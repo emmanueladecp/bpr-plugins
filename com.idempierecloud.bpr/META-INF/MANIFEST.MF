@@ -1,0 +1,28 @@
+Manifest-Version: 1.0
+Bundle-Category: idempiere-plugin
+Bundle-ManifestVersion: 2
+Bundle-Name: BPR IDempiere Plugin
+Bundle-SymbolicName: com.idempierecloud.bpr
+Bundle-Version: 9.0.0.qualifier
+Bundle-Vendor: REDCLOUD <https://rekaestudigital.id>
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.apache.commons.lang3,
+ org.adempiere.base,
+ org.adempiere.plugin.utils,
+ org.adempiere.ui.zk,
+ zcommon,
+ zel,
+ zhtml,
+ zk,
+ zkbind,
+ zkplus,
+ zul,
+ zweb
+Import-Package: org.osgi.service.event
+Service-Component: OSGI-INF/ModelFactory.xml,
+ OSGI-INF/EventFactory.xml,
+ OSGI-INF/CalloutFactory.xml,
+ OSGI-INF/ProcessFactory.xml,
+ OSGI-INF/FormFactory.xml
+Bundle-ClassPath: .
+Bundle-Activator: org.adempiere.plugin.utils.Incremental2PackActivator
