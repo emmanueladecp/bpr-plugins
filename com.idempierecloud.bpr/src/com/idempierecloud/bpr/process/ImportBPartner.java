@@ -322,6 +322,8 @@ public class ImportBPartner extends CustomProcess implements ImportProcess
 					if (impBP.getC_BPartner_ID() == 0)	//	Insert new BPartner
 					{
 						bp = new MBPartner(impBP);
+						if(impBP.get_Value("SO_CreditLimit")!=null)
+							bp.setSO_CreditLimit((BigDecimal) impBP.get_Value("SO_CreditLimit"));
 						ModelValidationEngine.get().fireImportValidate(this, impBP, bp, ImportValidator.TIMING_AFTER_IMPORT);
 						
 						setTypeOfBPartner(impBP,bp);
@@ -361,6 +363,8 @@ public class ImportBPartner extends CustomProcess implements ImportProcess
 							bp.setDescription(impBP.getDescription());
 						if (impBP.getC_BP_Group_ID() != 0)
 							bp.setC_BP_Group_ID(impBP.getC_BP_Group_ID());
+						if(impBP.get_Value("SO_CreditLimit")!=null)
+							bp.setSO_CreditLimit((BigDecimal) impBP.get_Value("SO_CreditLimit"));
 						ModelValidationEngine.get().fireImportValidate(this, impBP, bp, ImportValidator.TIMING_AFTER_IMPORT);
 						
 						setTypeOfBPartner(impBP,bp);
