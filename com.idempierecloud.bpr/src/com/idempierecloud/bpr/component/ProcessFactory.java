@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomProcessFactory;
+import com.idempierecloud.bpr.process.ImportBPartner;
 
 /**
  * Process Factory
@@ -36,6 +37,7 @@ public class ProcessFactory extends CustomProcessFactory {
 	 */
 	@Override
 	protected void initialize() {
+		registerProcess(ImportBPartner.class);
 	}
 
 }
