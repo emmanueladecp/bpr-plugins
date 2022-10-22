@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: BPR Test
+Bundle-SymbolicName: com.idempierecloud.bpr.test
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: IDEMPIERECLOUD
+Automatic-Module-Name: com.idempierecloud.bpr.test
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-Activator: org.idempiere.test.TestActivator
+Require-Bundle: org.adempiere.base;bundle-version="9.0.0",
+ org.adempiere.plugin.utils;bundle-version="9.0.0",
+ org.idempiere.test;bundle-version="9.0.0"
+Import-Package: org.junit.jupiter.api;version="5.8.1"
+Bundle-ActivationPolicy: lazy
+Export-Package: com.idempierecloud.bpr.test
