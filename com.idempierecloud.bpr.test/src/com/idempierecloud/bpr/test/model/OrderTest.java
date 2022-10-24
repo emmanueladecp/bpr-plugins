@@ -1,4 +1,4 @@
-package com.idempierecloud.bpr.test;
+package com.idempierecloud.bpr.test.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,6 +9,8 @@ import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.util.Env;
 import org.junit.jupiter.api.Test;
+
+import com.idempierecloud.bpr.test.AbstractTestCase;
 
 public class OrderTest extends AbstractTestCase {
 

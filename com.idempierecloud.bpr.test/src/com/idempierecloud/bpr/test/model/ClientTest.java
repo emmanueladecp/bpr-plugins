@@ -1,9 +1,11 @@
-package com.idempierecloud.bpr.test;
+package com.idempierecloud.bpr.test.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.compiere.util.DB;
 import org.junit.jupiter.api.Test;
+
+import com.idempierecloud.bpr.test.AbstractTestCase;
 
 public class ClientTest extends AbstractTestCase {
 

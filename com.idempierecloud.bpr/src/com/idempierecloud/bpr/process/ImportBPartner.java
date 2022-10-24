@@ -75,7 +75,7 @@ public class ImportBPartner extends CustomProcess implements ImportProcess
 		{
 			String name = para[i].getParameterName();
 			if (name.equals("AD_Client_ID"))
-				m_AD_Client_ID = ((BigDecimal)para[i].getParameter()).intValue();
+				m_AD_Client_ID = para[i].getParameterAsInt();
 			else if (name.equals("DeleteOldImported"))
 				m_deleteOldImported = "Y".equals(para[i].getParameter());
 			else if (name.equals("IsValidateOnly"))

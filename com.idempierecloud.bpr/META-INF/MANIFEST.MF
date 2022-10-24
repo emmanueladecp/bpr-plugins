@@ -26,3 +26,4 @@ Service-Component: OSGI-INF/ModelFactory.xml,
  OSGI-INF/FormFactory.xml
 Bundle-ClassPath: .
 Bundle-Activator: org.adempiere.plugin.utils.Incremental2PackActivator
+Export-Package: com.idempierecloud.bpr.model
