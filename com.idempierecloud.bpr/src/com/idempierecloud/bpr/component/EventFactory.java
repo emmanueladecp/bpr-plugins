@@ -46,6 +46,7 @@ public class EventFactory extends CustomEventFactory {
 		// C_OrderLine
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_OrderLine.Table_Name, COrderLineEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_C_OrderLine.Table_Name, COrderLineEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_DELETE, I_C_OrderLine.Table_Name, COrderLineEvent.class);
 	}
 
 }

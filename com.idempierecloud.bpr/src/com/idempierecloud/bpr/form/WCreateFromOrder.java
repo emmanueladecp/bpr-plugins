@@ -23,14 +23,11 @@ import org.compiere.util.KeyNamePair;
 import org.compiere.util.Msg;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
-import org.zkoss.zul.Space;
 import org.zkoss.zul.Vlayout;
 
 public class WCreateFromOrder extends CreateFromOrder implements EventListener<Event> {
 
 	private WCreateFromWindow window;
-	private Integer AD_Client_ID = 0;
-	private Integer AD_Org_ID = 0;
 	private boolean m_actionActive = false;
 	
 	/** Window No               */
@@ -41,6 +38,8 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
     /** Labels and Fields */
     protected Label orgLabel = new Label();
     protected Listbox orgField = ListboxFactory.newDropdownListbox();
+    protected Label reqLabel = new Label();
+    protected Listbox reqField = ListboxFactory.newDropdownListbox();
 	
 	public WCreateFromOrder(GridTab mTab) {
 		super(mTab);
@@ -70,6 +69,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 	protected void zkInit() throws Exception
 	{
 		orgLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
+		reqLabel.setText(Msg.translate(Env.getCtx(), "M_Requisition_ID"));
 
 		Vlayout vlayout = new Vlayout();
 		vlayout.setVflex("1");
@@ -87,7 +87,10 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		row.appendChild(orgLabel.rightAlign());
 		row.appendChild(orgField);
 		orgField.setHflex("1");
-		row.appendChild(new Space());
+
+		row.appendChild(reqLabel.rightAlign());
+		row.appendChild(reqField);
+		reqField.setHflex("1");
 	}	
 	
 	public boolean dynInit() throws Exception
@@ -98,9 +101,6 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		window.setTitle(getTitle());
 		
 		initOrgData();
-		
-		if(!isSOTrx)
-			loadRequisition();
 		
 		return true;
 	}
@@ -129,7 +129,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 	 */
 	protected void loadRequisition()
 	{
-		loadTableOIS(getRequisitionData(AD_Client_ID, AD_Org_ID));
+		loadTableOIS(getRequisitionData());
 	}
 	
 	private void initOrgData(){
@@ -148,9 +148,27 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 			if (knp.getKey()==AD_Org_ID)
 				idxSelected = idx;
 		}
+		if(idxSelected>0) {
+			initRequisitionData();
+		}
 		
 		orgField.setSelectedIndex(idxSelected);
-		orgField.addActionListener(this);
+		orgField.setEnabled(false);
+	}
+	
+	private void initRequisitionData(){
+		reqField.removeActionListener(this);
+		reqField.removeAllItems();
+		
+		KeyNamePair pp = new KeyNamePair(0, "");
+		reqField.addItem(pp);
+		
+		ArrayList<KeyNamePair> list = loadRequisitionData();
+		for (KeyNamePair knp : list){
+			reqField.addItem(knp);
+		}
+		
+		reqField.addActionListener(this);
 	}
 
 	@Override
@@ -165,7 +183,13 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 				AD_Org_ID = pp.getKey();
 			else 
 				AD_Org_ID = 0;
-			
+		}else if (e.getTarget().equals(reqField)){
+			KeyNamePair pp = reqField.getSelectedItem().toKeyNamePair();
+			if (pp!=null)
+				M_Requisition_ID = pp.getKey();
+			else
+				M_Requisition_ID = 0;
+
 			loadRequisition();
 		}
 		

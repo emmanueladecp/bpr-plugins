@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-Category: idempiere-plugin
 Bundle-ManifestVersion: 2
 Bundle-Name: BPR IDempiere Plugin
-Bundle-SymbolicName: com.idempierecloud.bpr
+Bundle-SymbolicName: com.idempierecloud.bpr;singleton:=true
 Bundle-Version: 9.0.0.qualifier
 Bundle-Vendor: REDCLOUD <https://rekaestudigital.id>
 Bundle-ActivationPolicy: lazy
@@ -24,7 +24,8 @@ Service-Component: OSGI-INF/ModelFactory.xml,
  OSGI-INF/EventFactory.xml,
  OSGI-INF/CalloutFactory.xml,
  OSGI-INF/ProcessFactory.xml,
- OSGI-INF/FormFactory.xml
+ OSGI-INF/FormFactory.xml,
+ OSGI-INF/CreateFormFactory.xml
 Bundle-ClassPath: .
 Bundle-Activator: org.adempiere.plugin.utils.Incremental2PackActivator
 Export-Package: com.idempierecloud.bpr.model
