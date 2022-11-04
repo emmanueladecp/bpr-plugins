@@ -6,6 +6,7 @@ import org.adempiere.base.event.IEventTopics;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
+import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
@@ -26,6 +27,13 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE))
 			calculateLinetNetAmt();
+		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE))
+			checkRequisitionLine();
+	}
+
+	private void checkRequisitionLine() {
+		int no = DB.executeUpdate("UPDATE M_RequisitionLine SET C_OrderLine_ID=null WHERE C_orderLine_id=?", orderLine.getC_OrderLine_ID(), orderLine.get_TrxName());
+		log.info("Updated RequisitionLine "+no);
 	}
 
 	private void calculateLinetNetAmt() {
