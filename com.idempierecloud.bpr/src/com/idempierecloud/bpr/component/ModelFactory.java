@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomModelFactory;
+import com.idempierecloud.bpr.model.MProductionExt;
 
 /**
  * Model Factory
@@ -36,6 +37,7 @@ public class ModelFactory extends CustomModelFactory {
 	 */
 	@Override
 	protected void initialize() {
+		registerModel(MProductionExt.Table_Name, MProductionExt.class);
 	}
 
 }
