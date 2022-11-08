@@ -24,14 +24,15 @@ public class COrderLineEvent extends CustomEvent {
 		log.fine("OrderLine Event : "+event.getTopic());
 		
 		orderLine = (MOrderLine) po;
-		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)||event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) 
+		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			calculateOngkosAngkut();
-		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
 			calculateLinetNetAmt();
-		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE))
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			calculateOngkosAngkut();
 			calculateLinetNetAmt();
-		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE))
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
+		}
 	}
 
 	private void checkRequisitionLine() {
