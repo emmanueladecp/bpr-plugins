@@ -27,9 +27,11 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine = (MOrderLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			calculateOngkosAngkut();
+			calculatePrice();
 			calculateLinetNetAmt();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			calculateOngkosAngkut();
+			calculatePrice();
 			calculateLinetNetAmt();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
@@ -40,7 +42,13 @@ public class COrderLineEvent extends CustomEvent {
 		int no = DB.executeUpdate("UPDATE M_RequisitionLine SET C_OrderLine_ID=null WHERE C_orderLine_id=?", orderLine.getC_OrderLine_ID(), orderLine.get_TrxName());
 		log.info("Updated RequisitionLine "+no);
 	}
-
+	private void calculatePrice() {
+		if(orderLine.getM_Product_ID()==0)
+			return;
+		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
+		BigDecimal price = ongkosAngkut.add(orderLine.getPriceList());
+		orderLine.setPriceEntered(price);
+	}
 	private void calculateLinetNetAmt() {
 		if(orderLine.getM_Product_ID()==0)
 			return;
