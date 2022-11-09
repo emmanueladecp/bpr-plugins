@@ -26,6 +26,8 @@ public class OrderTest extends AbstractTestCase {
 	private static final int C_UOM_ZAK = 1000018;
 	private static final int C_TAX_STANDARD = 1000000;
 	private static final int M_PRICELIST_SUMATERA_GT = 1000004;
+	private static final String DeliveryViaRule_Pickup = "P";
+	private static final String DeliveryViaRule_Delivery = "D";
 
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
@@ -42,6 +44,7 @@ public class OrderTest extends AbstractTestCase {
 		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
 		order.setDocStatus(MOrder.STATUS_Drafted);
 		order.setDocAction(MOrder.ACTION_Complete);
+		order.setDeliveryViaRule(DeliveryViaRule_Delivery);
 		order.saveEx();
 		
 		assertEquals(order.getC_BPartner_ID(), C_BPARTNER_ARI_SAPUTRA);
@@ -77,6 +80,7 @@ public class OrderTest extends AbstractTestCase {
 		order.setM_Warehouse_ID(M_WAREHOUSE_KANTOR_16);
 		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
 		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDeliveryViaRule(DeliveryViaRule_Pickup);
 		order.setDocStatus(MOrder.STATUS_Drafted);
 		order.setDocAction(MOrder.ACTION_Complete);
 		order.saveEx();
@@ -97,7 +101,8 @@ public class OrderTest extends AbstractTestCase {
 		
 		BigDecimal expectedOngkosKirim = orderLine.getQtyEntered().multiply(BPR_OngkosAngkut).multiply(orderLine.getM_Product().getWeight()); 
 		
-		assertEquals((BigDecimal)orderLine.get_Value("OngkosAngkut"), expectedOngkosKirim.setScale(2));
+		if(order.getDeliveryViaRule().equalsIgnoreCase(DeliveryViaRule_Delivery))
+			assertEquals((BigDecimal)orderLine.get_Value("OngkosAngkut"), expectedOngkosKirim.setScale(2));
 		
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();

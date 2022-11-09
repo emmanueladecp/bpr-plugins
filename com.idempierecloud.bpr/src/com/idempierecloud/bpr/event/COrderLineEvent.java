@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
 import org.compiere.model.MBPartnerLocation;
+import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -49,16 +50,23 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine.setLineNetAmt(orderLine.getLineNetAmt().add(ongkosAngkut));
 	}
 	private void calculateOngkosAngkut() {
-		String IsSOTrx = DB.getSQLValueString(orderLine.get_TrxName(), "select isSOTrx from c_order where c_order_id = ?", orderLine.getC_Order_ID());
-		if(IsSOTrx.equalsIgnoreCase("Y")) {
+		
+		MOrder order = (MOrder)orderLine.getC_Order();
+		if(order.getDeliveryViaRule().equalsIgnoreCase("")) {
+			return;
+		}		
+		if(order.getDeliveryViaRule().equalsIgnoreCase("D")) {//Delivery
 			if(orderLine.getM_Product_ID()==0)
 				return;
 			if(orderLine.getC_BPartner_Location_ID()==0)
 				return;
-			
 			MBPartnerLocation BPLoc = new MBPartnerLocation(orderLine.getCtx(), orderLine.getC_BPartner_Location_ID(), orderLine.get_TrxName());
 			BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(BPLoc.get_TrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ?", BPLoc.get_ValueAsInt("C_City_ID"));
 			BigDecimal ongkosAngkut = BPR_OngkosAngkut.multiply(orderLine.getQtyEntered()).multiply(orderLine.getM_Product().getWeight());
+			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
+		}
+		else if (order.getDeliveryViaRule().equalsIgnoreCase("P")) {//Pickup
+			BigDecimal ongkosAngkut = BigDecimal.ZERO;
 			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
 		}
 	}
