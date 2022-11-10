@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
 import org.compiere.model.MBPartnerLocation;
+import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -24,21 +25,30 @@ public class COrderLineEvent extends CustomEvent {
 		log.fine("OrderLine Event : "+event.getTopic());
 		
 		orderLine = (MOrderLine) po;
-		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)||event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) 
+		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			calculateOngkosAngkut();
-		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
+			calculatePrice();
 			calculateLinetNetAmt();
-		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE))
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			calculateOngkosAngkut();
+			calculatePrice();
 			calculateLinetNetAmt();
-		else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE))
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
+		}
 	}
 
 	private void checkRequisitionLine() {
 		int no = DB.executeUpdate("UPDATE M_RequisitionLine SET C_OrderLine_ID=null WHERE C_orderLine_id=?", orderLine.getC_OrderLine_ID(), orderLine.get_TrxName());
 		log.info("Updated RequisitionLine "+no);
 	}
-
+	private void calculatePrice() {
+		if(orderLine.getM_Product_ID()==0)
+			return;
+		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
+		BigDecimal price = ongkosAngkut.add(orderLine.getPriceList());
+		orderLine.setPriceEntered(price);
+	}
 	private void calculateLinetNetAmt() {
 		if(orderLine.getM_Product_ID()==0)
 			return;
@@ -48,16 +58,23 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine.setLineNetAmt(orderLine.getLineNetAmt().add(ongkosAngkut));
 	}
 	private void calculateOngkosAngkut() {
-		String IsSOTrx = DB.getSQLValueString(orderLine.get_TrxName(), "select isSOTrx from c_order where c_order_id = ?", orderLine.getC_Order_ID());
-		if(IsSOTrx.equalsIgnoreCase("Y")) {
+		
+		MOrder order = (MOrder)orderLine.getC_Order();
+		if(order.getDeliveryViaRule().equalsIgnoreCase("")) {
+			return;
+		}		
+		if(order.getDeliveryViaRule().equalsIgnoreCase("D")) {//Delivery
 			if(orderLine.getM_Product_ID()==0)
 				return;
 			if(orderLine.getC_BPartner_Location_ID()==0)
 				return;
-			
 			MBPartnerLocation BPLoc = new MBPartnerLocation(orderLine.getCtx(), orderLine.getC_BPartner_Location_ID(), orderLine.get_TrxName());
 			BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(BPLoc.get_TrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ?", BPLoc.get_ValueAsInt("C_City_ID"));
 			BigDecimal ongkosAngkut = BPR_OngkosAngkut.multiply(orderLine.getQtyEntered()).multiply(orderLine.getM_Product().getWeight());
+			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
+		}
+		else if (order.getDeliveryViaRule().equalsIgnoreCase("P")) {//Pickup
+			BigDecimal ongkosAngkut = BigDecimal.ZERO;
 			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
 		}
 	}
