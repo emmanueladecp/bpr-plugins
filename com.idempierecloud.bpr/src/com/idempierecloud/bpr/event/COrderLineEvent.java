@@ -53,9 +53,11 @@ public class COrderLineEvent extends CustomEvent {
 		if(orderLine.getM_Product_ID()==0)
 			return;
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
+		BigDecimal PriceEntered 	= orderLine.getPriceList().add(ongkosAngkut); 
 		if(ongkosAngkut==null)
 			ongkosAngkut = Env.ZERO;
-		orderLine.setLineNetAmt(orderLine.getLineNetAmt().add(ongkosAngkut));
+		BigDecimal LineNetAmt = PriceEntered.multiply(orderLine.getQtyEntered());	
+		orderLine.setLineNetAmt(LineNetAmt);
 	}
 	private void calculateOngkosAngkut() {
 		

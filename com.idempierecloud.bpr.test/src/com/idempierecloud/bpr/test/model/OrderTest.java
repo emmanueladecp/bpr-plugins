@@ -58,9 +58,9 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
 		orderLine.saveEx();
 		
-		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().add((BigDecimal) orderLine.get_Value("OngkosAngkut"));
-		
-		assertEquals(orderLine.getLineNetAmt().setScale(2), expectedLineNetAmt.setScale(2));
+		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyEntered());
+		if(order.getDeliveryViaRule().equalsIgnoreCase(DeliveryViaRule_Delivery))
+			assertEquals(orderLine.getLineNetAmt().setScale(2), expectedLineNetAmt.setScale(2));
 		
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();
