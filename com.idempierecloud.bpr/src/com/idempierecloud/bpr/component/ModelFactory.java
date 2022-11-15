@@ -19,7 +19,9 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomModelFactory;
+import com.idempierecloud.bpr.model.I_BPR_Timbangan;
 import com.idempierecloud.bpr.model.MProductionExt;
+import com.idempierecloud.bpr.model.X_BPR_Timbangan;
 
 /**
  * Model Factory
@@ -38,6 +40,7 @@ public class ModelFactory extends CustomModelFactory {
 	@Override
 	protected void initialize() {
 		registerModel(MProductionExt.Table_Name, MProductionExt.class);
+		registerModel(I_BPR_Timbangan.Table_Name, X_BPR_Timbangan.class);
 	}
 
 }

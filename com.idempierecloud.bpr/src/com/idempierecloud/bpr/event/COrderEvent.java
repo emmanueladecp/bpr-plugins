@@ -8,10 +8,12 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.osgi.service.event.Event;
@@ -30,13 +32,28 @@ public class COrderEvent extends CustomEvent{
 		
 		order = (MOrder) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+			checkTimbanganPO();
 			calculateOngkosAngkut();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			checkTimbanganPO();
 			calculateOngkosAngkut();
 			checkTimbanganNetAmt();
 		}
 	}
 	
+	private void checkTimbanganPO() {
+		if(order.isSOTrx() || order.get_ValueAsInt("BPR_Timbangan_ID")==0)
+			return;
+		
+		MOrder anotherOrder = new Query(order.getCtx(), MOrder.Table_Name, "BPR_Timbangan_ID=? AND C_Order_ID<>?", order.get_TrxName())
+				.setParameters(order.get_ValueAsInt("BPR_Timbangan_ID"), order.getC_Order_ID())
+				.first();
+				
+		if(anotherOrder!=null)
+			throw new AdempiereException("Timbangan sudah digunakan di Order "+anotherOrder.getDocumentNo());
+		
+	}
+
 	private void checkTimbanganNetAmt() {
 		if(order.isSOTrx() || order.get_ValueAsInt("timbanganNetAmt")==0)
 			return;
