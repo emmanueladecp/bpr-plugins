@@ -26,6 +26,7 @@ package com.idempierecloud.bpr.test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 
@@ -33,6 +34,7 @@ import org.compiere.Adempiere;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MClientInfo;
 import org.compiere.model.MRole;
+import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Language;
 import org.compiere.util.Trx;
@@ -57,6 +59,8 @@ public abstract class AbstractTestCase {
 	protected final int BPR_ADMIN_USER = 1000006;
 	protected final int BPR_ADMIN_ROLE = 1000006;
 	protected final int BPR_HQ_WAREHOUSE = 1000000;
+	protected final int C_TAX_NON_PPN = 1000000;
+	protected final BigDecimal TEN = BigDecimal.valueOf(10);
 	
 	@BeforeAll
 	/**
@@ -225,5 +229,10 @@ public abstract class AbstractTestCase {
 	 * shutdown for class
 	 */
 	static void shutdown() {
+	}
+	
+	protected int getValueofColumn(String tableName, String columnName, Object value, String trxName) {
+		return DB.getSQLValue(trxName, "SELECT "+tableName+"_id FROM "+tableName+" WHERE "+columnName+"=?", value);
+				
 	}
 }

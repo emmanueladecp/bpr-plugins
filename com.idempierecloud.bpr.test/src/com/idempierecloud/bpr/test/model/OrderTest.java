@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MOrder;
@@ -17,6 +18,7 @@ import com.idempierecloud.bpr.test.AbstractTestCase;
 public class OrderTest extends AbstractTestCase {
 
 	private static final int C_DOCTYPE_GT_ORDER_BPR1 = 1000048;
+	private static final int C_DOCTYPE_PO_BahanBaku = 1000051;
 	private static final int C_BPARTNER_ARI_SAPUTRA = 1001591;
 	private static final int C_BPARTNER_LOCATION_ARI_SAPUTRA = 1001584;
 	private static final int AD_ORG_KANTOR_16 = 1000006;
@@ -28,6 +30,13 @@ public class OrderTest extends AbstractTestCase {
 	private static final int M_PRICELIST_SUMATERA_GT = 1000004;
 	private static final String DeliveryViaRule_Pickup = "P";
 	private static final String DeliveryViaRule_Delivery = "D";
+	private static final int M_PRICELIST_PEMBELIAN = 1000005;
+	private static final int C_BPARTNER_CV_PADI_JAYA = 1000003;
+	private static final int C_BPARTNER_LOCATION_CV_PADI_JAYA = 1000003;
+	private static final int M_WAREHOUSE_GUDANG_BPR1 = 1000001;
+	private static final int M_PRODUCT_GABAH_64 = 1000272;
+	private static final int M_PRODUCT_BELITANG_LEMBAB = 1000003;
+	private static final int C_UOM_KG = 1000013;
 
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
@@ -67,6 +76,7 @@ public class OrderTest extends AbstractTestCase {
 	
 		assertEquals(order.getGrandTotal().setScale(2), expectedLineNetAmt.setScale(2));
 	}
+	
 	@Test
 	public void test_ongkosangkut_bpr_ongkosangkut() throws Exception{
 		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
@@ -107,5 +117,51 @@ public class OrderTest extends AbstractTestCase {
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();
 	}
+	
+	@Test
+	public void test_purchase_order_turus_calculate_qty_ordered_when_timbangan_updated() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(BPR_BPR1_ORG);
+		order.setIsSOTrx(false);
+		order.setC_DocTypeTarget_ID(C_DOCTYPE_PO_BahanBaku);
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_PEMBELIAN);
+		order.setC_BPartner_ID(C_BPARTNER_CV_PADI_JAYA);
+		order.setC_BPartner_Location_ID(C_BPARTNER_LOCATION_CV_PADI_JAYA);
+		order.setM_Warehouse_ID(M_WAREHOUSE_GUDANG_BPR1);
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.setDocAction(MOrder.ACTION_Complete);
+		order.saveEx();
+		
+		MOrderLine orderLine = new MOrderLine(order);
+		orderLine.setM_Product_ID(M_PRODUCT_GABAH_64);
+		orderLine.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_LEMBAB);
+		orderLine.setQty(Env.ONEHUNDRED);
+		orderLine.setC_UOM_ID(C_UOM_KG);
+		orderLine.setPrice();
+		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
+		orderLine.saveEx();
+		
+		MOrderLine orderLine2 = new MOrderLine(order);
+		orderLine2.setM_Product_ID(M_PRODUCT_GABAH_64);
+		orderLine2.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_LEMBAB);
+		orderLine2.setQty(Env.ONEHUNDRED);
+		orderLine2.setC_UOM_ID(C_UOM_KG);
+		orderLine2.setPrice();
+		orderLine2.setC_Tax_ID(C_TAX_NON_PPN);
+		orderLine2.saveEx();
+		
+		BigDecimal TimbanganNetAmt = BigDecimal.valueOf(180);
+		order.set_ValueOfColumn("TimbanganNetAmt", TimbanganNetAmt);
+		order.saveEx();
+		
+		for(MOrderLine line : order.getLines(true, "Line")) {
+			BigDecimal newQtyOrdered = line.getQtyEntered().subtract(line.getQtyEntered().divide(BigDecimal.valueOf(200), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(20)));
+			assertEquals(newQtyOrdered.setScale(2), line.getQtyOrdered().setScale(2));
+		}
+	}
+	
 	
 }

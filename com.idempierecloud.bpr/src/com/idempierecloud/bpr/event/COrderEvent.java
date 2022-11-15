@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,8 +33,27 @@ public class COrderEvent extends CustomEvent{
 			calculateOngkosAngkut();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			calculateOngkosAngkut();
+			checkTimbanganNetAmt();
 		}
 	}
+	
+	private void checkTimbanganNetAmt() {
+		if(order.isSOTrx() || order.get_ValueAsInt("timbanganNetAmt")==0)
+			return;
+		
+		BigDecimal timbanganNetAmt = (BigDecimal) order.get_Value("timbanganNetAmt");
+		BigDecimal totalQtyEntered = DB.getSQLValueBD(order.get_TrxName(), "SELECT COALESCE(SUM(QtyEntered),0) FROM C_OrderLine WHERE C_Order_ID=?", order.getC_Order_ID());
+		for(MOrderLine line : order.getLines()) {
+			BigDecimal newQtyOrdered = line.getQtyEntered().subtract(
+					line.getQtyEntered()
+					.divide(totalQtyEntered, 2, RoundingMode.HALF_UP)
+					.multiply(totalQtyEntered.subtract(timbanganNetAmt))
+				);
+			line.setQtyOrdered(newQtyOrdered);
+			line.saveEx();
+		}
+	}
+	
 	private void calculateOngkosAngkut() {
 		
 		if(order.getDeliveryViaRule().equalsIgnoreCase("")) {
@@ -81,6 +101,7 @@ public class COrderEvent extends CustomEvent{
 			pstmt = null;
 		}
 	}
+	
 	@Override
 	protected void doHandleEvent() {
 		// TODO Auto-generated method stub
