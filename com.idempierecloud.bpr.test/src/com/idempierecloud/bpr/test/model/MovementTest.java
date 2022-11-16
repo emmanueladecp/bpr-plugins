@@ -44,13 +44,35 @@ public class MovementTest extends AbstractTestCase {
 		line.setM_Locator_ID(Locator_BPR1FinishGood);
 		line.setM_LocatorTo_ID(Locator_BPR1InTransit);
 		line.set_ValueOfColumn("M_LocatorToAlias_ID", Locator_BPR2FinishGood);
-		line.setMovementQty(BigDecimal.valueOf(11));
-		line.setTargetQty(BigDecimal.valueOf(10));
+		line.setMovementQty(BigDecimal.valueOf(10));
 		line.saveEx();
 		
 		movement.processIt(MMovement.ACTION_Complete);
 		
-		assertNotEquals(MMovement.STATUS_Completed, movement.getDocStatus());
+		assertEquals(MMovement.STATUS_Completed, movement.getDocStatus());
+		
+		MMovement movementConfirm = new MMovement(Env.getCtx(), 0, getTrxName());
+		movementConfirm.setAD_Org_ID(getAD_Org_ID());
+		movementConfirm.setC_DocType_ID(DocType_ConfirmMovement);
+		movementConfirm.setM_Warehouse_ID(Warehouse_BPR1);
+		movementConfirm.setM_WarehouseTo_ID(Warehouse_BPR2);
+		movementConfirm.setMovementDate(getLoginDate());
+		movementConfirm.setIsInTransit(true);
+		movementConfirm.setDocAction(MMovement.ACTION_Complete);
+		movementConfirm.saveEx();
+		
+		MMovementLine confirmLine = new MMovementLine(movementConfirm);
+		confirmLine.setM_Product_ID(Product_BerasPera50Kg);
+		confirmLine.setM_Locator_ID(Locator_BPR1FinishGood);
+		confirmLine.setM_LocatorTo_ID(Locator_BPR1InTransit);
+		confirmLine.set_ValueOfColumn("M_LocatorToAlias_ID", Locator_BPR2FinishGood);
+		confirmLine.setMovementQty(BigDecimal.valueOf(11));
+		confirmLine.setTargetQty(BigDecimal.valueOf(10));
+		confirmLine.saveEx();
+		
+		movementConfirm.processIt(MMovement.ACTION_Complete);
+		
+		assertNotEquals(MMovement.STATUS_Completed, movementConfirm.getDocStatus());
 	}
 	
 	@Test

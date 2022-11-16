@@ -25,9 +25,10 @@ public class MMovementEvent extends CustomEvent {
 		
 		movement = (MMovement) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			checkMovementLine();
-			if(movement.getC_DocType().getDescription().equals("CONFIRM"))
+			if(movement.getC_DocType().getDescription().equals("CONFIRM")) {
+				checkMovementLine();
 				checkMovementLineSusut();
+			}
 		}if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			if(movement.getC_DocType().getDescription().equals("INTRANSIT"))
 				createMovementConfirm();
