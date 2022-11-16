@@ -26,11 +26,11 @@ public class MMovementEvent extends CustomEvent {
 		movement = (MMovement) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkMovementLine();
+			if(movement.getC_DocType().getDescription().equals("CONFIRM"))
+				checkMovementLineSusut();
 		}if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			if(movement.getC_DocType().getDescription().equals("INTRANSIT"))
 				createMovementConfirm();
-			else if(movement.getC_DocType().getDescription().equals("CONFIRM"))
-				checkMovementLineSusut();
 		}
 	}
 
@@ -67,8 +67,8 @@ public class MMovementEvent extends CustomEvent {
 
 	private void checkMovementLine() {
 		for(MMovementLine line : movement.getLines(true)) {
-			if(line.getConfirmedQty().compareTo(line.getMovementQty())>0)
-				throw new AdempiereException("Confirmed Qty over that Movement Qty."+line.toString());
+			if(line.getMovementQty().compareTo(line.getTargetQty())>0)
+				throw new AdempiereException("Movement Qty over that Target Qty."+line.toString());
 		}
 	}
 
@@ -79,15 +79,8 @@ public class MMovementEvent extends CustomEvent {
 		MLocator locatorSusut = null;
 		
 		for(MMovementLine line : movement.getLines(true)) {
-			if(line.getConfirmedQty().compareTo(line.getMovementQty())==0)
+			if(line.getTargetQty().compareTo(line.getMovementQty())==0)
 				continue;
-			
-			MMovement moveReference = new Query(line.getCtx(), MMovement.Table_Name, "DocumentNo=?", line.get_TrxName())
-					.setParameters(movement.get_ValueAsString("MoveReference"))
-					.first();
-			
-			if(moveReference==null)
-				throw new AdempiereException("Move Reference not found "+movement.get_ValueAsInt("MoveReference"));
 			
 			if(locatorSusut==null) {
 				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y')"
@@ -100,39 +93,29 @@ public class MMovementEvent extends CustomEvent {
 					throw new AdempiereException("No Locator Susut for Warehouse "+movement.getM_Warehouse().getName());
 			}
 			
-			createMovementSusut(moveReference, line, locatorSusut);
+			if(line.getM_LocatorTo_ID()==locatorSusut.getM_Locator_ID())
+				continue;
+			
+			createMovementLineSusut(line, locatorSusut);
 		}
 		
 		
 	}
 
-	private void createMovementSusut(MMovement moveReference, MMovementLine line, MLocator locatorSusut) {
-
-		int DocType_MovementSusut = DB.getSQLValue(movement.get_TrxName(), "SELECT C_DocType_ID FROM C_DocType WHERE AD_Client_ID=? AND DocBaseType='MMM' AND Description='SUSUT'", movement.getAD_Client_ID());
-		if(DocType_MovementSusut==0)
-			throw new AdempiereException("No Document Type Material Susut");
+	private void createMovementLineSusut(MMovementLine line, MLocator locatorSusut) {
+		MMovementLine lineSusut = new Query(movement.getCtx(), MMovementLine.Table_Name, "M_Movement_ID=? AND M_Product_ID=? AND M_LocatorTo_ID=?", movement.get_TrxName())
+				.setParameters(line.getM_Movement_ID(), line.getM_Product_ID(), locatorSusut.getM_Locator_ID())
+				.firstOnly();
 		
-		MMovement movementSusut = new MMovement(line.getCtx(), 0, line.get_TrxName());
-		movementSusut.setAD_Org_ID(line.getAD_Org_ID());
-		movementSusut.set_ValueOfColumn("moveReference",moveReference.getDocumentNo());
-		movementSusut.setDescription("Movement Susut "+moveReference.getDocumentNo());
-		movementSusut.setC_DocType_ID(DocType_MovementSusut);
-		movementSusut.setM_Warehouse_ID(moveReference.getM_Warehouse_ID());
-		movementSusut.setM_WarehouseTo_ID(moveReference.getM_Warehouse_ID());
-		movementSusut.setMovementDate(moveReference.getMovementDate());
-		movementSusut.setDocAction(MMovement.ACTION_Complete);
-		movementSusut.saveEx();
-		
-		MMovementLine lineSusut = new MMovementLine(movementSusut);
-		lineSusut.setM_Locator_ID(line.getM_Locator_ID());
-		lineSusut.setM_LocatorTo_ID(locatorSusut.getM_Locator_ID());
-		lineSusut.setMovementQty(line.getMovementQty().subtract(line.getConfirmedQty()));
+		if(lineSusut==null) {
+			lineSusut = new MMovementLine(movement);
+			lineSusut.setM_Locator_ID(line.getM_Locator_ID());
+			lineSusut.setM_LocatorTo_ID(locatorSusut.getM_Locator_ID());
+		}
+		lineSusut.setMovementQty(line.getTargetQty().subtract(line.getMovementQty()));
+		lineSusut.setTargetQty(line.getTargetQty());
 		lineSusut.setM_Product_ID(line.getM_Product_ID());
 		lineSusut.saveEx();
-		
-		if(!movementSusut.processIt(MMovement.ACTION_Complete)) {
-			throw new AdempiereException("Failed Complete Movement Susut "+movementSusut.getProcessMsg());
-		}
 	}
 
 	@Override
