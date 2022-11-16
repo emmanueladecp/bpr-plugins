@@ -51,6 +51,10 @@ public class ProductionTest extends AbstractTestCase {
 		
 		assertEquals(MProductionExt.STATUS_Completed, production.getDocStatus());
 		
+		production.processIt(MProductionExt.ACTION_Reverse_Correct);
+		
+		assertEquals(MProductionExt.STATUS_Reversed, production.getDocStatus());
+		
 	}
 	
 }
