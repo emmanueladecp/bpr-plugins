@@ -11,6 +11,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MProductPrice;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.junit.jupiter.api.Test;
@@ -38,8 +39,9 @@ public class OrderTest extends AbstractTestCase {
 	private static final int C_BPARTNER_LOCATION_CV_PADI_JAYA = 1000003;
 	private static final int M_WAREHOUSE_GUDANG_BPR1 = 1000001;
 	private static final int M_PRODUCT_GABAH_64 = 1000272;
-	private static final int M_PRODUCT_BELITANG_LEMBAB = 1000003;
+	private static final int M_PRODUCT_BELITANG_BASAH = 1003329;
 	private static final int C_UOM_KG = 1000013;
+	private static final int M_PRODUCT_GABAH_HAMPA = 1003324;
 
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
@@ -70,7 +72,7 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
 		orderLine.saveEx();
 		
-		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyEntered());
+		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
 		if(order.getDeliveryViaRule().equalsIgnoreCase(DeliveryViaRule_Delivery))
 			assertEquals(orderLine.getLineNetAmt().setScale(2), expectedLineNetAmt.setScale(2));
 		
@@ -112,7 +114,7 @@ public class OrderTest extends AbstractTestCase {
 		MBPartnerLocation bpLocation = (MBPartnerLocation)order.getC_BPartner_Location();
 		BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(getTrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ? ", bpLocation.get_ValueAsInt("C_City_ID"));
 		
-		BigDecimal expectedOngkosKirim = orderLine.getQtyEntered().multiply(BPR_OngkosAngkut).multiply(orderLine.getM_Product().getWeight()); 
+		BigDecimal expectedOngkosKirim = orderLine.getQtyOrdered().multiply(BPR_OngkosAngkut).multiply(orderLine.getM_Product().getWeight()); 
 		
 		if(order.getDeliveryViaRule().equalsIgnoreCase(DeliveryViaRule_Delivery))
 			assertEquals((BigDecimal)orderLine.get_Value("OngkosAngkut"), expectedOngkosKirim.setScale(2));
@@ -140,21 +142,29 @@ public class OrderTest extends AbstractTestCase {
 		
 		MOrderLine orderLine = new MOrderLine(order);
 		orderLine.setM_Product_ID(M_PRODUCT_GABAH_64);
-		orderLine.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_LEMBAB);
+		orderLine.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_BASAH);
 		orderLine.setQty(Env.ONEHUNDRED);
 		orderLine.setC_UOM_ID(C_UOM_KG);
 		orderLine.setPrice();
 		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
 		orderLine.saveEx();
 		
+		int M_PriceList_Version_ID = DB.getSQLValue(orderLine.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
+		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, M_PRODUCT_BELITANG_BASAH, orderLine.get_TrxName());
+		assertEquals(price.getPriceList(), orderLine.getPriceList());
+		
 		MOrderLine orderLine2 = new MOrderLine(order);
 		orderLine2.setM_Product_ID(M_PRODUCT_GABAH_64);
-		orderLine2.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_LEMBAB);
+		orderLine2.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_GABAH_HAMPA);
 		orderLine2.setQty(Env.ONEHUNDRED);
 		orderLine2.setC_UOM_ID(C_UOM_KG);
 		orderLine2.setPrice();
 		orderLine2.setC_Tax_ID(C_TAX_NON_PPN);
 		orderLine2.saveEx();
+		
+		M_PriceList_Version_ID = DB.getSQLValue(orderLine2.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
+		price = MProductPrice.get(orderLine2.getCtx(), M_PriceList_Version_ID, M_PRODUCT_GABAH_HAMPA, orderLine2.get_TrxName());
+		assertEquals(price.getPriceList(), orderLine2.getPriceList());
 		
 		BigDecimal TimbanganNetAmt = BigDecimal.valueOf(180);
 		order.set_ValueOfColumn("TimbanganNetAmt", TimbanganNetAmt);

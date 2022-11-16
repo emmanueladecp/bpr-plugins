@@ -3,9 +3,13 @@ package com.idempierecloud.bpr.event;
 import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
+import org.compiere.model.MDocType;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MProduct;
+import org.compiere.model.MProductPrice;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -26,16 +30,37 @@ public class COrderLineEvent extends CustomEvent {
 		
 		orderLine = (MOrderLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
 			calculateLinetNetAmt();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
 			calculateLinetNetAmt();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}
+	}
+
+	private void setPricePOTurus() {
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		if(!docType.get_ValueAsBoolean("isTurus"))
+			return;
+		
+		if(orderLine.get_ValueAsInt("relatedProduct_ID")==0)
+			return;
+		
+		MProduct relatedProduct = new MProduct(orderLine.getCtx(), orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
+		int M_PriceList_Version_ID = DB.getSQLValue(orderLine.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", orderLine.getC_Order().getM_PriceList_ID(), orderLine.getC_Order().getDateOrdered());
+		if(M_PriceList_Version_ID<=0)
+			throw new AdempiereException("No Product Price for "+relatedProduct.getName());
+		
+		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
+		orderLine.setPriceEntered(price.getPriceStd());
+		orderLine.setPriceList(price.getPriceList());
+		orderLine.setPriceLimit(price.getPriceLimit());
 	}
 
 	private void checkRequisitionLine() {
@@ -52,11 +77,7 @@ public class COrderLineEvent extends CustomEvent {
 	private void calculateLinetNetAmt() {
 		if(orderLine.getM_Product_ID()==0)
 			return;
-		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
-		BigDecimal PriceEntered 	= orderLine.getPriceList().add(ongkosAngkut); 
-		if(ongkosAngkut==null)
-			ongkosAngkut = Env.ZERO;
-		BigDecimal LineNetAmt = PriceEntered.multiply(orderLine.getQtyEntered());	
+		BigDecimal LineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());	
 		orderLine.setLineNetAmt(LineNetAmt);
 	}
 	private void calculateOngkosAngkut() {
@@ -72,7 +93,7 @@ public class COrderLineEvent extends CustomEvent {
 				return;
 			MBPartnerLocation BPLoc = new MBPartnerLocation(orderLine.getCtx(), orderLine.getC_BPartner_Location_ID(), orderLine.get_TrxName());
 			BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(BPLoc.get_TrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ?", BPLoc.get_ValueAsInt("C_City_ID"));
-			BigDecimal ongkosAngkut = BPR_OngkosAngkut.multiply(orderLine.getQtyEntered()).multiply(orderLine.getM_Product().getWeight());
+			BigDecimal ongkosAngkut = BPR_OngkosAngkut.multiply(orderLine.getQtyOrdered()).multiply(orderLine.getM_Product().getWeight());
 			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
 		}
 		else if (order.getDeliveryViaRule().equalsIgnoreCase("P")) {//Pickup
