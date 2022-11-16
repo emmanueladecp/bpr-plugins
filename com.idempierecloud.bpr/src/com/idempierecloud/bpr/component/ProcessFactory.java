@@ -20,6 +20,7 @@ package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomProcessFactory;
 import com.idempierecloud.bpr.process.ImportBPartner;
+import com.idempierecloud.bpr.process.ImportRMAfromBPRRMA;
 import com.idempierecloud.bpr.process.ImportRelatedProduct;
 
 /**
@@ -40,6 +41,7 @@ public class ProcessFactory extends CustomProcessFactory {
 	protected void initialize() {
 		registerProcess(ImportBPartner.class);
 		registerProcess(ImportRelatedProduct.class);
+		registerProcess(ImportRMAfromBPRRMA.class);
 	}
 
 }
