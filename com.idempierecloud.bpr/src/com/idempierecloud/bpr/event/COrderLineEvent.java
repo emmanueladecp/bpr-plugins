@@ -34,11 +34,13 @@ public class COrderLineEvent extends CustomEvent {
 			calculateOngkosAngkut();
 			calculatePrice();
 			calculateLinetNetAmt();
+			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
 			calculateLinetNetAmt();
+			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}
@@ -100,6 +102,11 @@ public class COrderLineEvent extends CustomEvent {
 			BigDecimal ongkosAngkut = BigDecimal.ZERO;
 			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
 		}
+	}
+	private void setDiscount() {
+		if(orderLine.getM_Product_ID()==0)
+			return;
+		orderLine.setDiscount(BigDecimal.ZERO);
 	}
 
 	@Override
