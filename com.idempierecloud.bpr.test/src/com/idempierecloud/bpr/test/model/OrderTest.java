@@ -152,6 +152,8 @@ public class OrderTest extends AbstractTestCase {
 		int M_PriceList_Version_ID = DB.getSQLValue(orderLine.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
 		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, M_PRODUCT_BELITANG_BASAH, orderLine.get_TrxName());
 		assertEquals(price.getPriceList(), orderLine.getPriceList());
+		assertEquals(price.getPriceList(), orderLine.getPriceActual());
+		assertEquals(price.getPriceLimit(), orderLine.getPriceLimit());
 		
 		MOrderLine orderLine2 = new MOrderLine(order);
 		orderLine2.setM_Product_ID(M_PRODUCT_GABAH_64);
@@ -165,6 +167,8 @@ public class OrderTest extends AbstractTestCase {
 		M_PriceList_Version_ID = DB.getSQLValue(orderLine2.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
 		price = MProductPrice.get(orderLine2.getCtx(), M_PriceList_Version_ID, M_PRODUCT_GABAH_HAMPA, orderLine2.get_TrxName());
 		assertEquals(price.getPriceList(), orderLine2.getPriceList());
+		assertEquals(price.getPriceList(), orderLine2.getPriceActual());
+		assertEquals(price.getPriceLimit(), orderLine2.getPriceLimit());
 		
 		BigDecimal TimbanganNetAmt = BigDecimal.valueOf(180);
 		order.set_ValueOfColumn("TimbanganNetAmt", TimbanganNetAmt);

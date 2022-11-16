@@ -13,7 +13,6 @@ import org.compiere.model.MProductPrice;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
-import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -62,6 +61,7 @@ public class COrderLineEvent extends CustomEvent {
 		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
 		orderLine.setPriceEntered(price.getPriceStd());
 		orderLine.setPriceList(price.getPriceList());
+		orderLine.setPriceActual(price.getPriceList());
 		orderLine.setPriceLimit(price.getPriceLimit());
 	}
 
