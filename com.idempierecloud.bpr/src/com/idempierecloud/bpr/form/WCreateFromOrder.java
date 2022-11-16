@@ -153,7 +153,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		}
 		
 		orgField.setSelectedIndex(idxSelected);
-		orgField.setEnabled(false);
+		orgField.setEnabled(true);
 	}
 	
 	private void initRequisitionData(){
