@@ -24,13 +24,15 @@ public class MMovementEvent extends CustomEvent {
 		log.fine("movement Event : "+event.getTopic());
 		
 		movement = (MMovement) po;
+		String desc = movement.getC_DocType().getDescription();
+		
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			if(movement.getC_DocType().getDescription().equals("CONFIRM")) {
+			if(desc!=null && desc.equals("CONFIRM")) {
 				checkMovementLine();
 				checkMovementLineSusut();
 			}
 		}if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
-			if(movement.getC_DocType().getDescription().equals("INTRANSIT"))
+			if(desc!=null && desc.equals("INTRANSIT"))
 				createMovementConfirm();
 		}
 	}
@@ -57,7 +59,7 @@ public class MMovementEvent extends CustomEvent {
 			confirmLine.setM_Locator_ID(line.getM_LocatorTo_ID());
 			confirmLine.set_ValueOfColumn("M_LocatorAlias_ID", line.getM_Locator_ID());
 			confirmLine.setM_LocatorTo_ID(line.get_ValueAsInt("M_LocatorToAlias_ID"));
-			confirmLine.setTargetQty(line.getTargetQty());
+			confirmLine.setTargetQty(line.getMovementQty());
 			confirmLine.setMovementQty(line.getMovementQty());
 			confirmLine.saveEx();
 		}

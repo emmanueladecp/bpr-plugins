@@ -93,7 +93,6 @@ public class MovementTest extends AbstractTestCase {
 		line.setM_LocatorTo_ID(Locator_BPR1InTransit);
 		line.set_ValueOfColumn("M_LocatorToAlias_ID", Locator_BPR2FinishGood);
 		line.setMovementQty(new BigDecimal(10));
-		line.setTargetQty(new BigDecimal(10));
 		line.saveEx();
 		
 		movement.processIt(MMovement.ACTION_Complete);
@@ -108,8 +107,9 @@ public class MovementTest extends AbstractTestCase {
 		assertEquals(movement.getLines(false).length, movementConfirm.getLines(false).length);
 		
 		for(MMovementLine confirmLine:movementConfirm.getLines(false)) {
+			assertEquals(line.getMovementQty(), confirmLine.getTargetQty());
+			
 			confirmLine.setMovementQty(new BigDecimal(5));
-			confirmLine.setConfirmedQty(new BigDecimal(5));
 			confirmLine.saveEx();
 		}
 		
