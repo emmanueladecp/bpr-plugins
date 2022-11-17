@@ -154,9 +154,12 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		
 		orgField.setSelectedIndex(idxSelected);
 		orgField.setEnabled(true);
+		orgField.addActionListener(this);
 	}
 	
 	private void initRequisitionData(){
+		window.getWListbox().clear();
+		
 		reqField.removeActionListener(this);
 		reqField.removeAllItems();
 		
@@ -183,6 +186,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 				AD_Org_ID = pp.getKey();
 			else 
 				AD_Org_ID = 0;
+			initRequisitionData();
 		}else if (e.getTarget().equals(reqField)){
 			KeyNamePair pp = reqField.getSelectedItem().toKeyNamePair();
 			if (pp!=null)
