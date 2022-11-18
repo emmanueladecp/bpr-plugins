@@ -20,12 +20,7 @@ Require-Bundle: org.apache.commons.lang3,
  zweb,
  org.adempiere.ui
 Import-Package: org.osgi.service.event
-Service-Component: OSGI-INF/ModelFactory.xml,
- OSGI-INF/EventFactory.xml,
- OSGI-INF/CalloutFactory.xml,
- OSGI-INF/ProcessFactory.xml,
- OSGI-INF/FormFactory.xml,
- OSGI-INF/CreateFormFactory.xml
+Service-Component: OSGI-INF/ModelFactory.xml,OSGI-INF/EventFactory.xml,OSGI-INF/CalloutFactory.xml,OSGI-INF/ProcessFactory.xml,OSGI-INF/FormFactory.xml,OSGI-INF/CreateFormFactory.xml, OSGI-INF/DocFactory.xml
 Bundle-ClassPath: .
 Bundle-Activator: org.adempiere.plugin.utils.Incremental2PackActivator
 Export-Package: com.idempierecloud.bpr.model

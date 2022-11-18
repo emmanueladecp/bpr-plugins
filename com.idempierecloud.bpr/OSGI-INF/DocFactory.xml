@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="com.idempierecloud.bpr.component.DocFactory">
+   <implementation class="com.idempierecloud.bpr.component.DocFactory"/>
+   <property name="gaap" type="String" value="*"/>
+   <service>
+      <provide interface="org.adempiere.base.IDocFactory"/>
+   </service>
+</scr:component>

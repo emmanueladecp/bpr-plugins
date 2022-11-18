@@ -1,10 +1,14 @@
 package com.idempierecloud.bpr.model;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.acct.Doc;
 import org.compiere.model.I_M_ProductionPlan;
 import org.compiere.model.MPeriod;
@@ -13,10 +17,14 @@ import org.compiere.model.MProductionLine;
 import org.compiere.model.MProductionLineMA;
 import org.compiere.model.MProductionPlan;
 import org.compiere.model.MSysConfig;
+import org.compiere.model.ModelValidationEngine;
+import org.compiere.model.ModelValidator;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.process.DocAction;
+import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.Util;
 
 public class MProductionExt extends MProduction implements DocAction {
 
@@ -169,6 +177,143 @@ public class MProductionExt extends MProduction implements DocAction {
 
 		return reversal;
 	}
+	
+	@Override
+	public String completeIt()
+	{
+		// Re-Check
+		if (!m_justPrepared)
+		{
+			String status = prepareIt();
+			m_justPrepared = false;
+			if (!DocAction.STATUS_InProgress.equals(status))
+				return status;
+		}
 
+		m_processMsg = ModelValidationEngine.get().fireDocValidate(this, ModelValidator.TIMING_BEFORE_COMPLETE);
+		if (m_processMsg != null)
+			return DocAction.STATUS_Invalid;
+
+		StringBuilder errors = new StringBuilder();
+		int processed = 0;
+			
+		if (!isUseProductionPlan()) {
+			MProductionLineExt[] lines = getLines();
+			//IDEMPIERE-3107 Check if End Product in Production Lines exist
+			if(!this.isHaveEndProduct(lines)) {
+				m_processMsg = "Production does not contain End Product";
+				return DocAction.STATUS_Invalid;
+			}
+			errors.append(processLines(lines));
+			if (errors.length() > 0) {
+				m_processMsg = errors.toString();
+				return DocAction.STATUS_Invalid;
+			}
+			processed = processed + lines.length;
+		} else {
+			Query planQuery = new Query(Env.getCtx(), I_M_ProductionPlan.Table_Name, "M_ProductionPlan.M_Production_ID=?", get_TrxName());
+			List<MProductionPlan> plans = planQuery.setParameters(getM_Production_ID()).list();
+			for(MProductionPlan plan : plans) {
+				MProductionLine[] lines = plan.getLines();
+				
+				//IDEMPIERE-3107 Check if End Product in Production Lines exist
+				if(!this.isHaveEndProduct(lines)) {
+					m_processMsg = String.format("Production plan (line %1$d id %2$d) does not contain End Product", plan.getLine(), plan.get_ID());
+					return DocAction.STATUS_Invalid;
+				}
+				
+				if (lines.length > 0) {
+					errors.append(processLines(lines));
+					if (errors.length() > 0) {
+						m_processMsg = errors.toString();
+						return DocAction.STATUS_Invalid;
+					}
+					processed = processed + lines.length;
+				}
+				plan.setProcessed(true);
+				plan.saveEx();
+			}
+		}
+
+		//		User Validation
+		String valid = ModelValidationEngine.get().fireDocValidate(this, ModelValidator.TIMING_AFTER_COMPLETE);
+		if (valid != null)
+		{
+			m_processMsg = valid;
+			return DocAction.STATUS_Invalid;
+		}
+
+		setProcessed(true);
+		setDocAction(DOCACTION_Close);
+		return DocAction.STATUS_Completed;
+	}
+	
+	protected Object processLines(MProductionLineExt[] lines) {
+		StringBuilder errors = new StringBuilder();
+		for ( int i = 0; i<lines.length; i++) {
+			String error = lines[i].createTransactions(getMovementDate(), false);
+			if (!Util.isEmpty(error)) {
+				errors.append(error);
+			} else { 
+				lines[i].setProcessed( true );
+				lines[i].saveEx(get_TrxName());
+			}
+		}
+
+		return errors.toString();
+	}
+
+	private boolean isHaveEndProduct(MProductionLineExt[] lines) {
+		
+		for(MProductionLineExt line : lines) {
+			if(line.isEndProduct())
+				return true;			
+		}
+		return false;
+	}
+
+
+	private boolean isHaveEndProduct(MProductionLine[] lines) {
+		
+		for(MProductionLine line : lines) {
+			if(line.isEndProduct())
+				return true;			
+		}
+		return false;
+	}
+	
+	public MProductionLineExt[] getLines() {
+		ArrayList<MProductionLineExt> list = new ArrayList<MProductionLineExt>();
+		
+		String sql = "SELECT pl.M_ProductionLine_ID "
+			+ "FROM M_ProductionLine pl "
+			+ "WHERE pl.M_Production_ID = ? "
+			+ "ORDER BY pl.Line, pl.M_ProductionLine_ID ";
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try
+		{
+			pstmt = DB.prepareStatement(sql, get_TrxName());
+			pstmt.setInt(1, get_ID());
+			rs = pstmt.executeQuery();
+			while (rs.next())
+				list.add( new MProductionLineExt( getCtx(), rs.getInt(1), get_TrxName() ) );	
+		}
+		catch (SQLException ex)
+		{
+			throw new AdempiereException("Unable to load production lines", ex);
+		}
+		finally
+		{
+			DB.close(rs, pstmt);
+			rs = null;
+			pstmt = null;
+		}
+		
+		MProductionLineExt[] retValue = new MProductionLineExt[list.size()];
+		list.toArray(retValue);
+		return retValue;
+	}
 	
 }
