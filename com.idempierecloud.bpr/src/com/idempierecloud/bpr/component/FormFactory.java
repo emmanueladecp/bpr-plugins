@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomFormFactory;
+import com.idempierecloud.bpr.form.WAllocation;
 
 /**
  * Form Factory
@@ -37,6 +38,7 @@ public class FormFactory extends CustomFormFactory {
 	 */
 	@Override
 	protected void initialize() {
+		registerForm(WAllocation.class);
 	}
 
 }
