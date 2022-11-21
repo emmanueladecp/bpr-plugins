@@ -19,7 +19,7 @@ import com.idempierecloud.bpr.model.MBPRRMA;
 import com.idempierecloud.bpr.model.MBPRRMALine;
 import com.idempierecloud.bpr.test.AbstractTestCase;
 
-public class ImportRMAfromBPRRMATest extends AbstractTestCase {
+public class ImportBPR_RMAtest extends AbstractTestCase {
 	
 	private final static int M_Product_ID = 1000007;
 	private final static int C_BPartner_ID = 1000020;

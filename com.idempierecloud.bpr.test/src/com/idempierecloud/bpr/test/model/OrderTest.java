@@ -42,6 +42,7 @@ public class OrderTest extends AbstractTestCase {
 	private static final int M_PRODUCT_BELITANG_BASAH = 1003329;
 	private static final int C_UOM_KG = 1000013;
 	private static final int M_PRODUCT_GABAH_HAMPA = 1003324;
+	private static final int C_DocType_PO_Non_Bahan_Baku = 1000053;
 
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
@@ -230,5 +231,38 @@ public class OrderTest extends AbstractTestCase {
 		assertThrows(AdempiereException.class, () -> order2.saveEx(), "Timbangan sudah digunakan di Order "+order.getDocumentNo());
 	}
 	
-	
+	@Test
+	public void test_purchase_order_price_non_turus() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(BPR_BPR1_ORG);
+		order.setIsSOTrx(false);
+		order.setC_DocTypeTarget_ID(C_DocType_PO_Non_Bahan_Baku);
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_PEMBELIAN);
+		order.setC_BPartner_ID(C_BPARTNER_CV_PADI_JAYA);
+		order.setC_BPartner_Location_ID(C_BPARTNER_LOCATION_CV_PADI_JAYA);
+		order.setM_Warehouse_ID(M_WAREHOUSE_GUDANG_BPR1);
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.setDocAction(MOrder.ACTION_Complete);
+		order.saveEx();
+		
+		MOrderLine orderLine = new MOrderLine(order);
+		orderLine.setM_Product_ID(M_PRODUCT_GABAH_64);
+		orderLine.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_BASAH);
+		orderLine.setQty(Env.ONEHUNDRED);
+		orderLine.setC_UOM_ID(C_UOM_KG);
+		orderLine.setPriceList(new BigDecimal(200000));
+		orderLine.setPriceEntered(new BigDecimal(200000));
+		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
+		orderLine.saveEx();
+		
+		order.processIt(MOrder.ACTION_Complete);
+		order.saveEx();
+		assertEquals(orderLine.getPriceActual().setScale(2), orderLine.getPriceEntered().setScale(2));
+		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
+		BigDecimal grand = order.getGrandTotal().setScale(2);
+		assertEquals(order.getGrandTotal().setScale(2), expectedLineNetAmt.setScale(2));
+	}
 }

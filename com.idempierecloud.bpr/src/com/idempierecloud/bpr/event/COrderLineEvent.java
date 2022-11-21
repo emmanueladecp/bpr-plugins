@@ -32,12 +32,14 @@ public class COrderLineEvent extends CustomEvent {
 			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
+			setPricePONonTurus();
 			calculateLinetNetAmt();
 			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
+			setPricePONonTurus();
 			calculateLinetNetAmt();
 			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
@@ -45,6 +47,18 @@ public class COrderLineEvent extends CustomEvent {
 		}
 	}
 
+	private void setPricePONonTurus() {
+		MOrder order = (MOrder)orderLine.getC_Order();
+		if(order.get_ValueAsBoolean("isSOTrx"))
+			return;
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		if(docType.get_ValueAsBoolean("isTurus"))
+			return;
+		if(orderLine.getPriceEntered().compareTo(BigDecimal.ZERO)>0) {
+			orderLine.setPriceActual(orderLine.getPriceEntered());
+			orderLine.setPriceList(orderLine.getPriceEntered());
+		}
+	}
 	private void setPricePOTurus() {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
@@ -70,7 +84,13 @@ public class COrderLineEvent extends CustomEvent {
 		log.info("Updated RequisitionLine "+no);
 	}
 	private void calculatePrice() {
+		MOrder order = (MOrder)orderLine.getC_Order();
+		if(!order.get_ValueAsBoolean("isSOTrx"))
+			return;
 		if(orderLine.getM_Product_ID()==0)
+			return;
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		if(docType.get_ValueAsBoolean("isTurus"))
 			return;
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
 		BigDecimal price = ongkosAngkut.add(orderLine.getPriceList());
@@ -83,8 +103,9 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine.setLineNetAmt(LineNetAmt);
 	}
 	private void calculateOngkosAngkut() {
-		
 		MOrder order = (MOrder)orderLine.getC_Order();
+		if(!order.get_ValueAsBoolean("isSOTrx"))
+			return;
 		if(order.getDeliveryViaRule().equalsIgnoreCase("")) {
 			return;
 		}		
