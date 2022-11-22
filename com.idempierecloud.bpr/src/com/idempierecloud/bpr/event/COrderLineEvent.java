@@ -13,6 +13,7 @@ import org.compiere.model.MProductPrice;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -63,6 +64,14 @@ public class COrderLineEvent extends CustomEvent {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
 			return;
+		
+		if(orderLine.get_ValueAsBoolean("isFOC")) {
+			orderLine.setPriceEntered(Env.ZERO);
+			orderLine.setPriceList(Env.ZERO);
+			orderLine.setPriceActual(Env.ZERO);
+			orderLine.setPriceLimit(Env.ZERO);
+			return;
+		}
 		
 		if(orderLine.get_ValueAsInt("relatedProduct_ID")==0)
 			return;

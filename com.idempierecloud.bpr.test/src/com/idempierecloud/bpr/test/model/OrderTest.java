@@ -182,6 +182,62 @@ public class OrderTest extends AbstractTestCase {
 	}
 	
 	@Test
+	public void test_purchase_order_turus_foc_product() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(BPR_BPR1_ORG);
+		order.setIsSOTrx(false);
+		order.setC_DocTypeTarget_ID(C_DOCTYPE_PO_BahanBaku);
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_PEMBELIAN);
+		order.setC_BPartner_ID(C_BPARTNER_CV_PADI_JAYA);
+		order.setC_BPartner_Location_ID(C_BPARTNER_LOCATION_CV_PADI_JAYA);
+		order.setM_Warehouse_ID(M_WAREHOUSE_GUDANG_BPR1);
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.setDocAction(MOrder.ACTION_Complete);
+		order.saveEx();
+		
+		MOrderLine orderLine = new MOrderLine(order);
+		orderLine.setM_Product_ID(M_PRODUCT_GABAH_64);
+		orderLine.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_BELITANG_BASAH);
+		orderLine.setQty(Env.ONEHUNDRED);
+		orderLine.setC_UOM_ID(C_UOM_KG);
+		orderLine.set_ValueOfColumn("isFOC", true);
+		orderLine.setPrice();
+		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
+		orderLine.saveEx();
+		
+		assertEquals(Env.ZERO, orderLine.getPriceList());
+		assertEquals(Env.ZERO, orderLine.getPriceActual());
+		assertEquals(Env.ZERO, orderLine.getPriceLimit());
+		
+		MOrderLine orderLine2 = new MOrderLine(order);
+		orderLine2.setM_Product_ID(M_PRODUCT_GABAH_64);
+		orderLine2.set_ValueOfColumn("RelatedProduct_ID", M_PRODUCT_GABAH_HAMPA);
+		orderLine2.setQty(Env.ONEHUNDRED);
+		orderLine2.setC_UOM_ID(C_UOM_KG);
+		orderLine2.setPrice();
+		orderLine2.setC_Tax_ID(C_TAX_NON_PPN);
+		orderLine2.saveEx();
+		
+		int M_PriceList_Version_ID = DB.getSQLValue(orderLine2.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
+		MProductPrice price = MProductPrice.get(orderLine2.getCtx(), M_PriceList_Version_ID, M_PRODUCT_GABAH_HAMPA, orderLine2.get_TrxName());
+		assertEquals(price.getPriceList(), orderLine2.getPriceList());
+		assertEquals(price.getPriceList(), orderLine2.getPriceActual());
+		assertEquals(price.getPriceLimit(), orderLine2.getPriceLimit());
+		
+		BigDecimal TimbanganNetAmt = BigDecimal.valueOf(180);
+		order.set_ValueOfColumn("TimbanganNetAmt", TimbanganNetAmt);
+		order.saveEx();
+		
+		for(MOrderLine line : order.getLines(true, "Line")) {
+			BigDecimal newQtyOrdered = line.getQtyEntered().subtract(line.getQtyEntered().divide(BigDecimal.valueOf(200), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(20)));
+			assertEquals(newQtyOrdered.setScale(2), line.getQtyOrdered().setScale(2));
+		}
+	}
+	
+	@Test
 	public void test_purchase_order_no_duplicate_bpr_timbangan_id() throws Exception{
 		X_BPR_Timbangan timbangan = new X_BPR_Timbangan(Env.getCtx(), 0, getTrxName());
 		timbangan.setAD_Org_ID(getAD_Org_ID());
