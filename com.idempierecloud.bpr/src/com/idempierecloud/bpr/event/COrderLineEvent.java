@@ -32,14 +32,14 @@ public class COrderLineEvent extends CustomEvent {
 			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
-			setPricePONonTurus();
+			setPrice();
 			calculateLinetNetAmt();
 			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
-			setPricePONonTurus();
+			setPrice();
 			calculateLinetNetAmt();
 			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
@@ -47,17 +47,22 @@ public class COrderLineEvent extends CustomEvent {
 		}
 	}
 
-	private void setPricePONonTurus() {
+	private void setPrice() {
 		MOrder order = (MOrder)orderLine.getC_Order();
-		if(order.get_ValueAsBoolean("isSOTrx"))
-			return;
-		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
-		if(docType.get_ValueAsBoolean("isTurus"))
-			return;
-		if(orderLine.getPriceEntered().compareTo(BigDecimal.ZERO)>0) {
-			orderLine.setPriceActual(orderLine.getPriceEntered());
-			orderLine.setPriceList(orderLine.getPriceEntered());
+		if(!order.get_ValueAsBoolean("isSOTrx")) {
+			MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+			if(docType.get_ValueAsBoolean("isTurus"))
+				return;
+			if(orderLine.getPriceEntered().compareTo(BigDecimal.ZERO)>0) {
+				orderLine.setPriceActual(orderLine.getPriceEntered());
+				orderLine.setPriceList(orderLine.getPriceEntered());
+			}
+		}else if(order.get_ValueAsBoolean("isSOTrx")){
+			if(orderLine.getPriceEntered().compareTo(BigDecimal.ZERO)>0) {
+				orderLine.setPriceActual(orderLine.getPriceEntered());
+			}
 		}
+		
 	}
 	private void setPricePOTurus() {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
@@ -116,7 +121,7 @@ public class COrderLineEvent extends CustomEvent {
 				return;
 			MBPartnerLocation BPLoc = new MBPartnerLocation(orderLine.getCtx(), orderLine.getC_BPartner_Location_ID(), orderLine.get_TrxName());
 			BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(BPLoc.get_TrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ?", BPLoc.get_ValueAsInt("C_City_ID"));
-			BigDecimal ongkosAngkut = BPR_OngkosAngkut.multiply(orderLine.getQtyOrdered()).multiply(orderLine.getM_Product().getWeight());
+			BigDecimal ongkosAngkut = BPR_OngkosAngkut.multiply(orderLine.getQtyEntered()).multiply(orderLine.getM_Product().getWeight());
 			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
 		}
 		else if (order.getDeliveryViaRule().equalsIgnoreCase("P")) {//Pickup
