@@ -288,7 +288,7 @@ public class OrderTest extends AbstractTestCase {
 	}
 	
 	@Test
-	public void test_purchase_order_price_non_turus() throws Exception{
+	public void test_purchase_order_price() throws Exception{
 		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
 		order.setAD_Org_ID(BPR_BPR1_ORG);
 		order.setIsSOTrx(false);
@@ -316,9 +316,9 @@ public class OrderTest extends AbstractTestCase {
 		
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();
+		assertEquals(orderLine.getPriceEntered(), orderLine.getPriceActual());
 		assertEquals(orderLine.getPriceActual().setScale(2), orderLine.getPriceEntered().setScale(2));
 		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
-		BigDecimal grand = order.getGrandTotal().setScale(2);
 		assertEquals(order.getGrandTotal().setScale(2), expectedLineNetAmt.setScale(2));
 	}
 }
