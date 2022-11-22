@@ -19,11 +19,15 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomModelFactory;
+import com.idempierecloud.bpr.model.I_BPR_Picklist;
+import com.idempierecloud.bpr.model.I_BPR_PicklistLine;
 import com.idempierecloud.bpr.model.I_BPR_Timbangan;
 import com.idempierecloud.bpr.model.MBPRRMA;
 import com.idempierecloud.bpr.model.MBPRRMALine;
 import com.idempierecloud.bpr.model.MProductionExt;
 import com.idempierecloud.bpr.model.MProductionLineExt;
+import com.idempierecloud.bpr.model.X_BPR_Picklist;
+import com.idempierecloud.bpr.model.X_BPR_PicklistLine;
 import com.idempierecloud.bpr.model.X_BPR_Timbangan;
 
 /**
@@ -47,6 +51,8 @@ public class ModelFactory extends CustomModelFactory {
 		registerModel(I_BPR_Timbangan.Table_Name, X_BPR_Timbangan.class);
 		registerModel(MBPRRMA.Table_Name, MBPRRMA.class);
 		registerModel(MBPRRMALine.Table_Name, MBPRRMALine.class);
+		registerModel(I_BPR_Picklist.Table_Name, X_BPR_Picklist.class);
+		registerModel(I_BPR_PicklistLine.Table_Name, X_BPR_PicklistLine.class);
 	}
 
 }
