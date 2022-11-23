@@ -24,10 +24,7 @@ import org.compiere.apps.IStatusBar;
 import org.compiere.grid.CreateFrom;
 import org.compiere.minigrid.IMiniTable;
 import org.compiere.model.GridTab;
-import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
-import org.compiere.model.MOrder;
-import org.compiere.model.MRequisitionLine;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
@@ -36,8 +33,8 @@ import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zul.Vlayout;
 
+import com.idempierecloud.bpr.model.MBPRPicklistLine;
 import com.idempierecloud.bpr.model.X_BPR_Picklist;
-import com.idempierecloud.bpr.model.X_BPR_PicklistLine;
 
 public class CreateFromPicklist extends CreateFrom  implements EventListener<Event> {
 
@@ -373,14 +370,14 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 			if (((Boolean)miniTable.getValueAt(i, 0)).booleanValue()) {
 				BigDecimal Qty = (BigDecimal)miniTable.getValueAt(i, 1);
 				KeyNamePair pp = (KeyNamePair)miniTable.getValueAt(i, 2);
-				int C_UOM_ID = pp.getKey();
+				//int C_UOM_ID = pp.getKey();
 				pp = (KeyNamePair)miniTable.getValueAt(i, 3);
 				int M_Product_ID = pp.getKey();
 				pp = (KeyNamePair)miniTable.getValueAt(i, 4);
 				M_InOutLine_ID = pp.getKey();
 				MInOutLine shipmentLine = new MInOutLine(picklist.getCtx(), M_InOutLine_ID, picklist.get_TrxName());
 				
-				X_BPR_PicklistLine line = new X_BPR_PicklistLine(picklist.getCtx(), 0, picklist.get_TrxName());
+				MBPRPicklistLine line = new MBPRPicklistLine(picklist.getCtx(), 0, picklist.get_TrxName());
 				line.setAD_Org_ID(picklist.getAD_Org_ID());
 				line.setLineNo(shipmentLine.getLine());
 				line.setM_InOut_ID(shipmentLine.getM_InOut_ID());
