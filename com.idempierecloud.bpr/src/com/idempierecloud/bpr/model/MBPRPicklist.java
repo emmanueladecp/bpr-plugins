@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.ModelValidationEngine;
 import org.compiere.model.ModelValidator;
 import org.compiere.model.Query;
@@ -83,7 +84,10 @@ public class MBPRPicklist extends X_BPR_Picklist implements DocAction, DocOption
 
 	@Override
 	public String prepareIt() {
-		return completeIt();
+		
+		
+		setProcessing(true);
+		return STATUS_InProgress;
 	}
 
 	@Override
@@ -104,6 +108,11 @@ public class MBPRPicklist extends X_BPR_Picklist implements DocAction, DocOption
 		if (m_processMsg != null)
 			return DocAction.STATUS_Invalid;
 		
+		if(getLines().length==0) {
+			m_processMsg = "No Lines";
+			return STATUS_Invalid;
+		}
+			
 		for(MBPRPicklistLine line : getLines()) {
 			line.setProcessed(true);
 			line.saveEx();
@@ -173,7 +182,7 @@ public class MBPRPicklist extends X_BPR_Picklist implements DocAction, DocOption
 	@Override
 	public String getDocumentInfo() {
 		
-		return null;
+		return getDocumentNo();
 	}
 
 	@Override

@@ -146,15 +146,19 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		StringBuffer sqlStmt = new StringBuffer();
 		sqlStmt.append(" select r.M_InOut_ID, r.documentNo ")
 			.append(" from M_InOut r")
+			.append(" join c_order o on r.c_order_id=o.c_order_id")
+			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
+			.append(" join c_doctype dto on o.c_doctype_id=dto.c_doctype_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
 			.append(" and r.isSoTrx='Y' ")
-			.append(" and r.DocStatus IN ('CO','CL') ")
+			.append(" and case when dts.isshipconfirm='Y' then r.DocStatus in ('IP')")
+			.append(" else r.DocStatus in ('CO', 'CL') and dts.docsubtypeso not in ('WR','WI','SO') end")
 		    .append(" and exists(select 1 from M_InOutLine rl")
-		    .append(" left join BPR_PicklistLine ol on rl.M_InOut_ID=ol.M_InOut_ID AND rl.M_Product_ID=ol.M_Product_ID")
-		    .append(" left join BPR_Picklist o on ol.BPR_Picklist_ID=o.BPR_Picklist_ID")
+		    .append(" left join BPR_PicklistLine pl on rl.M_InOut_ID=pl.M_InOut_ID AND rl.M_Product_ID=pl.M_Product_ID")
+		    .append(" left join BPR_Picklist p on pl.BPR_Picklist_ID=p.BPR_Picklist_ID")
 		    .append(" where r.M_InOut_ID=rl.M_InOut_ID")
-		    .append(" and (o.bpr_picklist_id is null or o.docstatus in ('VO', 'RE')))")
+		    .append(" and (p.bpr_picklist_id is null or p.docstatus in ('VO', 'RE')))")
 		;
 		
 		PreparedStatement pstmt = null;
@@ -254,7 +258,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	 */
 	protected void loadShipment()
 	{
-		loadTableOIS(getShipmentData());
+		loadTableOIS(getShipmentLines());
 	}
 	
 	@Override
@@ -283,7 +287,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		m_actionActive = false;				
 	}
 	
-	protected Vector<Vector<Object>> getShipmentData()
+	protected Vector<Vector<Object>> getShipmentLines()
 	{
 	    Vector<Vector<Object>> data = new Vector<Vector<Object>>();
 	    StringBuffer sqlStmt = new StringBuffer();
