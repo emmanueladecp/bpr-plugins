@@ -43,6 +43,7 @@ public class OrderTest extends AbstractTestCase {
 	private static final int C_UOM_KG = 1000013;
 	private static final int M_PRODUCT_GABAH_HAMPA = 1003324;
 	private static final int C_DocType_PO_Non_Bahan_Baku = 1000053;
+	private static final int USER_SALES = 1007908;
 
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
@@ -320,5 +321,28 @@ public class OrderTest extends AbstractTestCase {
 		assertEquals(orderLine.getPriceActual().setScale(2), orderLine.getPriceEntered().setScale(2));
 		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
 		assertEquals(order.getGrandTotal().setScale(2), expectedLineNetAmt.setScale(2));
+	}
+	
+	@Test
+	public void test_salesrep_on_sales_order() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(AD_ORG_KANTOR_16);
+		order.setIsSOTrx(true);
+		order.setC_DocTypeTarget_ID(C_DOCTYPE_GT_ORDER_BPR1);
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_SUMATERA_GT);
+		order.set_ValueOfColumn("SalesRep_ID2", USER_SALES);
+		order.setC_BPartner_ID(C_BPARTNER_ARI_SAPUTRA);
+		order.setC_BPartner_Location_ID(C_BPARTNER_LOCATION_ARI_SAPUTRA);
+		order.setM_Warehouse_ID(M_WAREHOUSE_KANTOR_16);
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.setDocAction(MOrder.ACTION_Complete);
+		order.setDeliveryViaRule(DeliveryViaRule_Delivery);
+		order.saveEx();
+		
+		assertEquals(USER_SALES, order.getSalesRep_ID());
+		assertEquals(USER_SALES, order.get_ValueAsInt("SalesRep_ID2"));
 	}
 }

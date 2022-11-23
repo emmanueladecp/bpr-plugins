@@ -34,13 +34,20 @@ public class COrderEvent extends CustomEvent{
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			checkTimbanganPO();
 			calculateOngkosAngkut();
+			checkSalesRep();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkTimbanganPO();
 			calculateOngkosAngkut();
 			checkTimbanganNetAmt();
+			checkSalesRep();
 		}
 	}
 	
+	private void checkSalesRep() {
+		if(order.get_ValueAsInt("SalesRep_ID2")>0)
+			order.setSalesRep_ID(order.get_ValueAsInt("SalesRep_ID2"));
+	}
+
 	private void checkTimbanganPO() {
 		if(order.isSOTrx() || order.get_ValueAsInt("BPR_Timbangan_ID")==0)
 			return;
