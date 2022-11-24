@@ -155,11 +155,12 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 			.append(" and case when dts.isshipconfirm='Y' then r.DocStatus in ('IP')")
 			.append(" else r.DocStatus in ('CO', 'CL') end")
 		    .append(" and exists(select 1 from M_InOutLine rl")
-		    .append(" left join BPR_PicklistLine pl on rl.M_InOut_ID=pl.M_InOut_ID AND rl.M_Product_ID=pl.M_Product_ID")
-		    .append(" left join BPR_Picklist p on pl.BPR_Picklist_ID=p.BPR_Picklist_ID")
 		    .append(" where r.M_InOut_ID=rl.M_InOut_ID")
-		    .append(" and (p.bpr_picklist_id is null or p.docstatus in ('VO', 'RE')))")
-		;
+		    .append(" and not exists(select 1 from BPR_PicklistLine ol")
+		    .append(" left join BPR_Picklist o on")
+			.append(" ol.BPR_Picklist_ID = o.BPR_Picklist_ID")
+			.append(" where rl.M_InOut_ID = ol.M_InOut_ID")
+			.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE')))");
 		
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -298,10 +299,12 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
 	    sqlStmt.append(" join m_inout r on rl.m_inout_id=r.m_inout_id");
-	    sqlStmt.append(" left join BPR_PicklistLine ol on rl.M_InOut_ID=ol.M_InOut_ID AND rl.M_Product_ID=ol.M_Product_ID");
-	    sqlStmt.append(" left join BPR_Picklist o on ol.BPR_Picklist_ID=o.BPR_Picklist_ID");
 	    sqlStmt.append(" where r.m_inout_id=? and r.M_InOut_ID=rl.M_InOut_ID");
-	    sqlStmt.append(" and (o.bpr_picklist_id is null or o.docstatus in ('VO', 'RE'))");
+	    sqlStmt.append(" and not exists(select 1 from BPR_PicklistLine ol");
+	    sqlStmt.append(" left join BPR_Picklist o");
+		sqlStmt.append(" on ol.BPR_Picklist_ID = o.BPR_Picklist_ID");
+		sqlStmt.append(" where rl.M_InOut_ID = ol.M_InOut_ID");
+		sqlStmt.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE'))");
 	    
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
