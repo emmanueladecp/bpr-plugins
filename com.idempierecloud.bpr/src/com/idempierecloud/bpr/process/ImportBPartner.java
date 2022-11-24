@@ -414,6 +414,16 @@ public class ImportBPartner extends CustomProcess implements ImportProcess
 						if (impBP.getFax() != null)
 							bpl.setFax(impBP.getFax());
 						ModelValidationEngine.get().fireImportValidate(this, impBP, bpl, ImportValidator.TIMING_AFTER_IMPORT);
+						
+						//Ticket #request-001151
+						int C_City_ID = DB.getSQLValue(get_TrxName(), "select coalesce(C_City_ID, 0) from c_city cc where cc.c_region_id = ? and cc.c_country_id = ? and cc.name like ? ", impBP.getC_Region_ID(), impBP.getC_Country_ID(), impBP.getCity());
+						if(C_City_ID < 1)
+							log.warning("Nama Kota tidak sesuai, tolong cek nama kota : "+impBP.getCity());
+						else 
+							bpl.set_ValueOfColumn("C_City_ID", C_City_ID);
+						bpl.set_ValueOfColumn("C_Country_ID", impBP.getC_Country_ID());
+						bpl.set_ValueOfColumn("C_Region_ID", impBP.getC_Region_ID());
+						//End Ticket #request-001151
 						bpl.saveEx();
 					}
 					else 	//	New Location
@@ -451,6 +461,17 @@ public class ImportBPartner extends CustomProcess implements ImportProcess
 							bpl.setPhone(impBP.getPhone());
 							bpl.setPhone2(impBP.getPhone2());
 							bpl.setFax(impBP.getFax());
+							
+							//Ticket #request-001151
+							int C_City_ID = DB.getSQLValue(get_TrxName(), "select coalesce(C_City_ID, 0) from c_city cc where cc.c_region_id = ? and cc.c_country_id = ? and cc.name like ? ", impBP.getC_Region_ID(), impBP.getC_Country_ID(), impBP.getCity());
+							if(C_City_ID < 1)
+								log.warning("Nama Kota tidak sesuai, tolong cek nama kota : "+impBP.getCity());
+							else 
+								bpl.set_ValueOfColumn("C_City_ID", C_City_ID);
+							bpl.set_ValueOfColumn("C_Country_ID", impBP.getC_Country_ID());
+							bpl.set_ValueOfColumn("C_Region_ID", impBP.getC_Region_ID());
+							//End Ticket #request-001151
+							
 							ModelValidationEngine.get().fireImportValidate(this, impBP, bpl, ImportValidator.TIMING_AFTER_IMPORT);
 							if (bpl.save())
 							{
