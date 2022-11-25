@@ -25,7 +25,49 @@ public class ProductionTest extends AbstractTestCase {
 	private static final int Product_TurunanColourSorterReproses = 1000457;
 	private static final int Product_ComponentBeras64BelitangSupplier = 1000038;
 	private static final int Product_ComponentBeras64JalurSupplier = 1000042;
-
+	private static final int DocType_BPR_RiceToRice = 1000066;
+	private static final int M_Product_ID_FGULT64010_ULTIMA10KG=1000163; 
+	private static final int M_Locator_ID_BPR2_GPRO_GA_PRODUKSI_A=1000056;
+	
+	
+	
+	@Test
+	public void test_validasi_qtyused() throws Exception{
+		MProductionExt production = new MProductionExt(Env.getCtx(), 0, getTrxName());
+		production.setAD_Org_ID(BPR_BPR1_ORG);
+		production.set_ValueOfColumn("C_DocType_ID", DocType_BPR_RiceToRice);
+		production.setMovementDate(getLoginDate());
+		production.setM_Product_ID(M_Product_ID_FGULT64010_ULTIMA10KG);
+		production.setM_Locator_ID(M_Locator_ID_BPR2_GPRO_GA_PRODUKSI_A);
+		production.setProductionQty(Env.ONE);
+		production.setIsCreated("Y");
+		production.saveEx();
+		
+		assertEquals(production.get_ValueAsInt("C_DocType_ID"), DocType_BPR_RiceToRice);
+		
+		MProductionLine lineBahanBaku = new MProductionLine(production);
+		lineBahanBaku.setLine(10);
+		lineBahanBaku.set_ValueOfColumn("jenisproduk", "B");
+		lineBahanBaku.setM_Product_ID(Product_Beras36Patahan);
+		lineBahanBaku.setIsEndProduct(false);
+		lineBahanBaku.setM_Locator_ID(Locator_GBBBahanBaku);
+		lineBahanBaku.setMovementQty(Env.ONE);
+		lineBahanBaku.saveEx();
+		
+		
+		MProductionLine line2 = new MProductionLine(production);
+		line2.setLine(20);
+		line2.setM_Product_ID(Product_BerasAsalanKWBagus);
+		line2.setIsEndProduct(false);
+		line2.setM_Locator_ID(Locator_GBBBahanBaku);
+		line2.setMovementQty(Env.ONE);
+		line2.saveEx();
+		
+		production.processIt(MProductionExt.ACTION_Complete);
+		
+		assertEquals(MProductionExt.STATUS_Invalid, production.getDocStatus());
+	}
+	
 	@Test
 	public void test_perubahan_type() throws Exception{
 		MProductionExt production = new MProductionExt(Env.getCtx(), 0, getTrxName());
