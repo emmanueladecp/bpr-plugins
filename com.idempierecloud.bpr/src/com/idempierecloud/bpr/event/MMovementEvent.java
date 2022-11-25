@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MLocator;
@@ -72,6 +74,11 @@ public class MMovementEvent extends CustomEvent {
 		for(MMovementLine line : movement.getLines(true)) {
 			if(line.getMovementQty().compareTo(line.getTargetQty())>0)
 				throw new AdempiereException("Movement Qty over that Target Qty."+line.toString());
+			
+			BigDecimal thresholdQty = line.getTargetQty().multiply(BigDecimal.valueOf(0.05));
+			if(line.getMovementQty().compareTo(thresholdQty)<0)
+				throw new AdempiereException("Movement Qty must over than "+thresholdQty);
+			
 		}
 	}
 

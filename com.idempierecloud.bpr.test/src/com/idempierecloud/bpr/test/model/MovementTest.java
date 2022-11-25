@@ -128,4 +128,82 @@ public class MovementTest extends AbstractTestCase {
 		assertEquals(1, susut);
 	}
 	
+	@Test
+	public void test_confirmmovement_qty_not_more_than_target_qty() throws Exception{
+		MMovement movement = new MMovement(Env.getCtx(), 0, getTrxName());
+		movement.setAD_Org_ID(getAD_Org_ID());
+		movement.setC_DocType_ID(DocType_MaterialMovement);
+		movement.setM_Warehouse_ID(Warehouse_BPR1);
+		movement.setM_WarehouseTo_ID(Warehouse_BPR2);
+		movement.setMovementDate(getLoginDate());
+		movement.setIsInTransit(true);
+		movement.setDocAction(MMovement.ACTION_Complete);
+		movement.saveEx();
+		
+		MMovementLine line = new MMovementLine(movement);
+		line.setM_Product_ID(Product_BerasPera50Kg);
+		line.setM_Locator_ID(Locator_BPR1FinishGood);
+		line.setM_LocatorTo_ID(Locator_BPR1InTransit);
+		line.set_ValueOfColumn("M_LocatorToAlias_ID", Locator_BPR2FinishGood);
+		line.setMovementQty(new BigDecimal(10));
+		line.saveEx();
+		
+		movement.processIt(MMovement.ACTION_Complete);
+		
+		MMovement movementConfirm = new Query(Env.getCtx(), MMovement.Table_Name, "C_DocType_ID=? AND MoveReference=?", getTrxName())
+				.setParameters(DocType_ConfirmMovement, movement.getDocumentNo())
+				.first();
+		
+		assertEquals(MMovement.STATUS_Completed, movement.getDocStatus());
+		assertEquals(movement.getDocumentNo(), movementConfirm.get_ValueAsString("moveReference"));
+		
+		assertEquals(movement.getLines(false).length, movementConfirm.getLines(false).length);
+		
+		for(MMovementLine confirmLine:movementConfirm.getLines(false)) {
+			assertEquals(line.getMovementQty(), confirmLine.getTargetQty());
+			
+			confirmLine.setMovementQty(confirmLine.getTargetQty().add(TEN));
+			assertThrows(AdempiereException.class, ()->confirmLine.saveEx());
+		}
+	}
+	
+	@Test
+	public void test_confirmmovement_qty_not_less_than_treshold_qty() throws Exception{
+		MMovement movement = new MMovement(Env.getCtx(), 0, getTrxName());
+		movement.setAD_Org_ID(getAD_Org_ID());
+		movement.setC_DocType_ID(DocType_MaterialMovement);
+		movement.setM_Warehouse_ID(Warehouse_BPR1);
+		movement.setM_WarehouseTo_ID(Warehouse_BPR2);
+		movement.setMovementDate(getLoginDate());
+		movement.setIsInTransit(true);
+		movement.setDocAction(MMovement.ACTION_Complete);
+		movement.saveEx();
+		
+		MMovementLine line = new MMovementLine(movement);
+		line.setM_Product_ID(Product_BerasPera50Kg);
+		line.setM_Locator_ID(Locator_BPR1FinishGood);
+		line.setM_LocatorTo_ID(Locator_BPR1InTransit);
+		line.set_ValueOfColumn("M_LocatorToAlias_ID", Locator_BPR2FinishGood);
+		line.setMovementQty(new BigDecimal(10));
+		line.saveEx();
+		
+		movement.processIt(MMovement.ACTION_Complete);
+		
+		MMovement movementConfirm = new Query(Env.getCtx(), MMovement.Table_Name, "C_DocType_ID=? AND MoveReference=?", getTrxName())
+				.setParameters(DocType_ConfirmMovement, movement.getDocumentNo())
+				.first();
+		
+		assertEquals(MMovement.STATUS_Completed, movement.getDocStatus());
+		assertEquals(movement.getDocumentNo(), movementConfirm.get_ValueAsString("moveReference"));
+		
+		assertEquals(movement.getLines(false).length, movementConfirm.getLines(false).length);
+		
+		for(MMovementLine confirmLine:movementConfirm.getLines(false)) {
+			assertEquals(line.getMovementQty(), confirmLine.getTargetQty());
+			
+			confirmLine.setMovementQty(BigDecimal.valueOf(0.001));
+			assertThrows(AdempiereException.class, ()->confirmLine.saveEx());
+		}
+	}
+	
 }
