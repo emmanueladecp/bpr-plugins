@@ -34,8 +34,10 @@ import org.compiere.model.MCostDetail;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductionLineMA;
 import org.compiere.model.ProductCost;
+import org.compiere.model.Query;
 import org.compiere.model.X_M_Production;
 import org.compiere.model.X_M_ProductionLine;
+import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 
@@ -281,6 +283,7 @@ public class Doc_Production extends Doc
 			
 			int stdPrecision = as.getCostingPrecision();
 			BigDecimal bomCost = Env.ZERO;	
+			BigDecimal relatedCost = Env.ZERO;	
 			BigDecimal qtyProduced = null;
 			if (line.isProductionBOM())
 			{
@@ -293,6 +296,10 @@ public class Doc_Production extends Doc
 					DocLine line0 = p_lines[ii];
 					X_M_ProductionLine bomProLine = (X_M_ProductionLine)line0.getPO();
 					MProduct product0 = (MProduct) bomProLine.getM_Product();
+					X_M_RelatedProduct relatedProduct = null;
+					if(!bomProLine.isEndProduct())
+						relatedProduct = checkComponent(bomProLine);
+					
 					int parentBomPro = prod.isUseProductionPlan()?bomProLine.getM_ProductionPlan_ID():bomProLine.getM_Production_ID();
 					
 					if (parentBomPro != parentEndPro)
@@ -367,7 +374,10 @@ public class Doc_Production extends Doc
 								costs0 = line0.getProductCosts(as, line0.getAD_Org_ID(), false);
 							}
 							costMap.put(line0.get_ID()+ "_"+ line0.getM_AttributeSetInstance_ID(),costs0);
-							bomCost = bomCost.add(costs0);
+							if(relatedProduct!=null && relatedProduct.getM_Product_ID()==product.getM_Product_ID())
+								relatedCost = relatedCost.add(costs0);
+							else if(relatedProduct==null)
+								bomCost = bomCost.add(costs0);
 						}
 					}else if(isZakProduct){
 						qtyEndProduct = qtyEndProduct.add(line0.getQty().multiply(product0.getWeight()));
@@ -377,7 +387,8 @@ public class Doc_Production extends Doc
 				if(isZakProduct) {
 					BigDecimal price = bomCost.divide(qtyEndProduct, stdPrecision, RoundingMode.HALF_UP);
 					BigDecimal qty = line.getQty().multiply(product.getWeight());
-					bomCost = price.multiply(qty).setScale(stdPrecision);
+					bomCost = price.multiply(qty);
+					bomCost = bomCost.add(relatedCost).setScale(stdPrecision);
 				}else {
 					qtyProduced = manipulateQtyProduced (mQtyProduced, endProLine, prod.isUseProductionPlan(), null);
 					if (line.getQty().compareTo(qtyProduced) != 0) 
@@ -525,5 +536,11 @@ public class Doc_Production extends Doc
 		facts.add(fact);
 		return facts;
 	}   //  createFact
+
+	private X_M_RelatedProduct checkComponent(X_M_ProductionLine prodline) {
+		return new Query(getCtx(), X_M_RelatedProduct.Table_Name, "RelatedProduct_ID=? AND EXISTS(SELECT 1 FROM M_ProductionLine pl WHERE pl.M_Product_ID=M_RelatedProduct.M_Product_ID AND pl.isendproduct='Y' ANd pl.M_Production_ID=?) ", prodline.get_TrxName())
+				.setParameters(prodline.getM_Product_ID(), prodline.getM_Production_ID())
+				.first();
+	}
 
 }   //  Doc_Production
