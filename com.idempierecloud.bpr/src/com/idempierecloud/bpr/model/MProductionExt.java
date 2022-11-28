@@ -22,11 +22,12 @@ import org.compiere.model.ModelValidator;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.process.DocAction;
+import org.compiere.process.DocOptions;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
 
-public class MProductionExt extends MProduction implements DocAction {
+public class MProductionExt extends MProduction implements DocAction, DocOptions {
 
 	/**
 	 * 
@@ -314,6 +315,18 @@ public class MProductionExt extends MProduction implements DocAction {
 		MProductionLineExt[] retValue = new MProductionLineExt[list.size()];
 		list.toArray(retValue);
 		return retValue;
+	}
+
+
+	@Override
+	public int customizeValidActions(String docStatus, Object processing, String orderType, String isSOTrx,
+			int AD_Table_ID, String[] docAction, String[] options, int index) {
+		if(docStatus.equals(STATUS_Drafted) || docStatus.equals(STATUS_Invalid)) {
+			index = 0;
+			options[index++] = ACTION_Prepare;
+			options[index++] = ACTION_Void;
+		}
+		return index;
 	}
 	
 }
