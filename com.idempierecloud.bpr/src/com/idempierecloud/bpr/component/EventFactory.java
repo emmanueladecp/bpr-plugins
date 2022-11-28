@@ -55,6 +55,7 @@ public class EventFactory extends CustomEventFactory {
 		
 		// C_Invoice
 		registerEvent(IEventTopics.DOC_BEFORE_VOID, I_C_Invoice.Table_Name, CInvoiceEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		
 		// C_Order
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Order.Table_Name, COrderEvent.class);
@@ -75,6 +76,8 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MProduction
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Production.Table_Name, MProductionEvent.class);
+		
+		
 		
 	}
 
