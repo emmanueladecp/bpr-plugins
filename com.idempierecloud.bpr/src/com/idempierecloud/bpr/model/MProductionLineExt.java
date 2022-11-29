@@ -9,6 +9,7 @@ import org.compiere.model.MProduction;
 import org.compiere.model.MProductionLine;
 import org.compiere.model.MQualityTest;
 import org.compiere.model.Query;
+import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.Msg;
 
 
@@ -86,5 +87,16 @@ public class MProductionLineExt extends MProductionLine {
 		return true;
 	}
 	
+	public static MProductionLineExt getLine(Properties ctx, int M_Product_ID, int M_Production_ID, String trxName) {
+		return new Query(ctx, MProductionLineExt.Table_Name, "M_Product_ID=? AND M_Production_ID=?", trxName)
+				.setParameters(M_Product_ID, M_Production_ID)
+				.first();
+	}
+	
+	public X_M_RelatedProduct getRelatedProduct() {
+		return new Query(getCtx(), X_M_RelatedProduct.Table_Name, "RelatedProduct_ID=? AND EXISTS(SELECT 1 FROM M_ProductionLine pl WHERE pl.M_Product_ID=M_RelatedProduct.M_Product_ID AND pl.isendproduct='Y' ANd pl.M_Production_ID=?) ", get_TrxName())
+				.setParameters(getM_Product_ID(), getM_Production_ID())
+				.first();
+	}
 	
 }

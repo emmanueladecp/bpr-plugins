@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.PO;
+import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.osgi.service.event.Event;
@@ -29,11 +30,23 @@ public class MProductionEvent extends CustomEvent{
 		log.fine("Production Event : "+event.getTopic());
 		production = (MProductionExt) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			qtyUsed();
+			checkQtyUsed();
+			checkRelatedProduct();
 		}
 	}
 	
-	private void qtyUsed() {
+	private void checkRelatedProduct() {
+		for(MProductionLineExt line : production.getLines()) {
+			X_M_RelatedProduct relatedProduct = line.getRelatedProduct();
+			if(relatedProduct!=null) {
+				MProductionLineExt parent = MProductionLineExt.getLine(line.getCtx(), relatedProduct.getM_Product_ID(), line.getM_Production_ID(), line.get_TrxName());
+				if(parent!=null && parent.getMovementQty().compareTo(line.getQtyUsed())>0)
+					throw new AdempiereException("Qty "+line.getM_Product().getName()+" must be equal or more than Qty "+parent.getM_Product().getName());
+			}
+		}
+	}
+
+	private void checkQtyUsed() {
 		//if Window Production Plan (Rice to Rice)
 		if(!production.get_ValueAsBoolean("IsUseProductionPlan") && production.get_ValueAsInt("C_DocType_ID")==C_Doctype_ID_BPR_RiceToRice) {
 			//if bahan baku

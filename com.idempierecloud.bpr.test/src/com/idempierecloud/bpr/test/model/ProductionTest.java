@@ -2,11 +2,15 @@ package com.idempierecloud.bpr.test.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MProductionLine;
+import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.Env;
 import org.junit.jupiter.api.Test;
 
@@ -179,6 +183,55 @@ public class ProductionTest extends AbstractTestCase {
 		production.processIt(MProductionExt.ACTION_Complete);
 		
 		assertEquals(MProductionExt.STATUS_Completed, production.getDocStatus());
+	}
+	
+
+	
+	@Test
+	public void test_related_qty_not_less_than_end_product_qty() throws Exception{
+		X_M_RelatedProduct relatedProduct = new X_M_RelatedProduct(Env.getCtx(), 0, getTrxName());
+		relatedProduct.setM_Product_ID(Product_Tomato5Kg);
+		relatedProduct.setName("Test");
+		relatedProduct.setRelatedProductType("B");
+		relatedProduct.setRelatedProduct_ID(Product_ComponentBeras64BelitangSupplier);
+		relatedProduct.saveEx();
+		
+		MProductionExt production = new MProductionExt(Env.getCtx(), 0, getTrxName());
+		production.setAD_Org_ID(BPR_BPR1_ORG);
+		production.set_ValueOfColumn("C_DocType_ID", DocType_BPR_RiceToRice);
+		production.setMovementDate(getLoginDate());
+		production.setM_Product_ID(Product_Tomato5Kg);
+		production.setM_Locator_ID(Locator_GBBBahanBaku);
+		production.setProductionQty(BigDecimal.valueOf(10));
+		production.setIsCreated("Y");
+		production.saveEx();
+		
+		assertEquals(production.get_ValueAsInt("C_DocType_ID"), DocType_BPR_RiceToRice);
+		
+		MProductionLineExt FG1 = new MProductionLineExt(production);
+		FG1.setLine(10);
+		FG1.setM_Product_ID(Product_Tomato5Kg);
+		FG1.setIsEndProduct(true);
+		FG1.setM_Locator_ID(Locator_GBBBahanBaku);
+		FG1.setMovementQty(BigDecimal.valueOf(10));
+		FG1.saveEx();
+		
+		assertTrue(FG1.isEndProduct());
+		
+		MProductionLineExt component1 = new MProductionLineExt(production);
+		component1.setLine(40);
+		component1.setM_Product_ID(Product_ComponentBeras64BelitangSupplier);
+		component1.setIsEndProduct(false);
+		component1.setM_Locator_ID(Locator_GBBBahanBaku);
+		component1.setQtyUsed(BigDecimal.valueOf(9));
+		component1.saveEx();
+
+		
+		assertFalse(component1.isEndProduct());
+		
+		production.processIt(MProductionExt.ACTION_Complete);
+		
+		assertNotEquals(MProductionExt.STATUS_Completed, production.getDocStatus());
 	}
 	
 }

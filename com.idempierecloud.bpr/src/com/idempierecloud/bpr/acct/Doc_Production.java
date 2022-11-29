@@ -34,12 +34,13 @@ import org.compiere.model.MCostDetail;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductionLineMA;
 import org.compiere.model.ProductCost;
-import org.compiere.model.Query;
 import org.compiere.model.X_M_Production;
 import org.compiere.model.X_M_ProductionLine;
 import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+
+import com.idempierecloud.bpr.model.MProductionLineExt;
 
 /**
  *  Post Invoice Documents.
@@ -294,11 +295,11 @@ public class Doc_Production extends Doc
 				for (int ii = 0; ii < p_lines.length; ii++)
 				{
 					DocLine line0 = p_lines[ii];
-					X_M_ProductionLine bomProLine = (X_M_ProductionLine)line0.getPO();
+					MProductionLineExt bomProLine = (MProductionLineExt)line0.getPO();
 					MProduct product0 = (MProduct) bomProLine.getM_Product();
 					X_M_RelatedProduct relatedProduct = null;
 					if(!bomProLine.isEndProduct())
-						relatedProduct = checkComponent(bomProLine);
+						relatedProduct = bomProLine.getRelatedProduct();
 					
 					int parentBomPro = prod.isUseProductionPlan()?bomProLine.getM_ProductionPlan_ID():bomProLine.getM_Production_ID();
 					
@@ -536,11 +537,5 @@ public class Doc_Production extends Doc
 		facts.add(fact);
 		return facts;
 	}   //  createFact
-
-	private X_M_RelatedProduct checkComponent(X_M_ProductionLine prodline) {
-		return new Query(getCtx(), X_M_RelatedProduct.Table_Name, "RelatedProduct_ID=? AND EXISTS(SELECT 1 FROM M_ProductionLine pl WHERE pl.M_Product_ID=M_RelatedProduct.M_Product_ID AND pl.isendproduct='Y' ANd pl.M_Production_ID=?) ", prodline.get_TrxName())
-				.setParameters(prodline.getM_Product_ID(), prodline.getM_Production_ID())
-				.first();
-	}
 
 }   //  Doc_Production
