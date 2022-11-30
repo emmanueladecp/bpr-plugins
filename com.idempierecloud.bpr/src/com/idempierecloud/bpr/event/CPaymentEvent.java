@@ -24,6 +24,15 @@ public class CPaymentEvent extends CustomEvent {
 			setBankAccount();
 		}else if (event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setBankAccount();
+		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setIsPrepayment();
+		}
+	}
+	
+	private void setIsPrepayment() { /*Ticket #request-001160 [BPR] setIsPrepayment pada prepayment*/
+		int C_DocType_ID_Prepayment = DB.getSQLValue(payment.get_TrxName(), "Select C_DocType_ID from C_Doctype where name like 'Prepayment'");
+		if(payment.getC_DocType_ID()==C_DocType_ID_Prepayment) {
+			payment.setIsPrepayment(false);
 		}
 	}
 	private void setBankAccount() {
