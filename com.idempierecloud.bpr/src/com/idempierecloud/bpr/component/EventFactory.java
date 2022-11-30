@@ -72,6 +72,7 @@ public class EventFactory extends CustomEventFactory {
 		
 		// C_Payment
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Payment.Table_Name, CPaymentEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Payment.Table_Name, CPaymentEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_C_Payment.Table_Name, CPaymentEvent.class);
 		
 		//MProduction
