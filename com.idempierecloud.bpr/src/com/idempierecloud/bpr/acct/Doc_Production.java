@@ -143,7 +143,7 @@ public class Doc_Production extends Doc
 			rsPL = pstmtPL.executeQuery();
 			while (rsPL.next())
 			{
-				X_M_ProductionLine line = new X_M_ProductionLine(getCtx(), rsPL, getTrxName());
+				MProductionLineExt line = new MProductionLineExt(getCtx(), rsPL, getTrxName());
 				if (line.getMovementQty().signum() == 0)
 				{
 					if (log.isLoggable(Level.INFO)) log.info("LineQty=0 - " + line);
