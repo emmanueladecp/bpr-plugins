@@ -163,8 +163,12 @@ public class MovementTest extends AbstractTestCase {
 			assertEquals(line.getMovementQty(), confirmLine.getTargetQty());
 			
 			confirmLine.setMovementQty(confirmLine.getTargetQty().add(TEN));
-			assertThrows(AdempiereException.class, ()->confirmLine.saveEx());
+			confirmLine.saveEx();	
 		}
+		
+		movementConfirm.processIt(MMovement.ACTION_Complete);
+		
+		assertNotEquals(MMovement.STATUS_Completed, movementConfirm.getDocStatus());
 	}
 	
 	@Test
