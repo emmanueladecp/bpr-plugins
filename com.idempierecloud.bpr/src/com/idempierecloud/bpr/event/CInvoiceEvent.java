@@ -26,7 +26,6 @@ public class CInvoiceEvent extends CustomEvent {
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID))
 			checkFaktur();
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE))
-			checkFakturPajak();
 			checkDocStatusShipment();
 	}
 
@@ -58,12 +57,6 @@ public class CInvoiceEvent extends CustomEvent {
 		invoice.saveEx();
 	}
 	
-	private void checkFakturPajak() {
-		if(!invoice.get_ValueAsBoolean("isSOTrx"))
-			return;
-		if(invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")==0)
-			throw new AdempiereException("Faktur Pajak Belum Diisi");
-	}
 	@Override
 	protected void doHandleEvent() {
 		
