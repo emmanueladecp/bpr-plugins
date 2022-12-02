@@ -34,13 +34,15 @@ public class CInvoiceEvent extends CustomEvent {
 			return;
 		MInvoiceLine[] lines = invoice.getLines();
 		for(MInvoiceLine line:lines) {
-			MInOut shipment = (MInOut) line.getM_InOutLine().getM_InOut();
-			if(shipment.getDocStatus().equalsIgnoreCase("CO"))
-				return;
-			else if(shipment.getDocStatus().equalsIgnoreCase("CL"))
-				return;
-			else
-				throw new AdempiereException("Shipment Document No : "+shipment.getDocumentNo()+" pada Invoice Line No "+ line.getLine()+" Belum complete!");
+			if(line.getM_InOutLine_ID()>0) {
+				MInOut shipment = (MInOut) line.getM_InOutLine().getM_InOut();
+				if(shipment.getDocStatus().equalsIgnoreCase("CO"))
+					return;
+				else if(shipment.getDocStatus().equalsIgnoreCase("CL"))
+					return;
+				else
+					throw new AdempiereException("Shipment Document No : "+shipment.getDocumentNo()+" pada Invoice Line No "+ line.getLine()+" Belum complete!");
+			}
 		}
 	}
 	private void checkFaktur() {
