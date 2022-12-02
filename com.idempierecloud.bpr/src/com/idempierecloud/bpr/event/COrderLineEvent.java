@@ -36,17 +36,30 @@ public class COrderLineEvent extends CustomEvent {
 			setPrice();
 			calculateLinetNetAmt();
 			setDiscount();
+			checkCreditLimitBP();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			calculateOngkosAngkut();
 			calculatePrice();
 			setPrice();
 			calculateLinetNetAmt();
 			setDiscount();
+			checkCreditLimitBP();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}
+	}	
+	
+	private void checkCreditLimitBP() {
+		if(!orderLine.getC_Order().isSOTrx())
+			return;
+		if(orderLine.getC_Order().getC_BPartner_ID()>0) {
+			BigDecimal grandTotal = DB.getSQLValueBD(orderLine.get_TrxName(), "select coalesce (grandtotal,0) from c_order where c_order_id = ?", orderLine.getC_Order_ID());
+			grandTotal = grandTotal.add(orderLine.getLineNetAmt());
+			BigDecimal SO_CreditAvaiable = orderLine.getC_Order().getC_BPartner().getSO_CreditLimit().subtract(orderLine.getC_Order().getC_BPartner().getSO_CreditUsed());
+			if(grandTotal.compareTo(SO_CreditAvaiable)>0)
+				throw new AdempiereException("Grand Total Melebihi SO Credit Available");
+		}
 	}
-
 	private void setPrice() {
 		MOrder order = (MOrder)orderLine.getC_Order();
 		if(order.isSOTrx()) {

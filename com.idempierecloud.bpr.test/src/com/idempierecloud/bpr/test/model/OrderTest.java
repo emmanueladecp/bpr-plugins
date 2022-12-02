@@ -44,7 +44,46 @@ public class OrderTest extends AbstractTestCase {
 	private static final int M_PRODUCT_GABAH_HAMPA = 1003324;
 	private static final int C_DocType_PO_Non_Bahan_Baku = 1000053;
 	private static final int USER_SALES = 1007908;
-
+	private static final int C_BPartner_ID_AHONG = 1000031;
+	private static final int C_BPartner_Location_ID_PALEMBANG=1000024;
+	private static final int AD_Org_ID_BPR1=1000003;
+	
+	@Test
+	public void test_so_credit_available() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(AD_Org_ID_BPR1);
+		order.setIsSOTrx(true);
+		order.setC_DocTypeTarget_ID(C_DOCTYPE_GT_ORDER_BPR1);
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_SUMATERA_GT);
+		order.setC_BPartner_ID(C_BPartner_ID_AHONG);
+		order.setC_BPartner_Location_ID(C_BPartner_Location_ID_PALEMBANG);
+		order.setM_Warehouse_ID(M_WAREHOUSE_GUDANG_BPR1);
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.setDeliveryViaRule(DeliveryViaRule_Delivery);
+		order.saveEx();
+		
+		assertEquals(order.getC_BPartner_ID(), C_BPartner_ID_AHONG);
+		assertFalse(order.getDocumentNo().isEmpty());
+		
+		MOrderLine orderLine = new MOrderLine(order);
+		orderLine.setM_Product_ID(M_PRODUCT_ULTIMA_10KG);
+		orderLine.setQty(new BigDecimal(100000000));
+		orderLine.setQtyOrdered(new BigDecimal(100000000));
+		orderLine.setC_UOM_ID(C_UOM_ZAK);
+		orderLine.setPrice();
+		orderLine.setPriceEntered(new BigDecimal(100000));
+		orderLine.setC_Tax_ID(C_TAX_STANDARD);
+		
+		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
+		BigDecimal SO_CreditAvaiable = orderLine.getC_Order().getC_BPartner().getSO_CreditLimit().subtract(orderLine.getC_Order().getC_BPartner().getSO_CreditUsed());
+		boolean isCorrect = true;
+		if(expectedLineNetAmt.compareTo(SO_CreditAvaiable)>0)
+			isCorrect = false;
+		assertFalse(isCorrect);
+	}
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
 		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
@@ -68,7 +107,7 @@ public class OrderTest extends AbstractTestCase {
 		
 		MOrderLine orderLine = new MOrderLine(order);
 		orderLine.setM_Product_ID(M_PRODUCT_ULTIMA_10KG);
-		orderLine.setQty(Env.ONEHUNDRED);
+		orderLine.setQty(Env.ONE);
 		orderLine.setC_UOM_ID(C_UOM_ZAK);
 		orderLine.setPrice();
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
@@ -107,7 +146,7 @@ public class OrderTest extends AbstractTestCase {
 		
 		MOrderLine orderLine = new MOrderLine(order);
 		orderLine.setM_Product_ID(M_PRODUCT_ULTIMA_10KG);
-		orderLine.setQty(Env.ONEHUNDRED);
+		orderLine.setQty(Env.ONE);
 		orderLine.setC_UOM_ID(C_UOM_ZAK);
 		orderLine.setPrice();
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
