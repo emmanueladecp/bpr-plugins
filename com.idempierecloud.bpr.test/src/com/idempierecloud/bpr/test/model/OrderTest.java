@@ -224,9 +224,17 @@ public class OrderTest extends AbstractTestCase {
 		
 		int M_PriceList_Version_ID = DB.getSQLValue(orderLine2.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
 		MProductPrice price = MProductPrice.get(orderLine2.getCtx(), M_PriceList_Version_ID, M_PRODUCT_GABAH_HAMPA, orderLine2.get_TrxName());
+		assertEquals(price.getPriceList(), orderLine2.getPriceEntered());
 		assertEquals(price.getPriceList(), orderLine2.getPriceList());
 		assertEquals(price.getPriceList(), orderLine2.getPriceActual());
 		assertEquals(price.getPriceLimit(), orderLine2.getPriceLimit());
+		
+		
+		orderLine2.setPriceEntered(BigDecimal.valueOf(1000000));
+		orderLine2.saveEx();
+		
+		assertEquals(BigDecimal.valueOf(1000000), orderLine2.getPriceEntered());
+		assertEquals(BigDecimal.valueOf(1000000), orderLine2.getPriceActual());
 		
 		BigDecimal TimbanganNetAmt = BigDecimal.valueOf(180);
 		order.set_ValueOfColumn("TimbanganNetAmt", TimbanganNetAmt);
@@ -314,11 +322,12 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setPriceEntered(new BigDecimal(200000));
 		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
 		orderLine.saveEx();
+
+		assertEquals(orderLine.getPriceEntered(), orderLine.getPriceActual());
+		assertEquals(orderLine.getPriceActual().setScale(2), orderLine.getPriceEntered().setScale(2));
 		
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();
-		assertEquals(orderLine.getPriceEntered(), orderLine.getPriceActual());
-		assertEquals(orderLine.getPriceActual().setScale(2), orderLine.getPriceEntered().setScale(2));
 		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
 		assertEquals(order.getGrandTotal().setScale(2), expectedLineNetAmt.setScale(2));
 	}

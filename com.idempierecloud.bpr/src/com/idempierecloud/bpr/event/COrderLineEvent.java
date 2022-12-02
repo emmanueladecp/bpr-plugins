@@ -37,7 +37,6 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
-			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
 			setPrice();
@@ -50,18 +49,11 @@ public class COrderLineEvent extends CustomEvent {
 
 	private void setPrice() {
 		MOrder order = (MOrder)orderLine.getC_Order();
-		if(!order.get_ValueAsBoolean("isSOTrx")) {
-			MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
-			if(docType.get_ValueAsBoolean("isTurus"))
-				return;
-			if(orderLine.getPriceEntered().compareTo(BigDecimal.ZERO)>0) {
-				orderLine.setPriceActual(orderLine.getPriceEntered());
-				orderLine.setPriceList(orderLine.getPriceEntered());
-			}
-		}else if(order.get_ValueAsBoolean("isSOTrx")){
-			if(orderLine.getPriceEntered().compareTo(BigDecimal.ZERO)>0) {
-				orderLine.setPriceActual(orderLine.getPriceEntered());
-			}
+		if(order.isSOTrx()) {
+			orderLine.setPriceActual(orderLine.getPriceEntered());
+		}else {
+			orderLine.setPriceActual(orderLine.getPriceEntered());
+			orderLine.setPriceList(orderLine.getPriceEntered());
 		}
 		
 	}
@@ -87,7 +79,7 @@ public class COrderLineEvent extends CustomEvent {
 			throw new AdempiereException("No Product Price for "+relatedProduct.getName());
 		
 		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
-		orderLine.setPriceEntered(price.getPriceStd());
+		orderLine.setPriceEntered(price.getPriceList());
 		orderLine.setPriceList(price.getPriceList());
 		orderLine.setPriceActual(price.getPriceList());
 		orderLine.setPriceLimit(price.getPriceLimit());
