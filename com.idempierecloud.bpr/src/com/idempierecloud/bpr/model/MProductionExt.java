@@ -105,9 +105,9 @@ public class MProductionExt extends MProduction implements DocAction, DocOptions
 		} else {
 			to.setProductionQty(getProductionQty().negate());	
 			to.saveEx();
-			MProductionLine[] flines = getLines();
-			for(MProductionLine fline : flines) {
-				MProductionLine tline = new MProductionLine(to);
+			MProductionLineExt[] flines = getLines();
+			for(MProductionLineExt fline : flines) {
+				MProductionLineExt tline = new MProductionLineExt(to);
 				PO.copyValues (fline, tline, getAD_Client_ID(), getAD_Org_ID());
 				tline.setM_Production_ID(to.getM_Production_ID());
 				tline.setMovementQty(fline.getMovementQty().negate());
@@ -138,8 +138,8 @@ public class MProductionExt extends MProduction implements DocAction, DocOptions
 		reversal.saveEx(get_TrxName());
 		
 		// Reverse Line Qty
-		MProductionLine[] sLines = getLines();
-		MProductionLine[] tLines = reversal.getLines();
+		MProductionLineExt[] sLines = getLines();
+		MProductionLineExt[] tLines = reversal.getLines();
 		for (int i = 0; i < sLines.length; i++)
 		{		
 			//	We need to copy MA

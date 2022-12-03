@@ -36,6 +36,9 @@ public class MProductionEvent extends CustomEvent{
 	}
 	
 	private void checkRelatedProduct() {
+		if(production.getReversal_ID()>0)
+			return;
+		
 		for(MProductionLineExt line : production.getLines()) {
 			X_M_RelatedProduct relatedProduct = line.getRelatedProduct();
 			if(relatedProduct!=null) {

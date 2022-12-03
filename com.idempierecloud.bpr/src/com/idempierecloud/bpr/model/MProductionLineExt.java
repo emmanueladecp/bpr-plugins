@@ -94,8 +94,8 @@ public class MProductionLineExt extends MProductionLine {
 	}
 	
 	public X_M_RelatedProduct getRelatedProduct() {
-		return new Query(getCtx(), X_M_RelatedProduct.Table_Name, "RelatedProduct_ID=? AND EXISTS(SELECT 1 FROM M_ProductionLine pl WHERE pl.M_Product_ID=M_RelatedProduct.M_Product_ID AND pl.isendproduct='Y' ANd pl.M_Production_ID=?) ", get_TrxName())
-				.setParameters(getM_Product_ID(), getM_Production_ID())
+		return new Query(getCtx(), X_M_RelatedProduct.Table_Name, X_M_RelatedProduct.COLUMNNAME_RelatedProductType+"=? AND "+X_M_RelatedProduct.COLUMNNAME_RelatedProduct_ID+"=? AND EXISTS(SELECT 1 FROM M_ProductionLine pl WHERE pl.M_Product_ID=M_RelatedProduct.M_Product_ID AND pl.isendproduct='Y' ANd pl.M_Production_ID=?) ", get_TrxName())
+				.setParameters("B", getM_Product_ID(), getM_Production_ID())
 				.first();
 	}
 	

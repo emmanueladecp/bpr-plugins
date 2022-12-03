@@ -56,6 +56,7 @@ public abstract class AbstractTestCase {
 	
 	protected final int BPR_CLIENT = 1000003;
 	protected final int BPR_BPR1_ORG = 1000003;
+	protected final int BPR_BPR3_ORG = 1000005;
 	protected final int BPR_ADMIN_USER = 1000006;
 	protected final int BPR_ADMIN_ROLE = 1000006;
 	protected final int BPR_HQ_WAREHOUSE = 1000000;

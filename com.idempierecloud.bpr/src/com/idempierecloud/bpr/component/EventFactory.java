@@ -26,6 +26,7 @@ import org.compiere.model.I_C_OrderLine;
 import org.compiere.model.I_C_Payment;
 import org.compiere.model.I_M_Movement;
 import org.compiere.model.I_M_Production;
+import org.compiere.model.I_M_ProductionLine;
 
 import com.idempierecloud.bpr.base.CustomEventFactory;
 import com.idempierecloud.bpr.event.CBPartnerLocationEvent;
@@ -36,6 +37,7 @@ import com.idempierecloud.bpr.event.CPaymentEvent;
 import com.idempierecloud.bpr.event.LoginEvent;
 import com.idempierecloud.bpr.event.MMovementEvent;
 import com.idempierecloud.bpr.event.MProductionEvent;
+import com.idempierecloud.bpr.event.MProductionLineEvent;
 
 /**
  * Event Factory
@@ -83,6 +85,10 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MProduction
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Production.Table_Name, MProductionEvent.class);
+
+		//MProductionLine
+		registerEvent(IEventTopics.PO_AFTER_NEW, I_M_ProductionLine.Table_Name, MProductionLineEvent.class);
+		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_M_ProductionLine.Table_Name, MProductionLineEvent.class);
 		
 		
 		

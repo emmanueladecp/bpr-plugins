@@ -3,13 +3,12 @@ package com.idempierecloud.bpr.test.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 
-import org.adempiere.exceptions.AdempiereException;
-import org.compiere.model.MProductionLine;
+import org.compiere.model.Query;
 import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.Env;
 import org.junit.jupiter.api.Test;
@@ -32,6 +31,11 @@ public class ProductionTest extends AbstractTestCase {
 	private static final int DocType_BPR_RiceToRice = 1000066;
 	private static final int M_Product_ID_FGULT64010_ULTIMA10KG=1000163; 
 	private static final int M_Locator_ID_BPR2_GPRO_GA_PRODUKSI_A=1000056;
+	private static final int DocType_RiceToRice = 1000066;
+	private static final int Product_MesinBPR3 = 1003598;
+	private static final int Locator_BPR3PRoduksi = 1000068;
+	private static final int Product_Platinum5Kg = 1003593;
+	private static final int M_PRODUCT_KARUNG_PLATINUM_5KG = 1003432;
 	
 	
 	
@@ -49,7 +53,7 @@ public class ProductionTest extends AbstractTestCase {
 		
 		assertEquals(production.get_ValueAsInt("C_DocType_ID"), DocType_BPR_RiceToRice);
 		
-		MProductionLine lineBahanBaku = new MProductionLine(production);
+		MProductionLineExt lineBahanBaku = new MProductionLineExt(production);
 		lineBahanBaku.setLine(10);
 		lineBahanBaku.set_ValueOfColumn("jenisproduk", "B");
 		lineBahanBaku.setM_Product_ID(Product_Beras36Patahan);
@@ -59,7 +63,7 @@ public class ProductionTest extends AbstractTestCase {
 		lineBahanBaku.saveEx();
 		
 		
-		MProductionLine line2 = new MProductionLine(production);
+		MProductionLineExt line2 = new MProductionLineExt(production);
 		line2.setLine(20);
 		line2.setM_Product_ID(Product_BerasAsalanKWBagus);
 		line2.setIsEndProduct(false);
@@ -86,7 +90,7 @@ public class ProductionTest extends AbstractTestCase {
 		
 		assertEquals(production.get_ValueAsInt("C_DocType_ID"), DocType_Repacking);
 		
-		MProductionLine line = new MProductionLine(production);
+		MProductionLineExt line = new MProductionLineExt(production);
 		line.setLine(10);
 		line.setM_Product_ID(Product_Beras36Patahan);
 		line.setIsEndProduct(true);
@@ -95,7 +99,7 @@ public class ProductionTest extends AbstractTestCase {
 		line.saveEx();
 		
 		
-		MProductionLine line2 = new MProductionLine(production);
+		MProductionLineExt line2 = new MProductionLineExt(production);
 		line2.setLine(20);
 		line2.setM_Product_ID(Product_BerasAsalanKWBagus);
 		line2.setIsEndProduct(false);
@@ -185,7 +189,36 @@ public class ProductionTest extends AbstractTestCase {
 		assertEquals(MProductionExt.STATUS_Completed, production.getDocStatus());
 	}
 	
-
+	@Test
+	public void test_production_bpr_with_related_product() throws Exception{
+		MProductionExt production = new MProductionExt(Env.getCtx(), 0, getTrxName());
+		production.setAD_Org_ID(BPR_BPR3_ORG);
+		production.set_ValueOfColumn("C_DocType_ID", DocType_RiceToRice);
+		production.setMovementDate(getLoginDate());
+		production.setM_Product_ID(Product_MesinBPR3);
+		production.setM_Locator_ID(Locator_BPR3PRoduksi);
+		production.setProductionQty(BigDecimal.valueOf(10));
+		production.setIsCreated("Y");
+		production.saveEx();
+		
+		assertEquals(production.get_ValueAsInt("C_DocType_ID"), DocType_RiceToRice);
+		
+		MProductionLineExt FG1 = new MProductionLineExt(production);
+		FG1.setLine(10);
+		FG1.setM_Product_ID(Product_Platinum5Kg);
+		FG1.setIsEndProduct(true);
+		FG1.setM_Locator_ID(Locator_BPR3PRoduksi);
+		FG1.setMovementQty(BigDecimal.valueOf(100));
+		FG1.saveEx();
+		
+		MProductionLineExt relatedProduct = new Query(FG1.getCtx(), MProductionLineExt.Table_Name, "M_Production_ID=? AND M_Product_ID=?", getTrxName())
+				.setParameters(production.getM_Production_ID(), M_PRODUCT_KARUNG_PLATINUM_5KG)
+				.first();
+		
+		assertNotNull(relatedProduct);
+		assertEquals("P", relatedProduct.get_ValueAsString("JenisProduk"));
+		assertEquals(BigDecimal.valueOf(20), relatedProduct.getQtyUsed());
+	}
 	
 	@Test
 	public void test_related_qty_not_less_than_end_product_qty() throws Exception{
