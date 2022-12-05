@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -43,7 +44,8 @@ public class MProductionEvent extends CustomEvent{
 			X_M_RelatedProduct relatedProduct = line.getRelatedProduct();
 			if(relatedProduct!=null) {
 				MProductionLineExt parent = MProductionLineExt.getLine(line.getCtx(), relatedProduct.getM_Product_ID(), line.getM_Production_ID(), line.get_TrxName());
-				if(parent!=null && parent.getMovementQty().compareTo(line.getQtyUsed())>0)
+				BigDecimal requiredQty = parent.getMovementQty().divide(parent.getM_Product().getWeight(), 0, RoundingMode.UP);
+				if(parent!=null && requiredQty.compareTo(line.getQtyUsed())>0)
 					throw new AdempiereException("Qty "+line.getM_Product().getName()+" must be equal or more than Qty "+parent.getM_Product().getName());
 			}
 		}
