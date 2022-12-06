@@ -86,6 +86,9 @@ public class MBPRPOBahanBaku extends X_BPR_POBahanBaku {
 				.append(" and costingMethod=?")
 				.append(" and Costinglevel='O')")
 				.append(" )")
+				.append(" and exists(SELECT 1 FROM BPR_POBahanBakuHeader bahanbaku")
+				.append(" WHERE bahanbaku.m_product_id=m_cost.m_product_id")
+				.append(" )")
 				;
 		
 		List<MCost> costs = new Query(getCtx(), MCost.Table_Name, whereSql.toString(), get_TrxName())
@@ -93,20 +96,17 @@ public class MBPRPOBahanBaku extends X_BPR_POBahanBaku {
 				.list();
 		
 		for(MCost cost : costs) {
+			MBPRPOBahanBakuHeader master = MBPRPOBahanBakuHeader.get(cost.getCtx(), cost.getM_Product_ID(), cost.get_TrxName());
+			
 			MBPRPOBahanBakuLine line = new MBPRPOBahanBakuLine(this);
 			line.setName(cost.getM_Product().getName());
 			line.setM_Cost_UU(cost.getM_Cost_UU());
 			line.setM_Product_ID(cost.getM_Product_ID());
 			line.setCurrentCostPrice(cost.getCurrentCostPrice());
-			line.setNewCostPrice(calculateNewCost(cost));
+			line.setNewCostPrice(master.getAmount().multiply(this.getAmount()).setScale(2, RoundingMode.HALF_UP));
 			line.saveEx();
 		}
 		return success;
-	}
-
-	private BigDecimal calculateNewCost(MCost cost) {
-		BigDecimal incrementCost = (getAmount().divide(Env.ONEHUNDRED, 2, RoundingMode.HALF_UP)).multiply(cost.getCurrentCostPrice());
-		return cost.getCurrentCostPrice().add(incrementCost);
 	}
 
 

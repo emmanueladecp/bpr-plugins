@@ -6,20 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MCost;
-import org.compiere.model.MPeriod;
 import org.compiere.model.MProcess;
 import org.compiere.process.ProcessInfo;
-import org.compiere.process.ProcessInfoParameter;
-import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
 import org.junit.jupiter.api.Test;
 
 import com.idempierecloud.bpr.model.MBPRPOBahanBaku;
+import com.idempierecloud.bpr.model.MBPRPOBahanBakuHeader;
 import com.idempierecloud.bpr.model.MBPRPOBahanBakuLine;
 import com.idempierecloud.bpr.test.AbstractTestCase;
 
@@ -28,22 +24,25 @@ public class POBahanBakuTest extends AbstractTestCase {
 	private static final String COSTINGMETHOD_StandardCosting = "S";
 	private static final int C_Period_Jan22 = 1000036;
 	private static final int AD_PROCESS_UPDATE_BAHAN_BAKU = 1000024;
+	private static final int M_PRODUCT_TAMPIAN40Kg = 1000454;
 
 	@Test
 	public void test_create_po_bahan_baku() throws Exception{
+		MBPRPOBahanBakuHeader master = new MBPRPOBahanBakuHeader(Env.getCtx(), 0, getTrxName());
+		master.setM_Product_ID(M_PRODUCT_TAMPIAN40Kg);
+		master.setAmount(BigDecimal.valueOf(1));
 		
 		MBPRPOBahanBaku bahanBaku = new MBPRPOBahanBaku(Env.getCtx(), 0, getTrxName());
 		bahanBaku.setName("Jan-22");
 		bahanBaku.setAD_Org_ID(BPR_BPR1_ORG);
 		bahanBaku.setCostingMethod(COSTINGMETHOD_StandardCosting);
 		bahanBaku.setC_Period_ID(C_Period_Jan22);
-		bahanBaku.setAmount(BigDecimal.valueOf(5));
+		bahanBaku.setAmount(BigDecimal.valueOf(5000));
 		bahanBaku.saveEx();
 		
-		BigDecimal percentage = BigDecimal.valueOf(0.05);
 		for(MBPRPOBahanBakuLine line : bahanBaku.getLines()) {
-			BigDecimal newPrice = line.getCurrentCostPrice().multiply(percentage).add(line.getCurrentCostPrice());
-			assertEquals(newPrice, line.getNewCostPrice());
+			if(line.getM_Product_ID()==M_PRODUCT_TAMPIAN40Kg)
+				assertEquals(BigDecimal.valueOf(5000), line.getNewCostPrice());
 		}
 	}
 	
