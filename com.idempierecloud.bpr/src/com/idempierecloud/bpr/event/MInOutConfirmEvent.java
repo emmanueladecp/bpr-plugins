@@ -28,19 +28,15 @@ public class MInOutConfirmEvent extends CustomEvent {
 	private void completeShipment() {
 		if(confirm.getM_InOut_ID()==0)
 			return;
-		if(confirm.getM_InOut().getC_DocType_ID()==C_DocType_ID_MM_Shipment_with_Confirmation) {
-			MInOut shipment = (MInOut) confirm.getM_InOut();
-			if(!shipment.get_ValueAsBoolean("isSOTrx"))
-				return;
-			shipment.setDocAction(MInOut.DOCACTION_Complete);
-			shipment.saveEx();
-			String status = shipment.getDocAction();
-			if(!shipment.processIt(MInOut.DOCACTION_Complete))
-				throw new AdempiereException("Shipment gagal Complete : "+shipment.getProcessMsg());
-			shipment.saveEx();
-			if(shipment.getDocStatus()!=MInOut.DOCSTATUS_Completed)
-				throw new AdempiereException("gagal complete shipment!");
-		}
+		confirm.setProcessed(true);
+		confirm.saveEx();
+		
+		MInOut shipment = (MInOut) confirm.getM_InOut();
+		shipment.setDocAction(MInOut.DOCACTION_Complete);
+		shipment.saveEx();
+		if(!shipment.processIt(MInOut.DOCACTION_Complete))
+			throw new AdempiereException("Shipment gagal Complete : "+shipment.getProcessMsg());
+		shipment.saveEx();
 		return;
 	}
 	
