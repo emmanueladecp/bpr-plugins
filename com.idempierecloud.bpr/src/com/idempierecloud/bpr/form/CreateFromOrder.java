@@ -226,6 +226,9 @@ public class CreateFromOrder extends CreateFrom {
 				line.setQty(Qty);
 				line.setC_UOM_ID(C_UOM_ID);
 				line.setPrice();
+				if(reqLine.get_ValueAsInt("RelatedProduct_ID")>0)
+					line.set_ValueOfColumn("RelatedProduct_ID", reqLine.get_Value("RelatedProduct_ID"));
+				line.set_ValueOfColumn("QtyPack", reqLine.get_Value("QtyPack"));
 				line.saveEx();
 				
 				reqLine.setC_OrderLine_ID(line.getC_OrderLine_ID());
