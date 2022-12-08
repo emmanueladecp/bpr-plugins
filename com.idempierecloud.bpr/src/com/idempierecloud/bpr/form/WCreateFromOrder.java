@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.form;
 
+import static org.compiere.model.SystemIDs.COLUMN_C_INVOICE_C_BPARTNER_ID;
+
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.logging.Level;
@@ -16,8 +18,15 @@ import org.adempiere.webui.component.ListboxFactory;
 import org.adempiere.webui.component.Panel;
 import org.adempiere.webui.component.Row;
 import org.adempiere.webui.component.Rows;
+import org.adempiere.webui.editor.WSearchEditor;
+import org.adempiere.webui.editor.WStringEditor;
+import org.adempiere.webui.event.ValueChangeEvent;
+import org.adempiere.webui.event.ValueChangeListener;
 import org.compiere.model.GridTab;
+import org.compiere.model.MLookup;
+import org.compiere.model.MLookupFactory;
 import org.compiere.util.CLogger;
+import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Msg;
@@ -25,7 +34,7 @@ import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zul.Vlayout;
 
-public class WCreateFromOrder extends CreateFromOrder implements EventListener<Event> {
+public class WCreateFromOrder extends CreateFromOrder implements EventListener<Event>, ValueChangeListener {
 
 	private WCreateFromWindow window;
 	private boolean m_actionActive = false;
@@ -40,6 +49,11 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
     protected Listbox orgField = ListboxFactory.newDropdownListbox();
     protected Label reqLabel = new Label();
     protected Listbox reqField = ListboxFactory.newDropdownListbox();
+    protected Label bpartnerLabel = new Label();
+    protected WSearchEditor bpartnerField = null;
+    protected Label timbanganLabel = new Label();
+    protected WStringEditor timbanganField = null;
+	private int p_WindowNo; 
 	
 	public WCreateFromOrder(GridTab mTab) {
 		super(mTab);
@@ -70,10 +84,11 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 	{
 		orgLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		reqLabel.setText(Msg.translate(Env.getCtx(), "M_Requisition_ID"));
+		bpartnerLabel.setText(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+		timbanganLabel.setText(Msg.translate(Env.getCtx(), "Nota Timbangan"));
 
 		Vlayout vlayout = new Vlayout();
 		vlayout.setVflex("1");
-		vlayout.setWidth("60%");
     	Panel parameterPanel = window.getParameterPanel();
 		parameterPanel.appendChild(vlayout);
 
@@ -88,6 +103,15 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		row.appendChild(orgField);
 		orgField.setHflex("1");
 
+		row.appendChild(bpartnerLabel.rightAlign());
+		row.appendChild(bpartnerField.getComponent());
+		reqField.setHflex("1");
+		
+		row = rows.newRow();
+		row.appendChild(timbanganLabel.rightAlign());
+		row.appendChild(timbanganField.getComponent());
+		orgField.setHflex("1");
+
 		row.appendChild(reqLabel.rightAlign());
 		row.appendChild(reqField);
 		reqField.setHflex("1");
@@ -99,11 +123,31 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		
 		super.dynInit();
 		window.setTitle(getTitle());
+		p_WindowNo = getGridTab().getWindowNo();
+		
+		timbanganField = new WStringEditor("timbangan", false, false, true, 20, 20, null, null);
+		timbanganField.addValueChangeListener(this);
 		
 		initOrgData();
+		initBPartner();
+		initRequisitionData();
+		
+		loadRequisition();
 		
 		return true;
 	}
+	
+	protected void initBPartner () throws Exception
+	{
+		//  load BPartner
+		int AD_Column_ID = 2762;        //  C_Order.C_BPartner_ID
+		MLookup lookup = MLookupFactory.get (Env.getCtx(), p_WindowNo, 0, AD_Column_ID, DisplayType.Search);
+		bpartnerField = new WSearchEditor ("C_BPartner_ID", true, false, true, lookup);
+		//
+		C_BPartner_ID = Env.getContextAsInt(Env.getCtx(), p_WindowNo, "C_BPartner_ID");
+		bpartnerField.setValue(Integer.valueOf(C_BPartner_ID));
+		bpartnerField.addValueChangeListener(this);
+	}   //  initBPartner
 	
 	/**
 	 *  Load Forecast data into Table
@@ -147,9 +191,6 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 			idx++;
 			if (knp.getKey()==AD_Org_ID)
 				idxSelected = idx;
-		}
-		if(idxSelected>0) {
-			initRequisitionData();
 		}
 		
 		orgField.setSelectedIndex(idxSelected);
@@ -213,6 +254,28 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 	@Override
 	public Object getWindow() {
 		return window;
+	}
+
+	@Override
+	public void valueChange(ValueChangeEvent e) {
+		if (log.isLoggable(Level.CONFIG)) log.config(e.getPropertyName() + "=" + e.getNewValue());
+
+		//  BPartner - load Order/Invoice/Shipment
+		if (e.getPropertyName().equals("C_BPartner_ID"))
+		{
+			Integer newBpValue = (Integer)e.getNewValue();
+			C_BPartner_ID = newBpValue == null?0:newBpValue.intValue();
+			initRequisitionData();
+			loadRequisition();
+			
+		}else if (e.getPropertyName().equals("timbangan"))
+		{
+			NotaTimbangan = (String) e.getNewValue();
+			initRequisitionData();
+			loadRequisition();
+			
+		}
+		window.tableChanged(null);
 	}	
 	
 }

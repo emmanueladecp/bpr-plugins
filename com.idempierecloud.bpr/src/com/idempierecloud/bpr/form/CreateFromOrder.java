@@ -26,6 +26,8 @@ public class CreateFromOrder extends CreateFrom {
 	protected int AD_Client_ID = 0;
 	protected int AD_Org_ID = 0;
 	protected int M_Requisition_ID = 0;
+	protected int C_BPartner_ID = 0;
+	protected String NotaTimbangan = null;
 	protected boolean isSOTrx = true;
 	
 	public CreateFromOrder(GridTab mTab) {
@@ -85,6 +87,7 @@ public class CreateFromOrder extends CreateFrom {
 		StringBuffer sqlStmt = new StringBuffer();
 		sqlStmt.append(" select r.M_Requisition_ID, r.documentNo ")
 			.append(" from M_Requisition r")
+		    .append(" left join bpr_timbangan t on t.bpr_timbangan_id=r.bpr_timbangan_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
 			.append(" and r.DocStatus IN ('CO','CL') ")
@@ -94,13 +97,22 @@ public class CreateFromOrder extends CreateFrom {
 		    .append(" where r.m_requisition_id=rl.m_requisition_id")
 		    .append(" and rl.c_orderline_id is null or o.docstatus in ('VO','RE'))")
 		;
+
+	    if(NotaTimbangan!=null && !NotaTimbangan.isEmpty())
+	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
+		
+		if(C_BPartner_ID>0)
+			sqlStmt.append(" and r.c_bpartner_id=?");
 		
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try{
 			pstmt = DB.prepareStatement(sqlStmt.toString(), null);
-			pstmt.setInt(1, AD_Client_ID);
-			pstmt.setInt(2, AD_Org_ID);
+			int index = 1;
+			pstmt.setInt(index++, AD_Client_ID);
+			pstmt.setInt(index++, AD_Org_ID);
+			if(C_BPartner_ID>0)
+				pstmt.setInt(index++, C_BPartner_ID);
 				
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
@@ -120,7 +132,7 @@ public class CreateFromOrder extends CreateFrom {
 	{
 	    Vector<Vector<Object>> data = new Vector<Vector<Object>>();
 	    StringBuffer sqlStmt = new StringBuffer();
-	    sqlStmt.append(" select rl.m_requisitionline_id, r.documentno, rl.qty,");
+	    sqlStmt.append(" select rl.m_requisitionline_id, rl.line || ' - ' || r.documentno as documentno, rl.qty,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
 	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName");
 	    sqlStmt.append(" from m_requisitionline rl");
@@ -129,14 +141,27 @@ public class CreateFromOrder extends CreateFrom {
 	    sqlStmt.append(" join m_requisition r on rl.m_requisition_id=r.m_requisition_id");
 	    sqlStmt.append(" left join c_orderline ol on rl.c_orderline_id=ol.c_orderline_id");
 	    sqlStmt.append(" left join c_order o on ol.c_order_id=o.c_order_id");
-	    sqlStmt.append(" where (rl.c_orderline_id is null or o.docstatus in ('VO','RE')) AND r.m_requisition_id=?");
-	    ;
+	    sqlStmt.append(" left join bpr_timbangan t on t.bpr_timbangan_id=r.bpr_timbangan_id");
+	    sqlStmt.append(" where (rl.c_orderline_id is null or o.docstatus in ('VO','RE'))");
+
+	    if(NotaTimbangan!=null && !NotaTimbangan.isEmpty())
+	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
+	    
+	    if(M_Requisition_ID>0)
+	    	sqlStmt.append(" and r.m_requisition_id=?");
+	    
+	    if(C_BPartner_ID>0)
+	    	sqlStmt.append(" and r.c_bpartner_id=?");
 	    
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
 	    try{
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
-	    	pstmt.setInt(1, M_Requisition_ID);
+	    	int index = 1;
+	    	if(M_Requisition_ID>0)
+	    		pstmt.setInt(index++, M_Requisition_ID);
+	    	if(C_BPartner_ID>0)
+	    		pstmt.setInt(index++, C_BPartner_ID);
 		    
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
@@ -149,6 +174,7 @@ public class CreateFromOrder extends CreateFrom {
 	    		line.add(pp);
 	    		pp = new KeyNamePair(rs.getInt("M_RequisitionLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
+	    		line.add(rs.getString("DocumentNo")); //5-Requisition
 	    		
 	    		data.add(line);
 		    }		    
@@ -170,6 +196,7 @@ public class CreateFromOrder extends CreateFrom {
 		miniTable.setColumnClass(2, String.class, true);       //  UOM
 		miniTable.setColumnClass(3, String.class, true);   	   //  Product Value
 		miniTable.setColumnClass(4, String.class, true);       //  Product Name
+		miniTable.setColumnClass(5, String.class, true);       //  Requisition
 		
 		//  Table UI
 		miniTable.autoSize();		
@@ -184,6 +211,7 @@ public class CreateFromOrder extends CreateFrom {
 	    columnNames.add(Msg.translate(Env.getCtx(), "C_UOM_ID"));
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
+	    columnNames.add(Msg.translate(Env.getCtx(), "M_Requisition_ID"));
 	    
 	    return columnNames;
 	}
@@ -198,7 +226,7 @@ public class CreateFromOrder extends CreateFrom {
 				qty = qty.add((BigDecimal)miniTable.getValueAt(i, 1));
 			}
 		}
-		statusBar.setInfo("Selected Qty "+qty);
+		statusBar.setStatusLine("Selected Qty "+qty);
 	}
 
 	@Override
