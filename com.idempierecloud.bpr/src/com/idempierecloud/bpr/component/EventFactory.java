@@ -28,8 +28,7 @@ import org.compiere.model.I_M_InOutConfirm;
 import org.compiere.model.I_M_Movement;
 import org.compiere.model.I_M_Production;
 import org.compiere.model.I_M_ProductionLine;
-import org.compiere.model.MInOutConfirm;
-
+import org.compiere.model.I_M_Requisition;
 import com.idempierecloud.bpr.base.CustomEventFactory;
 import com.idempierecloud.bpr.event.CBPartnerLocationEvent;
 import com.idempierecloud.bpr.event.CInvoiceEvent;
@@ -41,6 +40,7 @@ import com.idempierecloud.bpr.event.MInOutConfirmEvent;
 import com.idempierecloud.bpr.event.MMovementEvent;
 import com.idempierecloud.bpr.event.MProductionEvent;
 import com.idempierecloud.bpr.event.MProductionLineEvent;
+import com.idempierecloud.bpr.event.MRequisitionEvent;
 
 /**
  * Event Factory
@@ -93,6 +93,13 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_AFTER_NEW, I_M_ProductionLine.Table_Name, MProductionLineEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_M_ProductionLine.Table_Name, MProductionLineEvent.class);
 		
+		// MRequisition
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_Requisition.Table_Name, MRequisitionEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_Requisition.Table_Name, MRequisitionEvent.class);
+		registerEvent(IEventTopics.PO_AFTER_NEW, I_M_Requisition.Table_Name, MRequisitionEvent.class);
+		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_M_Requisition.Table_Name, MRequisitionEvent.class);
+		
+		//MInoutConfirm
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_InOutConfirm.Table_Name, MInOutConfirmEvent.class);
 		
 		
