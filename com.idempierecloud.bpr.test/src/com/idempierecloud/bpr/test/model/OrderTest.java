@@ -2,27 +2,19 @@ package com.idempierecloud.bpr.test.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-
-import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
-import org.compiere.model.MProductPrice;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.junit.jupiter.api.Test;
 
-import com.idempierecloud.bpr.model.X_BPR_Timbangan;
 import com.idempierecloud.bpr.test.AbstractTestCase;
 
 public class OrderTest extends AbstractTestCase {
 
 	private static final int C_DOCTYPE_GT_ORDER_BPR1 = 1000048;
-	private static final int C_DOCTYPE_PO_BahanBaku = 1000051;
 	private static final int C_BPARTNER_ARI_SAPUTRA = 1001591;
 	private static final int C_BPARTNER_LOCATION_ARI_SAPUTRA = 1001584;
 	private static final int AD_ORG_KANTOR_16 = 1000006;
@@ -41,7 +33,6 @@ public class OrderTest extends AbstractTestCase {
 	private static final int M_PRODUCT_GABAH_64 = 1000272;
 	private static final int M_PRODUCT_BELITANG_BASAH = 1003329;
 	private static final int C_UOM_KG = 1000013;
-	private static final int M_PRODUCT_GABAH_HAMPA = 1003324;
 	private static final int C_DocType_PO_Non_Bahan_Baku = 1000053;
 	private static final int USER_SALES = 1007908;
 	private static final int C_BPartner_ID_AHONG = 1000031;
@@ -190,9 +181,6 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setPriceEntered(new BigDecimal(200000));
 		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
 		orderLine.saveEx();
-
-		assertEquals(orderLine.getPriceEntered(), orderLine.getPriceActual());
-		assertEquals(orderLine.getPriceActual().setScale(2), orderLine.getPriceEntered().setScale(2));
 		
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();

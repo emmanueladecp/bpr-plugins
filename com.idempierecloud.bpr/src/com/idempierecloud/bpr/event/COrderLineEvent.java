@@ -10,6 +10,7 @@ import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductPrice;
+import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -33,14 +34,12 @@ public class COrderLineEvent extends CustomEvent {
 			setPricePOTurus();
 			calculateOngkosAngkut();
 			calculatePrice();
-			setPrice();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkCreditLimitBP();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			calculateOngkosAngkut();
 			calculatePrice();
-			setPrice();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkCreditLimitBP();
@@ -60,16 +59,7 @@ public class COrderLineEvent extends CustomEvent {
 				throw new AdempiereException("Grand Total Melebihi SO Credit Available");
 		}
 	}
-	private void setPrice() {
-		MOrder order = (MOrder)orderLine.getC_Order();
-		if(order.isSOTrx()) {
-			orderLine.setPriceActual(orderLine.getPriceEntered());
-		}else {
-			orderLine.setPriceActual(orderLine.getPriceEntered());
-			orderLine.setPriceList(orderLine.getPriceEntered());
-		}
-		
-	}
+	
 	private void setPricePOTurus() {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
@@ -113,12 +103,12 @@ public class COrderLineEvent extends CustomEvent {
 			return;
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
 		BigDecimal price = ongkosAngkut.add(orderLine.getPriceList());
-		orderLine.setPriceEntered(price);
+		orderLine.setPriceEntered(MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), price));
 	}
 	private void calculateLinetNetAmt() {
 		if(orderLine.getM_Product_ID()==0)
 			return;
-		BigDecimal LineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());	
+		BigDecimal LineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyEntered());	
 		orderLine.setLineNetAmt(LineNetAmt);
 	}
 	private void calculateOngkosAngkut() {
