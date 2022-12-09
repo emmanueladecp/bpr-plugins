@@ -1,6 +1,9 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -33,12 +36,14 @@ public class COrderLineEvent extends CustomEvent {
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setPricePOTurus();
 			calculateOngkosAngkut();
+			calculateAdditionalCost();
 			calculatePrice();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkCreditLimitBP();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			calculateOngkosAngkut();
+			calculateAdditionalCost();
 			calculatePrice();
 			calculateLinetNetAmt();
 			setDiscount();
@@ -48,6 +53,58 @@ public class COrderLineEvent extends CustomEvent {
 		}
 	}	
 	
+	private void calculateAdditionalCost() {
+		if(!orderLine.getC_Order().isSOTrx() || orderLine.getM_Product_ID()==0)
+			return;
+		
+		StringBuffer additionalCostSql = new StringBuffer();
+		additionalCostSql.append(" select mp.m_product_id , mp.value, mp.name, mp.m_product_category_id , ba.issoline, ba.c_bp_group_id , ba.m_pricelist_id , ba.costamt, ba.issoline, bal.weightfrom , bal.weightto");
+		additionalCostSql.append(" from m_product mp");
+		additionalCostSql.append(" join bpr_additionalcost_line bal on mp.m_product_category_id = bal.m_product_category_id");
+		additionalCostSql.append(" join bpr_additionalcost ba on bal.bpr_additionalcost_id = ba.bpr_additionalcost_id");
+		additionalCostSql.append(" where ba.c_bp_group_id=? and ba.m_pricelist_id=? and mp.m_product_id = ?");
+		
+		PreparedStatement pstmt = DB.prepareStatement(additionalCostSql.toString(), orderLine.get_TrxName());
+		ResultSet rs = null;
+		BigDecimal subsidiAmt = Env.ZERO;
+		try {
+			pstmt.setInt(1, orderLine.getC_Order().getC_BPartner().getC_BP_Group_ID());
+			pstmt.setInt(2, orderLine.getC_Order().getM_PriceList_ID());
+			pstmt.setInt(3, orderLine.getM_Product_ID());
+			rs = pstmt.executeQuery();
+			while(rs.next()) {
+				BigDecimal costAmt = rs.getBigDecimal("costamt");
+				if(costAmt==null)
+					costAmt = Env.ZERO;
+				if(rs.getBoolean("issoline")) {
+					subsidiAmt = subsidiAmt.add(costAmt);
+				}else {
+					BigDecimal totalQty = DB.getSQLValueBD(orderLine.get_TrxName(), "SELECT COALESCE(SUM(qtyordered),0) FROM C_OrderLine WHERE C_Order_ID=? AND C_OrderLine_ID<>?", orderLine.getC_Order_ID(), orderLine.getC_OrderLine_ID());
+					totalQty = totalQty.add(orderLine.getQtyOrdered());
+					BigDecimal weightFrom = rs.getBigDecimal("weightfrom");
+					BigDecimal weightTo = rs.getBigDecimal("weightto");
+					if(weightFrom==null)
+						weightFrom = Env.ZERO;
+
+					if(weightTo==null)
+						weightTo = Env.ZERO;
+					if(weightFrom.equals(Env.ZERO) && weightTo.equals(Env.ZERO))
+						continue;
+					if(totalQty.compareTo(weightFrom)>=0 && totalQty.compareTo(weightTo)<=0)
+					{
+						subsidiAmt = subsidiAmt.add(costAmt);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			log.info(e.getLocalizedMessage());
+			throw new AdempiereException("Failed calculate additional cost");
+		}
+		
+		orderLine.set_ValueOfColumn("SubsidiAmt", subsidiAmt);
+
+	}
+
 	private void checkCreditLimitBP() {
 		if(!orderLine.getC_Order().isSOTrx())
 			return;
@@ -92,6 +149,7 @@ public class COrderLineEvent extends CustomEvent {
 		int no = DB.executeUpdate("UPDATE M_RequisitionLine SET C_OrderLine_ID=null WHERE C_orderLine_id=?", orderLine.getC_OrderLine_ID(), orderLine.get_TrxName());
 		log.info("Updated RequisitionLine "+no);
 	}
+	
 	private void calculatePrice() {
 		MOrder order = (MOrder)orderLine.getC_Order();
 		if(!order.get_ValueAsBoolean("isSOTrx"))
@@ -102,15 +160,23 @@ public class COrderLineEvent extends CustomEvent {
 		if(docType.get_ValueAsBoolean("isTurus"))
 			return;
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
-		BigDecimal price = ongkosAngkut.add(orderLine.getPriceList());
-		orderLine.setPriceEntered(MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), price));
+		BigDecimal priceEntered = ongkosAngkut.add(orderLine.getPriceList());
+		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("SubsidiAmt");
+		if(subsidiAmt==null)
+			subsidiAmt = Env.ZERO;
+		
+		priceEntered = priceEntered.add(subsidiAmt);
+		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
+		orderLine.setPriceEntered(priceEntered);
 	}
+	
 	private void calculateLinetNetAmt() {
 		if(orderLine.getM_Product_ID()==0)
 			return;
 		BigDecimal LineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyEntered());	
 		orderLine.setLineNetAmt(LineNetAmt);
 	}
+	
 	private void calculateOngkosAngkut() {
 		MOrder order = (MOrder)orderLine.getC_Order();
 		if(!order.get_ValueAsBoolean("isSOTrx"))
@@ -135,6 +201,7 @@ public class COrderLineEvent extends CustomEvent {
 			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
 		}
 	}
+	
 	private void setDiscount() {
 		if(orderLine.getM_Product_ID()==0)
 			return;

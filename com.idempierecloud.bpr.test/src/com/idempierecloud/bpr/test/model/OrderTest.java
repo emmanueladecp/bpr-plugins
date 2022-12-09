@@ -2,6 +2,8 @@ package com.idempierecloud.bpr.test.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.math.BigDecimal;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MOrder;
@@ -209,5 +211,42 @@ public class OrderTest extends AbstractTestCase {
 		
 		assertEquals(USER_SALES, order.getSalesRep_ID());
 		assertEquals(USER_SALES, order.get_ValueAsInt("SalesRep_ID2"));
+	}
+	
+	@Test
+	public void test_additional_cost_on_sales_order_per_order_line() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(BPR_BPR2_ORG);
+		order.setIsSOTrx(true);
+		order.setC_DocTypeTarget_ID(1000060); //MANUAL ORDER BPR
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_SUMATERA_GT);
+		order.set_ValueOfColumn("SalesRep_ID2", USER_SALES);
+		order.setC_BPartner_ID(1000306); //CV JAYA PELITA SEMPURNA
+		order.setC_BPartner_Location_ID(1000299);
+		order.setM_Warehouse_ID(1000008); //GUDANG BPR2
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.setDocAction(MOrder.ACTION_Complete);
+		order.setDeliveryViaRule(DeliveryViaRule_Pickup);
+		order.saveEx();
+		
+		assertNotNull(order.getC_Order_ID());
+		
+		MOrderLine orderLine = new MOrderLine(order);
+		orderLine.setM_Product_ID(1003635); //RAJA BIRU 5KG
+		orderLine.setQtyEntered(BigDecimal.valueOf(20));
+		orderLine.setQtyOrdered(BigDecimal.valueOf(100));
+		orderLine.setPrice();
+		orderLine.setC_UOM_ID(1000018); //ZAK
+		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
+		orderLine.saveEx();
+		
+		assertEquals(BigDecimal.valueOf(9650), orderLine.getPriceActual().setScale(0));
+		assertEquals(BigDecimal.valueOf(47500), orderLine.getPriceEntered().setScale(0));
+		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("subsidiAmt");
+		assertEquals(BigDecimal.valueOf(-150), subsidiAmt.setScale(0));
+		assertEquals(BigDecimal.valueOf(950000), orderLine.getLineNetAmt().setScale(0));
 	}
 }
