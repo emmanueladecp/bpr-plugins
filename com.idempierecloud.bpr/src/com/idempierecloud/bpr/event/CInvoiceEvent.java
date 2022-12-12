@@ -11,6 +11,8 @@ import org.compiere.util.DB;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
+import com.idempierecloud.bpr.model.MBPRHistoryFakturPajak;
+import com.idempierecloud.bpr.model.MBPRListFakturPajak;
 
 public class CInvoiceEvent extends CustomEvent {
 
@@ -25,8 +27,19 @@ public class CInvoiceEvent extends CustomEvent {
 		invoice = (MInvoice) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID))
 			checkFaktur();
-		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE))
+		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setFaktur();
 			checkDocStatusShipment();
+		}
+	}
+
+	private void checkFaktur() {
+		if(invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")==0)
+			return;
+		
+		int history = DB.getSQLValue(invoice.get_TrxName(), "SELECT BPR_HistoryFakturPajak_ID FROM BPR_HistoryFakturPajak WHERE BPR_ListFakturPajak_ID=? AND C_Invoice_ID=? AND isUploaded='Y'", invoice.get_ValueAsInt("BPR_ListFakturPajak_ID"), invoice.getC_Invoice_ID());
+		if(history>0)
+			throw new AdempiereException("Faktur Pajak telah diupload. Invoice tidak bisa dibatalkan");
 	}
 
 	private void checkDocStatusShipment() {
@@ -45,18 +58,18 @@ public class CInvoiceEvent extends CustomEvent {
 			}
 		}
 	}
-	private void checkFaktur() {
-		if(invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")==0)
+	private void setFaktur() {
+		if(!invoice.isSOTrx() || invoice.get_ValueAsString("TypePajak")==null || invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")>0)
 			return;
 		
-		String isUploaded = DB.getSQLValueString(invoice.get_TrxName(), "SELECT IsUploaded FROM BPR_ListFakturPajak WHERE BPR_ListFakturPajak_ID=?", invoice.get_ValueAsInt("BPR_ListFakturPajak_ID"));
+		MBPRListFakturPajak pajak = MBPRListFakturPajak.getNext(invoice);
+		if(pajak==null)
+			throw new AdempiereException("Tidak ada nomor faktur pajak yang tersedia");
 		
-		if(isUploaded!=null && isUploaded.equals("Y")) {
-			throw new AdempiereException("Faktur Pajak already uploaded");
-		}
-		
-		invoice.set_ValueOfColumn("BPR_ListFakturPajak_ID", null);
+		invoice.set_ValueOfColumn("BPR_ListFakturPajak_ID", pajak.getBPR_ListFakturPajak_ID());
 		invoice.saveEx();
+		
+		MBPRHistoryFakturPajak.addHistory(invoice, pajak);
 	}
 	
 	@Override
