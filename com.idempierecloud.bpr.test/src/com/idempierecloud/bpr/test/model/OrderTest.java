@@ -5,10 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.math.BigDecimal;
-import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
-import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +20,7 @@ public class OrderTest extends AbstractTestCase {
 	private static final int AD_ORG_KANTOR_16 = 1000006;
 	private static final int M_WAREHOUSE_KANTOR_16 = 1000014;
 	private static final int C_PAYMENT_TERM_IMMEDIATE = 1000000;
-	private static final int M_PRODUCT_ULTIMA_10KG = 1000163;
+	private static final int M_PRODUCT_ULTIMA_10KG = 1003643;
 	private static final int C_UOM_ZAK = 1000018;
 	private static final int C_TAX_STANDARD = 1000000;
 	private static final int M_PRICELIST_SUMATERA_GT = 1000004;
@@ -119,22 +117,21 @@ public class OrderTest extends AbstractTestCase {
 	@Test
 	public void test_ongkosangkut_bpr_ongkosangkut() throws Exception{
 		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
-		order.setAD_Org_ID(AD_ORG_KANTOR_16);
+		order.setAD_Org_ID(AD_Org_ID_BPR1);
 		order.setIsSOTrx(true);
-		order.setC_DocTypeTarget_ID(C_DOCTYPE_GT_ORDER_BPR1);
+		order.setC_DocTypeTarget_ID(1000060); // MANUAL GT
 		order.setDateOrdered(getLoginDate());
-		order.setM_PriceList_ID(M_PRICELIST_SUMATERA_GT);
-		order.setC_BPartner_ID(C_BPARTNER_ARI_SAPUTRA);
-		order.setC_BPartner_Location_ID(C_BPARTNER_LOCATION_ARI_SAPUTRA);
-		order.setM_Warehouse_ID(M_WAREHOUSE_KANTOR_16);
+		order.setM_PriceList_ID(1000008); // JAWA GT
+		order.setC_BPartner_ID(1000467); // AMEN - CIPINANG
+		order.setC_BPartner_Location_ID(1000460); // JAKARTA TIMUR
+		order.setM_Warehouse_ID(1000001); // BPR 1
 		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
 		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
-		order.setDeliveryViaRule(DeliveryViaRule_Pickup);
+		order.setDeliveryViaRule(DeliveryViaRule_Delivery);
 		order.setDocStatus(MOrder.STATUS_Drafted);
 		order.setDocAction(MOrder.ACTION_Complete);
 		order.saveEx();
 		
-		assertEquals(order.getC_BPartner_ID(), C_BPARTNER_ARI_SAPUTRA);
 		assertFalse(order.getDocumentNo().isEmpty());
 		
 		MOrderLine orderLine = new MOrderLine(order);
@@ -145,16 +142,10 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
 		orderLine.saveEx();
 		
-		MBPartnerLocation bpLocation = (MBPartnerLocation)order.getC_BPartner_Location();
-		BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(getTrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ? ", bpLocation.get_ValueAsInt("C_City_ID"));
+		BigDecimal ongkosAngkut = (BigDecimal)orderLine.get_Value("OngkosAngkut");
+		assertEquals(BigDecimal.valueOf(336.60).setScale(2), ongkosAngkut.setScale(2));
+		assertEquals(BigDecimal.valueOf(11700), orderLine.getPriceActual().setScale(0));
 		
-		BigDecimal expectedOngkosKirim = orderLine.getQtyOrdered().multiply(BPR_OngkosAngkut).multiply(orderLine.getM_Product().getWeight()); 
-		
-		if(order.getDeliveryViaRule().equalsIgnoreCase(DeliveryViaRule_Delivery))
-			assertEquals((BigDecimal)orderLine.get_Value("OngkosAngkut"), expectedOngkosKirim.setScale(2));
-		
-		order.processIt(MOrder.ACTION_Complete);
-		order.saveEx();
 	}
 	
 	@Test
