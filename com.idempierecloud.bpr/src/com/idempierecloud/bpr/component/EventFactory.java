@@ -25,6 +25,8 @@ import org.compiere.model.I_C_Order;
 import org.compiere.model.I_C_OrderLine;
 import org.compiere.model.I_C_Payment;
 import org.compiere.model.I_M_InOutConfirm;
+import org.compiere.model.I_M_Inventory;
+import org.compiere.model.I_M_InventoryLine;
 import org.compiere.model.I_M_Movement;
 import org.compiere.model.I_M_Production;
 import org.compiere.model.I_M_ProductionLine;
@@ -37,6 +39,8 @@ import com.idempierecloud.bpr.event.COrderLineEvent;
 import com.idempierecloud.bpr.event.CPaymentEvent;
 import com.idempierecloud.bpr.event.LoginEvent;
 import com.idempierecloud.bpr.event.MInOutConfirmEvent;
+import com.idempierecloud.bpr.event.MInventoryEvent;
+import com.idempierecloud.bpr.event.MInventoryLineEvent;
 import com.idempierecloud.bpr.event.MMovementEvent;
 import com.idempierecloud.bpr.event.MProductionEvent;
 import com.idempierecloud.bpr.event.MProductionLineEvent;
@@ -80,6 +84,11 @@ public class EventFactory extends CustomEventFactory {
 		// M_Movement
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);
+		
+		// M_Inventory
+		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_Inventory.Table_Name, MInventoryEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InventoryLine.Table_Name, MInventoryLineEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InventoryLine.Table_Name, MInventoryLineEvent.class);
 		
 		// C_Payment
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Payment.Table_Name, CPaymentEvent.class);

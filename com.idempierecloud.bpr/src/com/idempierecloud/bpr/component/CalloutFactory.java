@@ -44,6 +44,7 @@ public class CalloutFactory extends CustomCalloutFactory {
 		// C_OrderLine
 		registerCallout(I_C_OrderLine.Table_Name, "M_Product_ID", SetUOMOrderLine.class);
 		
+		// M_ProductionLine
 		registerCallout(I_M_ProductionLine.Table_Name, "QtyEntered", SetQtyUsedProductionLine.class);
 	}
 
