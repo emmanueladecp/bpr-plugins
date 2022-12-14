@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomProcessFactory;
+import com.idempierecloud.bpr.process.CancelAndMoveShipment;
 import com.idempierecloud.bpr.process.GenerateNoFakturPajak;
 import com.idempierecloud.bpr.process.ImportBPartner;
 import com.idempierecloud.bpr.process.ImportRMAfromBPRRMA;
@@ -46,6 +47,7 @@ public class ProcessFactory extends CustomProcessFactory {
 		registerProcess(ImportRMAfromBPRRMA.class);
 		registerProcess(UpdateProductCostPrice.class);
 		registerProcess(GenerateNoFakturPajak.class);
+		registerProcess(CancelAndMoveShipment.class);
 	}
 
 }
