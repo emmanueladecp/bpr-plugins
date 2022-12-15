@@ -33,7 +33,6 @@ public class COrderEvent extends CustomEvent{
 			checkTimbanganPO();
 			checkTimbanganNetAmt();
 			checkSalesRep();
-			setCreditAvailable();
 		}
 	}
 	private void setCreditAvailable() {
