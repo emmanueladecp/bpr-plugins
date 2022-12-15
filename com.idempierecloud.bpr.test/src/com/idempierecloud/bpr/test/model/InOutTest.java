@@ -24,9 +24,9 @@ public class InOutTest extends AbstractTestCase{
 		pi.setAD_Client_ID(getAD_Client_ID());
 		pi.setAD_User_ID(getAD_User_ID());
 		
-		ProcessInfoParameter[] params = new  ProcessInfoParameter[3];
-		params[0] = new ProcessInfoParameter("M_InOut_ID", 1000349, null, null, null); // BPR 2
-		params[1] = new ProcessInfoParameter("M_Warehouse_ID", 1000001, null, null, null); // BPR 1
+		ProcessInfoParameter[] params = new  ProcessInfoParameter[2];
+		params[0] = new ProcessInfoParameter("M_InOut_ID", 1000367, null, null, null); // BPR 2
+		params[1] = new ProcessInfoParameter("M_Warehouse_ID", 1000123, null, null, null); // BPR 1
 		pi.setParameter(params);
 		pi.setTransactionName(getTrxName());
 		
