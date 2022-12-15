@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import com.idempierecloud.bpr.base.CustomFormFactory;
+import com.idempierecloud.bpr.form.CompleteMovementConfirmUI;
 import com.idempierecloud.bpr.form.TandaTerimaFakturUI;
 import com.idempierecloud.bpr.form.WAllocation;
 
@@ -41,6 +42,7 @@ public class FormFactory extends CustomFormFactory {
 	protected void initialize() {
 		registerForm(WAllocation.class);
 		registerForm(TandaTerimaFakturUI.class);
+		registerForm(CompleteMovementConfirmUI.class);
 	}
 
 }

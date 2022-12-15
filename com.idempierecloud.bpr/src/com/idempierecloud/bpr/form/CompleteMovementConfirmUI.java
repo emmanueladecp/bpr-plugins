@@ -31,7 +31,7 @@ import org.adempiere.webui.event.WTableModelListener;
 import org.adempiere.webui.util.ZKUpdateUtil;
 import org.adempiere.webui.window.FDialog;
 import org.compiere.minigrid.IMiniTable;
-import org.compiere.model.MInvoice;
+import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
 import org.compiere.model.MRole;
@@ -53,7 +53,7 @@ import org.zkoss.zul.South;
 
 import com.idempierecloud.bpr.base.CustomForm;
 
-public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListener, WTableModelListener {
+public class CompleteMovementConfirmUI extends CustomForm implements ValueChangeListener, WTableModelListener {
 
 	/**
 	 * 
@@ -65,7 +65,7 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 	private Borderlayout mainLayout = new Borderlayout();
 	private Panel parameterPanel = new Panel();
 	private Grid parameterLayout = GridFactory.newGridLayout();
-	private WListbox invoiceTable = ListboxFactory.newDataTable();
+	private WListbox confirmTable = ListboxFactory.newDataTable();
 
 	private Label dateLabel = new Label();
 	private WDateEditor dateField = new WDateEditor();
@@ -75,70 +75,72 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 	private int m_AD_Org_ID;
 
 	private Button processBtn = new Button();
+
+	private Timestamp m_MovementDate;
 	
 	@Override
 	protected void initForm() {
 		dynInit();
 		zkInit();
 		
-		loadInvoice();
+		loadShipmentConfirm();
 	}
 
-	private void loadInvoice() {
-		Vector<Vector<Object>> data = getInvoiceData();
-		Vector<String> columnNames = getInvoiceColumnNames();
+	private void loadShipmentConfirm() {
+		processBtn.setEnabled(false);
 		
-		invoiceTable.clear();
+		Vector<Vector<Object>> data = getShipmentConfirm();
+		Vector<String> columnNames = getColumnNames();
+		
+		confirmTable.clear();
 		
 		//  Remove previous listeners
-		invoiceTable.getModel().removeTableModelListener(this);
+		confirmTable.getModel().removeTableModelListener(this);
 		
 		//  Set Model
 		ListModelTable modelI = new ListModelTable(data);
 		modelI.addTableModelListener(this);
-		invoiceTable.setData(modelI, columnNames);
-		setInvoiceColumnClass(invoiceTable);
+		confirmTable.setData(modelI, columnNames);
+		setColumnClass(confirmTable);
 	}
 
-	public Vector<String> getInvoiceColumnNames()
+	public Vector<String> getColumnNames()
 	{
 		//  Header Info
 		Vector<String> columnNames = new Vector<String>();
 		columnNames.add(Msg.getMsg(Env.getCtx(), "Select"));
-		columnNames.add(Msg.getElement(Env.getCtx(), "DateInvoiced"));
-		columnNames.add(Msg.getElement(Env.getCtx(), "DocumentNo"));
-		columnNames.add(Msg.getElement(Env.getCtx(), "C_BPartner_ID"));
-		columnNames.add(Msg.getElement(Env.getCtx(), "GrandTotal"));
+		columnNames.add("Shipment Confirm");
+		columnNames.add("Shipment");
+		columnNames.add("Movement Date");
 		
 		return columnNames;
 	}
 	
-	public void setInvoiceColumnClass(IMiniTable invoiceTable)
+	public void setColumnClass(IMiniTable invoiceTable)
 	{
 		int i = 0;
 		invoiceTable.setColumnClass(i++, Boolean.class, false);         //  0-Selection
-		invoiceTable.setColumnClass(i++, Timestamp.class, true);        //  1-TrxDate
-		invoiceTable.setColumnClass(i++, String.class, true);           //  2-DocumentNo
-		invoiceTable.setColumnClass(i++, String.class, true);           //  2-BPartner
-		invoiceTable.setColumnClass(i++, String.class, true);           //  2-GrandTotal
+		invoiceTable.setColumnClass(i++, String.class, true);           //  1-Shipment Confirm
+		invoiceTable.setColumnClass(i++, String.class, true);           //  2-Shipment
+		invoiceTable.setColumnClass(i++, Timestamp.class, true);        //  3-Movement Date
 		invoiceTable.autoSize();
 	}
 
-	private Vector<Vector<Object>> getInvoiceData() {
+	private Vector<Vector<Object>> getShipmentConfirm() {
 		Vector<Vector<Object>> data = new Vector<Vector<Object>>();
-		StringBuilder sql = new StringBuilder("SELECT i.DateInvoiced,o.name||' - '||i.DocumentNo as documentno,i.C_Invoice_ID," //  1..3
-			+ "bp.value || ' - ' || bp.name as bpartner, i.c_bpartner_id, "                            //  4..5 BP
-			+ "i.GrandTotal "                            //  6 GrandTotal
-			+ "FROM C_Invoice i"		//  corrected for CM/Split
-			+ " INNER JOIN AD_Org o ON (i.AD_Org_ID=o.AD_Org_ID) "
-			+ " INNER JOIN C_BPartner bp ON i.C_BPartner_ID=bp.C_BPartner_ID "
-			+ "WHERE i.IsTTF='Y' AND i.DateTTF is null AND i.issotrx='Y' AND DocStatus='CO'"
-			+ " AND i.AD_Org_ID=?");                                            //  #7
-		sql.append(" ORDER BY i.DateInvoiced, i.DocumentNo");
-		if (log.isLoggable(Level.FINE)) log.fine("InvSQL=" + sql.toString());
+		StringBuilder sql = new StringBuilder(""
+			+ " select  c.m_inoutconfirm_id , c.documentno as confirmno,"
+			+ " s.m_inout_id , s.documentno as shipmentno, s.movementdate"
+			+ " from m_inoutconfirm c"
+			+ " join m_inout s on c.m_inout_id =s.m_inout_id"
+			+ " where c.docstatus in ('DR')"
+			+ " AND c.AD_Org_ID=?");
 		
-		// role security
-		sql = new StringBuilder( MRole.getDefault(Env.getCtx(), false).addAccessSQL( sql.toString(), "i", MRole.SQL_FULLYQUALIFIED, MRole.SQL_RO ) );
+		if(m_MovementDate!=null)
+			sql.append(" AND s.movementDate=?");
+		
+		sql.append(" ORDER BY c.documentno");
+		if (log.isLoggable(Level.FINE)) log.fine("SQL=" + sql.toString());
 		
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -146,17 +148,18 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 		{
 			pstmt = DB.prepareStatement(sql.toString(), null);
 			pstmt.setInt(1,m_AD_Org_ID);
+			if(m_MovementDate!=null)
+				pstmt.setTimestamp(2, m_MovementDate);
 			rs = pstmt.executeQuery();
 			while (rs.next())
 			{
 				Vector<Object> line = new Vector<Object>();
 				line.add(Boolean.FALSE);       //  0-Selection
-				line.add(rs.getTimestamp(1));       //  1-TrxDate
-				KeyNamePair pp = new KeyNamePair(rs.getInt(3), rs.getString(2));
-				line.add(pp);                       //  2-DocumentNo
-				pp = new KeyNamePair(rs.getInt(5), rs.getString(4));
-				line.add(pp);                       //  3-BPartner
-				line.add(rs.getBigDecimal(6)); // 4-GrandTotal
+				KeyNamePair pp = new KeyNamePair(rs.getInt(1), rs.getString(2));
+				line.add(pp);                       //  1-DocumentNo
+				pp = new KeyNamePair(rs.getInt(3), rs.getString(4));
+				line.add(pp);                       //  2-BPartner
+				line.add(rs.getTimestamp(5));       //  3-TrxDate
 				
 				data.add(line);
 			}
@@ -181,6 +184,10 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 		m_AD_Org_ID = Env.getAD_Org_ID(Env.getCtx());
 		organizationPick.setValue(m_AD_Org_ID);
 		organizationPick.addValueChangeListener(this);
+		
+		dateField.addValueChangeListener(this);
+		
+		processBtn.setEnabled(false);
 	}
 
 	private void zkInit() {
@@ -189,8 +196,9 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 		div.appendChild(mainLayout);
 		appendChild(div);
 		ZKUpdateUtil.setWidth(mainLayout, "100%");
+		
 
-		dateLabel.setText(Msg.translate(Env.getCtx(), "TTF Date"));
+		dateLabel.setText(Msg.translate(Env.getCtx(), "Movement Date"));
 		organizationLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		processBtn.setLabel(Util.cleanAmp(Msg.getMsg(Env.getCtx(), "Process")));
 		processBtn.addActionListener(this);
@@ -233,7 +241,7 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 		
 		Center center = new Center();
 		mainLayout.appendChild(center);
-		center.appendChild(invoiceTable);
+		center.appendChild(confirmTable);
 		
 		South south = new South();
 		south.setBorder("none");
@@ -246,7 +254,7 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 		String name = e.getPropertyName();
 		Object value = e.getNewValue();
 		if (log.isLoggable(Level.CONFIG)) log.config(name + "=" + value);
-		if (value == null && (!name.equals("AD_Org_ID")))
+		if (value == null)
 			return;
 		
 		// Organization
@@ -254,7 +262,13 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 		{
 			m_AD_Org_ID = ((Integer) value).intValue();
 			
-			loadInvoice();
+			loadShipmentConfirm();
+		}
+		else if (name.equals("Date"))
+		{
+			m_MovementDate = (Timestamp) value;
+			
+			loadShipmentConfirm();
 		}
 	}
 	
@@ -269,44 +283,48 @@ public class TandaTerimaFakturUI extends CustomForm implements ValueChangeListen
 				{
 					public void run(String trxName)
 					{
-						updateInvoice(trxName);
+						completeConfirm(trxName);
 					}
 				});
 			}catch(Exception ex) {
 				FDialog.error(getWindowNo(), this, "Error", ex.getLocalizedMessage());
-				processBtn.setEnabled(true);
 				return;
 			}
-			
-			FDialog.info(getWindowNo(), this, "Success", "Invoice Updated");
-			loadInvoice();
-			processBtn.setEnabled(true);
+
+			loadShipmentConfirm();
 		}
 		
 	}
 
-	private void updateInvoice(String trxName) {
-		Timestamp dateTTF = (Timestamp) dateField.getValue();
-		if(dateTTF==null)
-			throw new AdempiereException("Date TTF required");	
+	private void completeConfirm(String trxName) {	
 			
-		for (int i = 0; i < invoiceTable.getRowCount(); i++)
+		for (int i = 0; i < confirmTable.getRowCount(); i++)
 		{
-			if (((Boolean)invoiceTable.getValueAt(i, 0)).booleanValue())
+			if (((Boolean)confirmTable.getValueAt(i, 0)).booleanValue())
 			{
-				KeyNamePair pp = (KeyNamePair)invoiceTable.getValueAt(i, 2);   //  Value
-				int C_Invoice_ID = pp.getKey();
-				MInvoice invoice = new MInvoice(Env.getCtx(), C_Invoice_ID, trxName);
-				invoice.set_ValueOfColumn("DateTTF", dateTTF);
-				invoice.saveEx();
+				KeyNamePair pp = (KeyNamePair)confirmTable.getValueAt(i, 2);
+				int M_InOutConfirm_ID = pp.getKey();
+				MInOutConfirm confirm = new MInOutConfirm(Env.getCtx(), M_InOutConfirm_ID, trxName);
+				if(!confirm.processIt(MInOutConfirm.ACTION_Complete)) {
+					FDialog.error(getWindowNo(), this, "Error", confirm.getProcessMsg());
+					return;
+				}
+				
+				confirm.saveEx();
 			}
 		}
 	}
 
 	@Override
 	public void tableChanged(WTableModelEvent event) {
-		// TODO Auto-generated method stub
+		int count = 0;
+		for (int i = 0; i < confirmTable.getRowCount(); i++)
+		{
+			if (((Boolean)confirmTable.getValueAt(i, 0)).booleanValue())
+				count++;
+		}
 		
+		processBtn.setEnabled(count>0);
 	}
 
 }
