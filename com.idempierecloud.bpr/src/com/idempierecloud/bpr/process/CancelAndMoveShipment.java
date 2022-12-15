@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.process;
 
+import java.math.BigDecimal;
+
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutConfirm;
@@ -7,6 +9,7 @@ import org.compiere.model.MInOutLine;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
+import org.compiere.model.MUOMConversion;
 import org.compiere.model.Query;
 import org.compiere.process.ProcessInfoParameter;
 import org.compiere.util.DB;
@@ -59,7 +62,8 @@ public class CancelAndMoveShipment extends CustomProcess {
 			MMovementLine moveLine = new MMovementLine(move);
 			moveLine.setLine(line.getLine());
 			moveLine.setM_Product_ID(line.getM_Product_ID());
-			moveLine.setMovementQty(line.getMovementQty());
+			BigDecimal movementQty = MUOMConversion.convertProductFrom(getCtx(), line.getM_Product_ID(), line.getC_UOM_ID(), line.getMovementQty());
+			moveLine.setMovementQty(movementQty);
 			moveLine.setM_Locator_ID(line.getM_Locator_ID());
 			moveLine.setM_LocatorTo_ID(locatorTo.getM_Locator_ID());
 			moveLine.saveEx();

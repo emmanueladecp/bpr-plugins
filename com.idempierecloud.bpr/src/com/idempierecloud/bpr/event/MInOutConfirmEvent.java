@@ -14,7 +14,6 @@ public class MInOutConfirmEvent extends CustomEvent {
 	
 	private static CLogger log = CLogger.getCLogger(CInvoiceEvent.class);
 	private MInOutConfirm confirm = null;
-	private static final int C_DocType_ID_MM_Shipment_with_Confirmation =1000058;
 	
 	@Override
 	protected void doHandleEvent(PO po, Event event) {

@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
 import org.compiere.model.MOrder;
 import org.compiere.model.PO;
