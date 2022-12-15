@@ -28,7 +28,6 @@ public class OrderTest extends AbstractTestCase {
 	private static final int AD_ORG_KANTOR_16 = 1000006;
 	private static final int M_WAREHOUSE_KANTOR_16 = 1000014;
 	private static final int C_PAYMENT_TERM_IMMEDIATE = 1000000;
-	private static final int M_PRODUCT_ULTIMA_10KG = 1000163;
 	private static final int C_UOM_ZAK = 1000018;
 	private static final int C_TAX_STANDARD = 1000000;
 	private static final int M_PRICELIST_SUMATERA_GT = 1000004;
@@ -69,7 +68,7 @@ public class OrderTest extends AbstractTestCase {
 		assertFalse(order.getDocumentNo().isEmpty());
 		
 		MOrderLine orderLine = new MOrderLine(order);
-		orderLine.setM_Product_ID(M_PRODUCT_ULTIMA_10KG);
+		orderLine.setM_Product_ID(1003635);
 		orderLine.setQty(new BigDecimal(100000000));
 		orderLine.setQtyOrdered(new BigDecimal(100000000));
 		orderLine.setC_UOM_ID(C_UOM_ZAK);
@@ -77,12 +76,10 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setPriceEntered(new BigDecimal(100000));
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
 		
-		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
-		assertEquals(expectedLineNetAmt, orderLine.getLineNetAmt());
-		BigDecimal SO_CreditAvaiable = (BigDecimal) order.get_Value("SO_CreditAvaiable");
-		boolean isCorrect = true;
-		if(SO_CreditAvaiable.compareTo(order.getGrandTotal())<0)
-			isCorrect = false;
+		BigDecimal SO_CreditAvailable = (BigDecimal) order.get_Value("SO_CreditAvailable");
+		boolean isCorrect = false;
+		if(SO_CreditAvailable.compareTo(order.getGrandTotal())<0)
+			isCorrect = true;
 		assertFalse(isCorrect);
 		orderLine.saveEx();
 	}
@@ -93,7 +90,7 @@ public class OrderTest extends AbstractTestCase {
 		order.setIsSOTrx(true);
 		order.setC_DocTypeTarget_ID(C_DOCTYPE_GT_ORDER_BPR1);
 		order.setDateOrdered(getLoginDate());
-		order.setM_PriceList_ID(M_PRICELIST_SUMATERA_GT);
+		order.setM_PriceList_ID(M_PRICELIST_PEMBELIAN);
 		order.setC_BPartner_ID(C_BPARTNER_ARI_SAPUTRA);
 		order.setC_BPartner_Location_ID(C_BPARTNER_LOCATION_ARI_SAPUTRA);
 		order.setM_Warehouse_ID(M_WAREHOUSE_KANTOR_16);
@@ -108,7 +105,7 @@ public class OrderTest extends AbstractTestCase {
 		assertFalse(order.getDocumentNo().isEmpty());
 		
 		MOrderLine orderLine = new MOrderLine(order);
-		orderLine.setM_Product_ID(M_PRODUCT_ULTIMA_10KG);
+		orderLine.setM_Product_ID(M_PRODUCT_GABAH_64);
 		orderLine.setQty(Env.ONE);
 		orderLine.setC_UOM_ID(C_UOM_ZAK);
 		orderLine.setPrice();
@@ -122,7 +119,9 @@ public class OrderTest extends AbstractTestCase {
 		order.processIt(MOrder.ACTION_Complete);
 		order.saveEx();
 	
-		assertEquals(order.getGrandTotal().setScale(2), expectedLineNetAmt.setScale(2));
+		BigDecimal ongkosAngkut = (BigDecimal)orderLine.get_Value("OngkosAngkut");
+		assertEquals(BigDecimal.valueOf(198).setScale(2), ongkosAngkut.setScale(2));
+		assertEquals(BigDecimal.valueOf(9650), orderLine.getPriceActual().setScale(0));
 	}
 	
 	@Test
@@ -147,7 +146,7 @@ public class OrderTest extends AbstractTestCase {
 		assertFalse(order.getDocumentNo().isEmpty());
 		
 		MOrderLine orderLine = new MOrderLine(order);
-		orderLine.setM_Product_ID(M_PRODUCT_ULTIMA_10KG);
+		orderLine.setM_Product_ID(1003635);
 		orderLine.setQty(Env.ONE);
 		orderLine.setC_UOM_ID(C_UOM_ZAK);
 		orderLine.setPrice();
