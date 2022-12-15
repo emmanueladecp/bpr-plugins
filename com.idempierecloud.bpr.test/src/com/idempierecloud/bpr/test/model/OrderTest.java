@@ -69,11 +69,13 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setC_Tax_ID(C_TAX_STANDARD);
 		
 		BigDecimal expectedLineNetAmt = orderLine.getPriceEntered().multiply(orderLine.getQtyOrdered());
-		BigDecimal SO_CreditAvaiable = orderLine.getC_Order().getC_BPartner().getSO_CreditLimit().subtract(orderLine.getC_Order().getC_BPartner().getSO_CreditUsed());
+		assertEquals(expectedLineNetAmt, orderLine.getLineNetAmt());
+		BigDecimal SO_CreditAvaiable = (BigDecimal) order.get_Value("SO_CreditAvaiable");
 		boolean isCorrect = true;
-		if(expectedLineNetAmt.compareTo(SO_CreditAvaiable)>0)
+		if(SO_CreditAvaiable.compareTo(order.getGrandTotal())<0)
 			isCorrect = false;
 		assertFalse(isCorrect);
+		orderLine.saveEx();
 	}
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{
