@@ -26,7 +26,6 @@ public class COrderEvent extends CustomEvent{
 			setCreditAvailable();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkSalesRep();
-			setCreditAvailable();
 		}
 	}
 	private void setCreditAvailable() {
