@@ -110,8 +110,10 @@ public class COrderLineEvent extends CustomEvent {
 			MOrder order = (MOrder) orderLine.getC_Order();
 			BigDecimal grandTotal = order.getGrandTotal(); ;
 			BigDecimal SO_CreditAvaiable = (BigDecimal) order.get_Value("SO_CreditAvailable");
-			if(grandTotal.compareTo(SO_CreditAvaiable)>0)
+			if(SO_CreditAvaiable.compareTo(grandTotal)<0) {
+				log.warning("Grand Total Melebihi SO Credit Available pada Header");
 				throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
+			}
 		}
 	}
 	
