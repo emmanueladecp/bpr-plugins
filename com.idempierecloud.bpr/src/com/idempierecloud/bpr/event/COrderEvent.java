@@ -26,13 +26,18 @@ public class COrderEvent extends CustomEvent{
 			setCreditAvailable();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkSalesRep();
+			setCreditAvailable();
 		}
 	}
 	private void setCreditAvailable() {
-		if(order.isSOTrx()) {
+		if(order.isSOTrx()) {//if sales order
 			if(order.getC_BPartner_ID()>0) {
-				BigDecimal SO_CreditAvaiable = order.getC_BPartner().getSO_CreditLimit().subtract(order.getC_BPartner().getSO_CreditUsed());
-				order.set_ValueOfColumn("SO_CreditAvailable", SO_CreditAvaiable);			}
+				if(order.getC_BPartner_ID()!=order.get_ValueAsInt("C_BPartnerSR_ID")) {//if document new or c_bpartner_id is change
+					BigDecimal SO_CreditAvailable = order.getC_BPartner().getSO_CreditLimit().subtract(order.getC_BPartner().getSO_CreditUsed());
+					order.set_ValueOfColumn("SO_CreditAvailable", SO_CreditAvailable);
+					order.set_ValueOfColumn("C_BPartnerSR_ID", order.getC_BPartner_ID());
+				}
+			}
 		}
 	}
 	
