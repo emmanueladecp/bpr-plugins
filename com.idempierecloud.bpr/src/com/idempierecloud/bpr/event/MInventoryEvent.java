@@ -24,11 +24,23 @@ public class MInventoryEvent extends CustomEvent {
 		log.fine("inventory Event : "+event.getTopic());
 		
 		inventory = (MInventory) po;
-		if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkLines();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
 		}
 	}
 	
+	private void checkLines() {
+		if(!inventory.get_ValueAsBoolean("isUpdateCosting"))
+			return;
+		
+		for(MInventoryLine line : inventory.getLines(true)) {
+			if(line.getNewCostPrice().signum()==0)
+				throw new AdempiereException("Inventory line "+line.getLine()+" new current cost price cannot be 0.");
+		}
+	}
+
 	private void createCostAdjustment() {
 		if(!inventory.get_ValueAsBoolean("isUpdateCosting"))
 			return;

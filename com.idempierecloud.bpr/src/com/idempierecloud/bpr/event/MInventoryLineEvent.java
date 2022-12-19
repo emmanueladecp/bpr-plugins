@@ -1,6 +1,8 @@
 package com.idempierecloud.bpr.event;
 
 import org.adempiere.base.event.IEventTopics;
+import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MInventory;
 import org.compiere.model.MInventoryLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -20,10 +22,21 @@ public class MInventoryLineEvent extends CustomEvent {
 		
 		inventoryLine = (MInventoryLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+			checkNewCurrentPrice();
 			setQtyCount();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			checkNewCurrentPrice();
 			setQtyCount();
 		}
+	}
+
+	private void checkNewCurrentPrice() {
+		MInventory inventory = (MInventory) inventoryLine.getM_Inventory();
+		if(!inventory.get_ValueAsBoolean("isUpdateCosting"))
+			return;
+		
+		if(inventoryLine.getNewCostPrice().signum()==0)
+			throw new AdempiereException("Inventory line "+inventoryLine.getLine()+" new current cost price cannot be 0.");
 	}
 
 	private void setQtyCount() {

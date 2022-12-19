@@ -86,6 +86,7 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);
 		
 		// M_Inventory
+		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Inventory.Table_Name, MInventoryEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_Inventory.Table_Name, MInventoryEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InventoryLine.Table_Name, MInventoryLineEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InventoryLine.Table_Name, MInventoryLineEvent.class);
