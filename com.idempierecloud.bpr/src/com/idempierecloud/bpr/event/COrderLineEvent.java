@@ -166,6 +166,7 @@ public class COrderLineEvent extends CustomEvent {
 			subsidiAmt = Env.ZERO;
 		
 		priceEntered = priceEntered.add(subsidiAmt);
+		orderLine.setPriceActual(priceEntered);
 		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
 		orderLine.setPriceEntered(priceEntered);
 	}

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.util.Env;
@@ -111,8 +113,9 @@ public class OrderTest extends AbstractTestCase {
 		order.saveEx();
 	
 		BigDecimal ongkosAngkut = (BigDecimal)orderLine.get_Value("OngkosAngkut");
+		assertEquals(BigDecimal.valueOf(5350).setScale(2), orderLine.getPriceList().setScale(2));
 		assertEquals(BigDecimal.valueOf(198).setScale(2), ongkosAngkut.setScale(2));
-		assertEquals(BigDecimal.valueOf(9650), orderLine.getPriceActual().setScale(0));
+		assertEquals(BigDecimal.valueOf(5548).setScale(2), orderLine.getPriceActual().setScale(2));
 	}
 	
 	@Test
@@ -144,8 +147,9 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.saveEx();
 		
 		BigDecimal ongkosAngkut = (BigDecimal)orderLine.get_Value("OngkosAngkut");
+		assertEquals(BigDecimal.valueOf(10700).setScale(2), orderLine.getPriceList().setScale(2));
 		assertEquals(BigDecimal.valueOf(336.60).setScale(2), ongkosAngkut.setScale(2));
-		assertEquals(BigDecimal.valueOf(11700), orderLine.getPriceActual().setScale(0));
+		assertEquals(BigDecimal.valueOf(11036.60).setScale(2), orderLine.getPriceActual().setScale(2, RoundingMode.HALF_UP));
 		
 	}
 	
@@ -235,10 +239,11 @@ public class OrderTest extends AbstractTestCase {
 		orderLine.setC_Tax_ID(C_TAX_NON_PPN);
 		orderLine.saveEx();
 		
-		assertEquals(BigDecimal.valueOf(9650), orderLine.getPriceActual().setScale(0));
+		assertEquals(BigDecimal.valueOf(9650), orderLine.getPriceList().setScale(0));
 		assertEquals(BigDecimal.valueOf(47500), orderLine.getPriceEntered().setScale(0));
 		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("subsidiAmt");
 		assertEquals(BigDecimal.valueOf(-150), subsidiAmt.setScale(0));
+		assertEquals(BigDecimal.valueOf(9500), orderLine.getPriceActual().setScale(0));
 		assertEquals(BigDecimal.valueOf(950000), orderLine.getLineNetAmt().setScale(0));
 	}
 }
