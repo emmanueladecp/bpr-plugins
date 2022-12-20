@@ -16,7 +16,17 @@ import org.junit.jupiter.api.Test;
 import com.idempierecloud.bpr.test.AbstractTestCase;
 
 public class InOutTest extends AbstractTestCase{
-
+	
+	@Test
+	public void checkQtyAvailableProduct() throws Exception{
+		//Shipment Doc No 700005 (ticket request-001182)
+		MInOut shipment = new MInOut(Env.getCtx(), 1000043, getTrxName());
+		shipment.setProcessed(true);
+		shipment.setDocAction(MInOut.DOCACTION_Complete);
+		shipment.processIt(MInOut.DOCACTION_Complete);
+		assertEquals(MInOut.DOCSTATUS_Invalid, shipment.getDocStatus());
+	}
+	
 	@Test
 	public void test_cancel_and_move_shipment() throws Exception{
 		MProcess process = MProcess.get(Env.getCtx(), 1000030);

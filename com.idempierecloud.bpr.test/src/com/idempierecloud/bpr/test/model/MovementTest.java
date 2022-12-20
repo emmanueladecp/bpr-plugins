@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.test.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -20,12 +21,19 @@ public class MovementTest extends AbstractTestCase {
 	private static final int DocType_MaterialMovement = 1000022;
 	private static final int DocType_ConfirmMovement = 1000059;
 	private static final int Warehouse_BPR1=1000001;
+	private static final int M_Warehouse_Gudang_Makasar = 1000096;
+	private static final int M_Warehouse_Gudang_Semarang = 1000123;
 	private static final int Warehouse_BPR2=1000008;
 	private static final int Product_BerasPera50Kg = 1000234;
+	private static final int M_Product_Ultima5KG=1003602;
+	private static final int M_Locator_BPR6_FINISH_GOOD = 1000093;
+	private static final int M_Locator_BPR9_FINISH_GOOD = 1000120;
+	private static final int M_Locator_BPR6_GINT_INTRANSIT = 1000094;
 	private static final int Locator_BPR1FinishGood = 1000005;
 	private static final int Locator_BPR1InTransit = 1000004;
 	private static final int Locator_BPR1Susut = 1000011;
 	private static final int Locator_BPR2FinishGood = 1000009;
+	private static final int AD_Org_ID_Depo_Makasar=1000009;
 
 	@Test
 	public void test_materialmovement_cannot_complete_over_movement_qty() throws Exception{
@@ -210,4 +218,32 @@ public class MovementTest extends AbstractTestCase {
 		}
 	}
 	
+	@Test
+	public void test_qtyAvailableProduct () throws Exception{
+		MMovement movement = new MMovement(Env.getCtx(), 0, getTrxName());
+		movement.setAD_Org_ID(AD_Org_ID_Depo_Makasar);
+		movement.setC_DocType_ID(DocType_MaterialMovement);
+		movement.setM_Warehouse_ID(M_Warehouse_Gudang_Makasar);
+		movement.setM_WarehouseTo_ID(M_Warehouse_Gudang_Semarang);
+		movement.setMovementDate(getLoginDate());
+		movement.setIsInTransit(true);
+		movement.setDocAction(MMovement.ACTION_Complete);
+		movement.saveEx();
+		
+		MMovementLine line = new MMovementLine(movement);
+		line.setM_Product_ID(M_Product_Ultima5KG);
+		line.setM_Locator_ID(M_Locator_BPR6_FINISH_GOOD);
+		line.setM_LocatorTo_ID(M_Locator_BPR6_GINT_INTRANSIT);
+		line.set_ValueOfColumn("M_LocatorToAlias_ID", M_Locator_BPR9_FINISH_GOOD);
+		line.setMovementQty(new BigDecimal(10000));
+		line.saveEx();
+		
+		movement.processIt(MMovement.ACTION_Complete);
+		
+		MMovement movementConfirm = new Query(Env.getCtx(), MMovement.Table_Name, "C_DocType_ID=? AND MoveReference=?", getTrxName())
+				.setParameters(DocType_ConfirmMovement, movement.getDocumentNo())
+				.first();
+		
+		assertEquals(MMovement.STATUS_Invalid, movement.getDocStatus());
+	}
 }

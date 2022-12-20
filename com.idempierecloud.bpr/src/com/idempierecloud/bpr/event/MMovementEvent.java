@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MInOutLine;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
@@ -33,6 +34,7 @@ public class MMovementEvent extends CustomEvent {
 				checkMovementLine();
 				checkMovementLineSusut();
 			}
+			checkAvailableQtyProduct();
 		}if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			if(desc!=null && desc.equals("INTRANSIT"))
 				createMovementConfirm();
@@ -126,6 +128,20 @@ public class MMovementEvent extends CustomEvent {
 		lineSusut.setTargetQty(line.getTargetQty());
 		lineSusut.setM_Product_ID(line.getM_Product_ID());
 		lineSusut.saveEx();
+	}
+	
+	private void checkAvailableQtyProduct() {
+		for(MMovementLine line : movement.getLines(true)) {			
+			BigDecimal qtyAvailable = DB.getSQLValueBD(movement.get_TrxName(), "select bomQtyAvailable(?,?,?) AS QtyAvailable "
+					+ " from M_Product p "
+					+ " LEFT OUTER JOIN M_ProductPrice pr ON (p.M_Product_ID=pr.M_Product_ID AND pr.IsActive='Y')"
+					+ " LEFT OUTER JOIN M_AttributeSet pa ON (p.M_AttributeSet_ID=pa.M_AttributeSet_ID)"
+					+ " LEFT OUTER JOIN M_Product_PO ppo ON (p.M_Product_ID=ppo.M_Product_ID AND ppo.IsCurrentVendor='Y' AND ppo.IsActive='Y')"
+					+ " LEFT OUTER JOIN C_BPartner bp ON (ppo.C_BPartner_ID=bp.C_BPartner_ID)"
+					+ " WHERE p.M_Product_ID=?", line.getM_Product_ID(),movement.getM_Warehouse_ID(),line.getM_Locator_ID(),line.getM_Product_ID());
+			if(qtyAvailable.compareTo(BigDecimal.ZERO)<=0)
+				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Movement = "+line.getMovementQty()+", pada Shipment Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName());		
+		}
 	}
 
 	@Override

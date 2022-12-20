@@ -24,6 +24,7 @@ import org.compiere.model.I_C_Invoice;
 import org.compiere.model.I_C_Order;
 import org.compiere.model.I_C_OrderLine;
 import org.compiere.model.I_C_Payment;
+import org.compiere.model.I_M_InOut;
 import org.compiere.model.I_M_InOutConfirm;
 import org.compiere.model.I_M_Inventory;
 import org.compiere.model.I_M_InventoryLine;
@@ -39,6 +40,7 @@ import com.idempierecloud.bpr.event.COrderLineEvent;
 import com.idempierecloud.bpr.event.CPaymentEvent;
 import com.idempierecloud.bpr.event.LoginEvent;
 import com.idempierecloud.bpr.event.MInOutConfirmEvent;
+import com.idempierecloud.bpr.event.MInOutEvent;
 import com.idempierecloud.bpr.event.MInventoryEvent;
 import com.idempierecloud.bpr.event.MInventoryLineEvent;
 import com.idempierecloud.bpr.event.MMovementEvent;
@@ -111,6 +113,9 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MInoutConfirm
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_InOutConfirm.Table_Name, MInOutConfirmEvent.class);
+		
+		//MInOut
+		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_InOut.Table_Name, MInOutEvent.class);
 		
 		
 	}
