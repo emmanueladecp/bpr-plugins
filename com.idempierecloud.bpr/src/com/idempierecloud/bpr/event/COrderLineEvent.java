@@ -9,6 +9,7 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MDocType;
+import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
@@ -38,6 +39,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
+			setProposalRetur();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
@@ -45,6 +47,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
+			setProposalRetur();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
@@ -207,7 +210,26 @@ public class COrderLineEvent extends CustomEvent {
 			return;
 		orderLine.setDiscount(BigDecimal.ZERO);
 	}
-
+	private void setProposalRetur() {
+		
+		MOrder order = (MOrder)orderLine.getC_Order();
+		int C_DocType_ID_CustomerReturnBPR=1000084;
+		
+		if(order.getC_DocTypeTarget_ID()==C_DocType_ID_CustomerReturnBPR) {
+			int C_Invoiceline_ID = DB.getSQLValue(orderLine.get_TrxName(), "select max(c_invoiceline_id) from c_invoiceline ci "
+					+ " join c_invoice ci2 on ci.c_invoice_id = ci2.c_invoice_id "
+					+ " where ci.m_product_id=? and ci2.C_BPartner_ID=? and ci2.docstatus in ('CO','CL') and ci2.isSoTrx='Y'", orderLine.getM_Product_ID(), orderLine.getC_BPartner_ID());
+			if(C_Invoiceline_ID > 0) {
+				MInvoiceLine inLine = new MInvoiceLine(orderLine.getCtx(),C_Invoiceline_ID, orderLine.get_TrxName());
+				orderLine.setPriceEntered(inLine.getPriceEntered());
+				orderLine.setPriceActual(inLine.getPriceActual());
+			}
+			else {
+				orderLine.setPriceActual(orderLine.getPriceList());
+			}
+		}
+	}
+	
 	@Override
 	protected void doHandleEvent() {
 		
