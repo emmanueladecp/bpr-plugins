@@ -30,6 +30,10 @@ public class CreateFromOrder extends CreateFrom {
 	protected String NotaTimbangan = null;
 	protected boolean isSOTrx = true;
 	
+	int C_Order_ID = ((Integer) getGridTab().getValue("C_Order_ID")).intValue();
+	MOrder order = new MOrder(Env.getCtx(), C_Order_ID, null);
+
+	
 	public CreateFromOrder(GridTab mTab) {
 		super(mTab);
 		if (log.isLoggable(Level.INFO)) log.info(mTab.toString());
@@ -100,9 +104,17 @@ public class CreateFromOrder extends CreateFrom {
 
 	    if(NotaTimbangan!=null && !NotaTimbangan.isEmpty())
 	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
-		
-		if(C_BPartner_ID>0)
-			sqlStmt.append(" and r.c_bpartner_id=?");
+	    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
+	    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
+			
+	    if(isturus.equals("Y")) {
+	    	if(C_BPartner_ID>0)
+				sqlStmt.append(" and r.c_bpartner_id=? ");
+	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku
+	    }
+	    else {
+	    	sqlStmt.append(" and r.C_DocType_ID<>1000088 ");
+	    }
 		
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -111,8 +123,10 @@ public class CreateFromOrder extends CreateFrom {
 			int index = 1;
 			pstmt.setInt(index++, AD_Client_ID);
 			pstmt.setInt(index++, AD_Org_ID);
-			if(C_BPartner_ID>0)
-				pstmt.setInt(index++, C_BPartner_ID);
+			if(isturus.equals("Y")) {
+				if(C_BPartner_ID>0)
+					pstmt.setInt(index++, C_BPartner_ID);
+			}
 				
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
@@ -149,9 +163,16 @@ public class CreateFromOrder extends CreateFrom {
 	    
 	    if(M_Requisition_ID>0)
 	    	sqlStmt.append(" and r.m_requisition_id=?");
+		
+	    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
+	    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
+			
+	    if(isturus.equals("Y")) {
+	    	if(C_BPartner_ID>0)
+		    	sqlStmt.append(" and r.c_bpartner_id=?");
+	    }
 	    
-	    if(C_BPartner_ID>0)
-	    	sqlStmt.append(" and r.c_bpartner_id=?");
+	    
 	    
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
@@ -160,9 +181,11 @@ public class CreateFromOrder extends CreateFrom {
 	    	int index = 1;
 	    	if(M_Requisition_ID>0)
 	    		pstmt.setInt(index++, M_Requisition_ID);
-	    	if(C_BPartner_ID>0)
-	    		pstmt.setInt(index++, C_BPartner_ID);
-		    
+	    	if(isturus.equals("Y")) {
+	    		if(C_BPartner_ID>0)
+	    			pstmt.setInt(index++, C_BPartner_ID);
+	    	}
+	    	
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
 		    	Vector<Object> line = new Vector<Object>(13);
@@ -231,8 +254,6 @@ public class CreateFromOrder extends CreateFrom {
 
 	@Override
 	public boolean save(IMiniTable miniTable, String trxName) {
-		int C_Order_ID = ((Integer) getGridTab().getValue("C_Order_ID")).intValue();
-		MOrder order = new MOrder(Env.getCtx(), C_Order_ID, trxName);
 		if (log.isLoggable(Level.CONFIG)) log.config(order.toString());
 		int M_RequisitionLine_ID = 0;
 

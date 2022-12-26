@@ -25,7 +25,9 @@ import org.adempiere.webui.event.ValueChangeListener;
 import org.compiere.model.GridTab;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
+import org.compiere.model.MOrder;
 import org.compiere.util.CLogger;
+import org.compiere.util.DB;
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
@@ -53,7 +55,15 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
     protected WSearchEditor bpartnerField = null;
     protected Label timbanganLabel = new Label();
     protected WStringEditor timbanganField = null;
-	private int p_WindowNo; 
+	private int p_WindowNo;
+	
+	int C_Order_ID = ((Integer) getGridTab().getValue("C_Order_ID")).intValue();
+	MOrder order = new MOrder(Env.getCtx(), C_Order_ID, null);
+	
+    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
+    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
+		
+    
 	
 	public WCreateFromOrder(GridTab mTab) {
 		super(mTab);
@@ -84,7 +94,9 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 	{
 		orgLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		reqLabel.setText(Msg.translate(Env.getCtx(), "M_Requisition_ID"));
-		bpartnerLabel.setText(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+		if(isturus.equals("Y")) {
+			bpartnerLabel.setText(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+		}
 		timbanganLabel.setText(Msg.translate(Env.getCtx(), "Nota Timbangan"));
 
 		Vlayout vlayout = new Vlayout();
@@ -102,10 +114,12 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		row.appendChild(orgLabel.rightAlign());
 		row.appendChild(orgField);
 		orgField.setHflex("1");
-
-		row.appendChild(bpartnerLabel.rightAlign());
-		row.appendChild(bpartnerField.getComponent());
-		reqField.setHflex("1");
+		
+		if(isturus.equals("Y")) {
+			row.appendChild(bpartnerLabel.rightAlign());
+			row.appendChild(bpartnerField.getComponent());
+			reqField.setHflex("1");
+		}
 		
 		row = rows.newRow();
 		row.appendChild(timbanganLabel.rightAlign());
@@ -129,7 +143,9 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		timbanganField.addValueChangeListener(this);
 		
 		initOrgData();
-		initBPartner();
+		if(isturus.equals("Y")) {
+			initBPartner();
+		}
 		initRequisitionData();
 		
 		loadRequisition();
@@ -261,20 +277,20 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		if (log.isLoggable(Level.CONFIG)) log.config(e.getPropertyName() + "=" + e.getNewValue());
 
 		//  BPartner - load Order/Invoice/Shipment
-		if (e.getPropertyName().equals("C_BPartner_ID"))
+		if (e.getPropertyName().equals("timbangan"))
+		{
+			NotaTimbangan = (String) e.getNewValue();
+			initRequisitionData();
+			loadRequisition();
+			
+		}else if (e.getPropertyName().equals("C_BPartner_ID"))
 		{
 			Integer newBpValue = (Integer)e.getNewValue();
 			C_BPartner_ID = newBpValue == null?0:newBpValue.intValue();
 			initRequisitionData();
 			loadRequisition();
 			
-		}else if (e.getPropertyName().equals("timbangan"))
-		{
-			NotaTimbangan = (String) e.getNewValue();
-			initRequisitionData();
-			loadRequisition();
-			
-		}
+		} 
 		window.tableChanged(null);
 	}	
 	
