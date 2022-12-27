@@ -176,6 +176,8 @@ public class CreateFromOrder extends CreateFrom {
 	    	sqlStmt.append(" and r.C_DocType_ID<>1000088 ");
 	    }
 	    
+	    sqlStmt.append(" and r.docstatus in ('CO') ");
+	    
 	    
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
