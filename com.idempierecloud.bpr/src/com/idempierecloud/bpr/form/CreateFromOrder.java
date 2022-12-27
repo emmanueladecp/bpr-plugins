@@ -170,8 +170,11 @@ public class CreateFromOrder extends CreateFrom {
 	    if(isturus.equals("Y")) {
 	    	if(C_BPartner_ID>0)
 		    	sqlStmt.append(" and r.c_bpartner_id=?");
+	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku
 	    }
-	    
+	    else {
+	    	sqlStmt.append(" and r.C_DocType_ID<>1000088 ");
+	    }
 	    
 	    
 	    PreparedStatement pstmt = null;
