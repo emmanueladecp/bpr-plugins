@@ -50,7 +50,7 @@ public class MProductionLineEvent extends CustomEvent {
 			
 			if(line==null) {
 				line = new MProductionLineExt(prodLine.getCtx(), 0, prodLine.get_TrxName());
-				line.setAD_Org_ID(line.getAD_Org_ID());
+				line.setAD_Org_ID(prodLine.getM_Production().getAD_Org_ID());
 				line.setM_Production_ID(prodLine.getM_Production_ID());
 				line.setM_Locator_ID(prodLine.getM_Locator_ID());
 				line.setM_Product_ID(relatedProduct.getRelatedProduct_ID());
