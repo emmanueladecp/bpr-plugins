@@ -380,14 +380,14 @@ public class Doc_Production extends Doc
 							else if(relatedProduct==null)
 								bomCost = bomCost.add(costs0);
 						}
-					}else if(isZakProduct){
-						qtyEndProduct = qtyEndProduct.add(line0.getQty().multiply(product0.getWeight()));
+					}else if(prodline.isEndProduct()){
+						qtyEndProduct = qtyEndProduct.add(line0.getQty());
 					}
 				}
 				
-				if(isZakProduct) {
+				if(prodline.isEndProduct()) {
 					BigDecimal price = bomCost.divide(qtyEndProduct, stdPrecision, RoundingMode.HALF_UP);
-					BigDecimal qty = line.getQty().multiply(product.getWeight());
+					BigDecimal qty = line.getQty();
 					bomCost = price.multiply(qty);
 					bomCost = bomCost.add(relatedCost).setScale(stdPrecision);
 				}else {
