@@ -63,6 +63,7 @@ public abstract class AbstractTestCase {
 	protected final int BPR_ADMIN_ROLE = 1000006;
 	protected final int BPR_HQ_WAREHOUSE = 1000000;
 	protected final int C_TAX_NON_PPN = 1000000;
+	protected final int C_UOM_ZAK = 1000018;
 	protected final BigDecimal TEN = BigDecimal.valueOf(10);
 	
 	@BeforeAll

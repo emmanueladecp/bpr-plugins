@@ -19,9 +19,11 @@
 package com.idempierecloud.bpr.component;
 
 import org.compiere.model.I_C_OrderLine;
+import org.compiere.model.I_M_InOutLineConfirm;
 import org.compiere.model.I_M_ProductionLine;
 
 import com.idempierecloud.bpr.base.CustomCalloutFactory;
+import com.idempierecloud.bpr.callout.SetMovementQtyConfirmLine;
 import com.idempierecloud.bpr.callout.SetQtyUsedProductionLine;
 import com.idempierecloud.bpr.callout.SetUOMOrderLine;
 
@@ -46,6 +48,9 @@ public class CalloutFactory extends CustomCalloutFactory {
 		
 		// M_ProductionLine
 		registerCallout(I_M_ProductionLine.Table_Name, "QtyEntered", SetQtyUsedProductionLine.class);
+		
+		// M_InOutLineConfirm
+		registerCallout(I_M_InOutLineConfirm.Table_Name, "QtyEntered", SetMovementQtyConfirmLine.class);
 	}
 
 }
