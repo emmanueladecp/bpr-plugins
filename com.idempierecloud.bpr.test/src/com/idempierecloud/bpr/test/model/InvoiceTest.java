@@ -1,18 +1,25 @@
 package com.idempierecloud.bpr.test.model;
 
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrder;
+import org.compiere.model.Query;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.globalqss.model.MLCOInvoiceWithholding;
+import org.globalqss.model.X_LCO_WithholdingRule;
+import org.globalqss.model.X_LCO_WithholdingRuleConf;
 import org.junit.jupiter.api.Test;
 
 import com.idempierecloud.bpr.model.MBPRHistoryFakturPajak;
@@ -22,19 +29,25 @@ import com.idempierecloud.bpr.test.AbstractTestCase;
 public class InvoiceTest extends AbstractTestCase{
 	
 	private static final int C_DocType_ID_AR_Invoice = 1000002;
+	private static final int C_DocType_ID_AP_Invoice_Turus = 1000095;
 	private static final int C_BPARTNER_ARI_SAPUTRA = 1001591;
 	private static final int C_BPARTNER_LOCATION_ARI_SAPUTRA = 1001584;
 	private static final int M_PriceList_ID_Sumatra_GT=1000004;
+	private static final int M_PriceList_ID_Pembelian_Bahan_Baku =1000005;
 	private static final int C_Currency_ID_Rupiah=303;
 	private static final int C_PaymentTerm_ID_Immediate=1000000;
 	private static final int M_PRODUCT_ULTIMA_10KG = 1003643;
 	private static final int C_UOM_ID_Each=100;
+	private static final int C_UOM_ID_KG = 1000013;
 	private static final int C_Tax_ID=1000000;
 	private static final int AD_Org_ID_DEPO_Balikpapan=1000013;
 	private static final int C_BPartner_ID_ACAI=1000020;
 	private static final int C_BPartner_Location_ID_ACAI=1000013;
+	private static final int C_BPartner_Location_ID_Hanafi = 1009761;
 	private static final int Product_ULTIMA25KG = 1003682;
 	private static final int C_UOM_ID_ZAK=1000018;
+	private static final int AD_Org_ID_BPR2=1000013;
+	private static final int C_BPartner_HANAFI = 1010966;
 
 
 	@Test
@@ -178,7 +191,55 @@ public class InvoiceTest extends AbstractTestCase{
 
 		invoice.processIt(MInvoice.ACTION_Void);
 		assertNotEquals(MInvoice.STATUS_Voided, invoice.getDocStatus());
+			
+	}
+	@Test
+	public void test_invoice_vendor_create_witholding_baseon_witholding_orderline() throws Exception{
 		
+		MInvoice invoice = new MInvoice(Env.getCtx(),0,getTrxName());
+		invoice.setAD_Org_ID(AD_Org_ID_BPR2);
+		invoice.setIsSOTrx(false);
+		invoice.setC_DocTypeTarget_ID(C_DocType_ID_AP_Invoice_Turus);
+		invoice.setC_BPartner_ID(C_BPartner_HANAFI);
+		invoice.setC_BPartner_Location_ID(C_BPartner_Location_ID_Hanafi);
+		invoice.setM_PriceList_ID(M_PriceList_ID_Pembelian_Bahan_Baku);
+		invoice.setPaymentRule("P");
+		invoice.setC_Currency_ID(C_Currency_ID_Rupiah);
+		invoice.setDateInvoiced(getLoginDate());
+		invoice.setC_PaymentTerm_ID(C_PaymentTerm_ID_Immediate);
+		invoice.setDocStatus(MInvoice.DOCSTATUS_Drafted);
+		invoice.setDocAction(MInvoice.DOCACTION_Complete);
+		invoice.saveEx();
 		
+		assertEquals(C_BPartner_HANAFI, invoice.getC_BPartner_ID());
+		
+		MInvoiceLine line = new MInvoiceLine(Env.getCtx(), 0, getTrxName());
+		line.setAD_Org_ID(AD_Org_ID_BPR2);
+		line.setC_Invoice_ID(invoice.get_ID());
+		line.setLine(10);
+		line.setM_Product_ID(1000035);
+		line.setC_OrderLine_ID(1001607);
+		line.setQty(new BigDecimal(30));
+		line.setC_UOM_ID(C_UOM_ID_KG);
+		line.setC_Tax_ID(C_Tax_ID);
+		line.setPrice(new BigDecimal(8610));
+		line.saveEx();
+		
+		invoice.processIt(MOrder.ACTION_Complete);
+		invoice.saveEx();
+		
+		boolean success = false;
+		MLCOInvoiceWithholding miw= new Query(invoice.getCtx(),MLCOInvoiceWithholding.Table_Name," C_Invoice_ID=? ",invoice.get_TrxName())
+				.setOnlyActiveRecords(true)
+				.setParameters(invoice.getC_Invoice_ID())
+				.first();
+		if(miw==null) 
+			success = false;
+		else 
+			success = true;
+		
+		assertTrue(success);
+		assertEquals(BigDecimal.valueOf(7749).setScale(2), ((BigDecimal) invoice.get_Value("WithholdingAmt")).setScale(2));
+		BigDecimal big = ((BigDecimal) invoice.get_Value("WithholdingAmt")).setScale(2);
 	}
 }
