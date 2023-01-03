@@ -124,9 +124,12 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MInOut
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_InOut.Table_Name, MInOutEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOut.Table_Name, MInOutEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOut.Table_Name, MInOutEvent.class);
 
 		//MInOutLine
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		
 		
 	}
