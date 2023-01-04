@@ -27,6 +27,7 @@ import com.idempierecloud.bpr.base.CustomCalloutFactory;
 import com.idempierecloud.bpr.callout.SetDatePromiseMOrderLine;
 import com.idempierecloud.bpr.callout.SetMovementQtyConfirmLine;
 import com.idempierecloud.bpr.callout.SetQtyUsedProductionLine;
+import com.idempierecloud.bpr.callout.SetSOCreditAvailable;
 import com.idempierecloud.bpr.callout.SetUOMOrderLine;
 
 /**
@@ -45,6 +46,9 @@ public class CalloutFactory extends CustomCalloutFactory {
 	 */
 	@Override
 	protected void initialize() {
+		// C_Order
+		registerCallout(I_C_Order.Table_Name, "C_BPartner_ID", SetSOCreditAvailable.class);
+		
 		// C_OrderLine
 		registerCallout(I_C_OrderLine.Table_Name, "M_Product_ID", SetUOMOrderLine.class);
 		//C_Order
