@@ -111,8 +111,10 @@ public class COrderLineEvent extends CustomEvent {
 	private void checkSOCreditLimit() {
 		if(orderLine.getC_Order().isSOTrx()) {
 			MOrder order = (MOrder) orderLine.getC_Order();
-			BigDecimal grandTotal = order.getGrandTotal(); ;
+			BigDecimal lineamt = orderLine.getLineNetAmt();
 			BigDecimal SO_CreditAvaiable = (BigDecimal) order.get_Value("SO_CreditAvailable");
+			BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
+			BigDecimal grandTotal = lineamt.add(sumLineAmt);
 			if(SO_CreditAvaiable.compareTo(grandTotal)<0) {
 				log.warning("Grand Total Melebihi SO Credit Available pada Header");
 				throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
