@@ -302,7 +302,7 @@ public class CompleteMovementConfirmUI extends CustomForm implements ValueChange
 		{
 			if (((Boolean)confirmTable.getValueAt(i, 0)).booleanValue())
 			{
-				KeyNamePair pp = (KeyNamePair)confirmTable.getValueAt(i, 2);
+				KeyNamePair pp = (KeyNamePair)confirmTable.getValueAt(i, 1);
 				int M_InOutConfirm_ID = pp.getKey();
 				MInOutConfirm confirm = new MInOutConfirm(Env.getCtx(), M_InOutConfirm_ID, trxName);
 				if(!confirm.processIt(MInOutConfirm.ACTION_Complete)) {
