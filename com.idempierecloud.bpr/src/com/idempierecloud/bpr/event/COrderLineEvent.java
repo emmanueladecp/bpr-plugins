@@ -1,24 +1,30 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MBPartner;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MDocType;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
+import org.compiere.model.MProductCategory;
 import org.compiere.model.MProductPrice;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.globalqss.model.X_LCO_WithholdingCalc;
+import org.globalqss.model.X_LCO_WithholdingType;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -36,6 +42,7 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine = (MOrderLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setPricePOTurus();
+			setWitholdingType();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
@@ -44,6 +51,7 @@ public class COrderLineEvent extends CustomEvent {
 			setDiscount();
 			checkSOCreditLimit();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			setWitholdingType();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
@@ -56,6 +64,49 @@ public class COrderLineEvent extends CustomEvent {
 		}
 	}	
 	
+	private void setWitholdingType() {
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		if(!docType.get_ValueAsBoolean("isTurus") || orderLine.getM_Product_ID()==0)
+			return;
+		
+		MProductCategory productCategory = (MProductCategory) orderLine.getM_Product().getM_Product_Category();
+		if(!productCategory.get_ValueAsBoolean("IsPph"))
+			return;
+		
+		MBPartner bp = (MBPartner) orderLine.getC_Order().getC_BPartner();
+		String pph = null;
+		if(bp.get_ValueAsBoolean("IsNpwp")) {
+			pph = "PPH 0.25%";
+		}else {
+			pph = "PPH 0.5%";
+		}
+		
+		X_LCO_WithholdingType type = new Query(orderLine.getCtx(), X_LCO_WithholdingType.Table_Name, "name=?", orderLine.get_TrxName())
+				.setParameters(pph)
+				.first();
+		
+		if(type==null)
+			throw new AdempiereException("No Withholding Type found "+pph);
+		
+		orderLine.set_ValueOfColumn("LCO_WithholdingType_ID", type.getLCO_WithholdingType_ID());
+		
+		X_LCO_WithholdingCalc calc = new Query(orderLine.getCtx(), X_LCO_WithholdingCalc.Table_Name, X_LCO_WithholdingCalc.COLUMNNAME_LCO_WithholdingType_ID+"=?", orderLine.get_TrxName())
+				.setParameters(type.getLCO_WithholdingType_ID())
+				.first();
+
+		if(calc==null)
+			throw new AdempiereException("No Withholding calc found "+pph);
+		
+		BigDecimal taxRate = calc.getC_Tax().getRate();
+		BigDecimal priceNet = (BigDecimal) orderLine.get_Value("PriceNet");
+		if(priceNet==null)
+			priceNet = Env.ZERO;
+		
+		BigDecimal tax = priceNet.multiply(taxRate);
+		priceNet = priceNet.add(tax).setScale(orderLine.getC_UOM().getStdPrecision(), RoundingMode.HALF_UP);
+		orderLine.setPrice(priceNet);
+	}
+
 	private void calculateAdditionalCost() {
 		if(!orderLine.getC_Order().isSOTrx() || orderLine.getM_Product_ID()==0)
 			return;
@@ -148,6 +199,7 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine.setPriceList(price.getPriceList());
 		orderLine.setPriceActual(price.getPriceList());
 		orderLine.setPriceLimit(price.getPriceLimit());
+		orderLine.set_ValueOfColumn("PriceNet", price.getPriceList());
 	}
 
 	private void checkRequisitionLine() {
