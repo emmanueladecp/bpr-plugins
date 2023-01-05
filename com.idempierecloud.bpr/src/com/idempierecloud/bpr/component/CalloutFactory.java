@@ -26,9 +26,11 @@ import org.compiere.model.I_M_ProductionLine;
 import com.idempierecloud.bpr.base.CustomCalloutFactory;
 import com.idempierecloud.bpr.callout.SetDatePromiseMOrderLine;
 import com.idempierecloud.bpr.callout.SetMovementQtyConfirmLine;
+import com.idempierecloud.bpr.callout.SetQCPenerimaanGabahBPR;
 import com.idempierecloud.bpr.callout.SetQtyUsedProductionLine;
 import com.idempierecloud.bpr.callout.SetSOCreditAvailable;
 import com.idempierecloud.bpr.callout.SetUOMOrderLine;
+import com.idempierecloud.bpr.model.I_BPR_QualityControl;
 
 /**
  * Callout Factory
@@ -48,14 +50,13 @@ public class CalloutFactory extends CustomCalloutFactory {
 	protected void initialize() {
 		// C_Order
 		registerCallout(I_C_Order.Table_Name, "C_BPartner_ID", SetSOCreditAvailable.class);
-		
+		registerCallout(I_C_Order.Table_Name, "DateOrdered", SetDatePromiseMOrderLine.class);
 		// C_OrderLine
 		registerCallout(I_C_OrderLine.Table_Name, "M_Product_ID", SetUOMOrderLine.class);
-		//C_Order
-		registerCallout(I_C_Order.Table_Name, "DateOrdered", SetDatePromiseMOrderLine.class);
+		//BPR_QualityControl
+		registerCallout(I_BPR_QualityControl.Table_Name, "BPR_Timbangan_ID", SetQCPenerimaanGabahBPR.class);
 		// M_ProductionLine
 		registerCallout(I_M_ProductionLine.Table_Name, "QtyEntered", SetQtyUsedProductionLine.class);
-		
 		// M_InOutLineConfirm
 		registerCallout(I_M_InOutLineConfirm.Table_Name, "QtyEntered", SetMovementQtyConfirmLine.class);
 	}
