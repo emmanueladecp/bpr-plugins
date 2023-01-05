@@ -151,10 +151,11 @@ public class FTUBPAllocation extends FTUForm {
 			+ "currencyConvert(p.PayAmt,p.C_Currency_ID,?,p.DateTrx,p.C_ConversionType_ID,p.AD_Client_ID,p.AD_Org_ID),"//  6   #1, #2
 			+ "currencyConvert(paymentAvailable(C_Payment_ID),p.C_Currency_ID,?,p.DateTrx,p.C_ConversionType_ID,p.AD_Client_ID,p.AD_Org_ID),"  //  7   #3, #4
 			+ "p.MultiplierAP "
-			+ ",bp.Name " // 9
+			+ ",bp.Name, ba.name as bankaccount " // 9
 			+ "FROM C_Payment_v p"		//	Corrected for AP/AR 
 			+ " INNER JOIN C_BPartner bp ON (p.C_BPartner_ID = bp.C_BPartner_ID) "
 			+ " INNER JOIN C_Currency c ON (p.C_Currency_ID=c.C_Currency_ID) "
+			+ " LEFT JOIN C_BankAccount ba ON (p.C_BankAccount_ID=ba.C_BankAccount_ID) "
 			+ "WHERE p.IsAllocated='N' AND p.Processed='Y'"
 			+ " AND p.C_Charge_ID IS NULL"		//	Prepayments OK
 			+ " AND p.C_BPartner_ID IN (?,?)");                   		//      #5,#6
@@ -201,6 +202,7 @@ public class FTUBPAllocation extends FTUForm {
 					continue;
 				line.add(available);				//  5/7-ConvOpen/Available
 				line.add(Env.ZERO);					//  6/8-Payment
+				line.add(rs.getString("bankaccount"));//  7/9-BankAccount
 //				line.add(rs.getBigDecimal(8));		//  7/9-Multiplier
 				//
 				data.add(line);
@@ -234,6 +236,7 @@ public class FTUBPAllocation extends FTUForm {
 		columnNames.add(Msg.getMsg(Env.getCtx(), "ConvertedAmount"));
 		columnNames.add(Msg.getMsg(Env.getCtx(), "OpenAmt"));
 		columnNames.add(Msg.getMsg(Env.getCtx(), "AppliedAmt"));
+		columnNames.add(Msg.translate(Env.getCtx(), "C_BankAccount_ID"));
 //		columnNames.add(" ");	//	Multiplier
 		
 		return columnNames;
@@ -254,6 +257,7 @@ public class FTUBPAllocation extends FTUForm {
 		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  6-ConvAmt
 		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  7-ConvOpen
 		paymentTable.setColumnClass(i++, BigDecimal.class, false);      //  8-Allocated
+		paymentTable.setColumnClass(i++, String.class, false);    	    //  9-BankAccount
 //		paymentTable.setColumnClass(i++, BigDecimal.class, true);      	//  9-Multiplier
 
 		//

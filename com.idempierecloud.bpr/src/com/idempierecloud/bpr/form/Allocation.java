@@ -134,9 +134,10 @@ public class Allocation extends CustomForm
 			+ "c.ISO_Code,p.PayAmt,"                            //  4..5
 			+ "currencyConvertPayment(p.C_Payment_ID,?,null,?),"//  6   #1, #2
 			+ "currencyConvertPayment(p.C_Payment_ID,?,paymentAvailable(p.C_Payment_ID),?),"  //  7   #3, #4
-			+ "p.MultiplierAP "
+			+ "p.MultiplierAP, ba.name as bankaccount "
 			+ "FROM C_Payment_v p"		//	Corrected for AP/AR
 			+ " INNER JOIN C_Currency c ON (p.C_Currency_ID=c.C_Currency_ID) "
+			+ " LEFT JOIN C_BankAccount ba ON (p.C_BankAccount_ID=ba.C_BankAccount_ID) "
 			+ "WHERE p.IsAllocated='N' AND p.Processed='Y'"
 			+ " AND p.C_Charge_ID IS NULL"		//	Prepayments OK
 			+ " AND p.C_BPartner_ID=?");                   		//      #5
@@ -181,6 +182,7 @@ public class Allocation extends CustomForm
 					continue;
 				line.add(available);				//  4/6-ConvOpen/Available
 				line.add(Env.ZERO);					//  5/7-Payment
+				line.add(rs.getString("bankaccount")); //  6/8-Bank Account
 //				line.add(rs.getBigDecimal(8));		//  6/8-Multiplier
 				//
 				data.add(line);
@@ -213,6 +215,7 @@ public class Allocation extends CustomForm
 		columnNames.add(Msg.getMsg(Env.getCtx(), "ConvertedAmount"));
 		columnNames.add(Msg.getMsg(Env.getCtx(), "OpenAmt"));
 		columnNames.add(Msg.getMsg(Env.getCtx(), "AppliedAmt"));
+		columnNames.add(Msg.getMsg(Env.getCtx(), "C_BankAccount_ID"));
 //		columnNames.add(" ");	//	Multiplier
 		
 		return columnNames;
@@ -232,6 +235,7 @@ public class Allocation extends CustomForm
 		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  5-ConvAmt
 		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  6-ConvOpen
 		paymentTable.setColumnClass(i++, BigDecimal.class, false);      //  7-Allocated
+		paymentTable.setColumnClass(i++, String.class, false);      	//  8-BankAccount
 //		paymentTable.setColumnClass(i++, BigDecimal.class, true);      	//  8-Multiplier
 
 		//
