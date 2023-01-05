@@ -82,6 +82,8 @@ public class EventFactory extends CustomEventFactory {
 		// C_Order
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Order.Table_Name, COrderEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_C_Order.Table_Name, COrderEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_REACTIVATE, I_C_Order.Table_Name, COrderEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_VOID, I_C_Order.Table_Name, COrderEvent.class);
 		
 		// C_OrderLine
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_OrderLine.Table_Name, COrderLineEvent.class);

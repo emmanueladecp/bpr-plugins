@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MOrder;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -30,8 +31,20 @@ public class COrderEvent extends CustomEvent{
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkSalesRep();
 			checkCreditAvailable();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
+			resetQtyReserved();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
+			resetQtyReserved();
 		}
 	}
+	
+	private void resetQtyReserved() {
+		for(MOrderLine line : order.getLines()) {
+			line.setQtyReserved(Env.ZERO);
+			line.saveEx();
+		}
+	}
+	
 	private void checkCreditAvailable() {
 		if(order.is_ValueChanged("SO_CreditAvailable")) {
 			BigDecimal BPCreditAvailable = this.getBPCreditAvailable();
