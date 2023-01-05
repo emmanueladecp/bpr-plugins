@@ -7,6 +7,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
@@ -28,16 +29,45 @@ public class COrderEvent extends CustomEvent{
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			checkSalesRep();
 			checkCreditAvailable();
+			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkSalesRep();
 			checkCreditAvailable();
+			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetQtyReserved();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			resetQtyReserved();
+			updatePOReference();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
+			resetQtyReserved();
+			updatePOReference();
 		}
 	}
 	
+	private void updatePOReference() {
+		if(!order.isSOTrx() || order.getPOReference()==null || order.getPOReference().isEmpty())
+			return;
+		
+		order.setPOReference(order.getPOReference()+"**");
+		order.saveEx();
+	}
+
+	/**
+	 * Sales Order PO Reference Unique
+	 */
+	private void checkPOReference() {
+		if(!order.isSOTrx() || order.getPOReference()==null || order.getPOReference().isEmpty() || order.getPOReference().endsWith("**"))
+			return;
+		
+		MOrder reference = new Query(order.getCtx(), MOrder.Table_Name, "C_Order_ID<>? && POReference=?", order.get_TrxName())
+				.setParameters(order.getC_Order_ID(), order.getPOReference())
+				.first();
+		
+		if(order!=null)
+			throw new AdempiereException("Duplikat PO Reference : "+reference.getDocumentNo());
+	}
+
 	private void resetQtyReserved() {
 		for(MOrderLine line : order.getLines()) {
 			line.setQtyReserved(Env.ZERO);
