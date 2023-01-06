@@ -120,13 +120,14 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_M_Requisition.Table_Name, MRequisitionEvent.class);
 		
 		//MInoutConfirm
+		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_InOutConfirm.Table_Name, MInOutConfirmEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_InOutConfirm.Table_Name, MInOutConfirmEvent.class);
 
 		//MInoutLineConfirm
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOutLineConfirm.Table_Name, MInOutLineConfirmEvent.class);
 		
 		//MInOut
-		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_InOut.Table_Name, MInOutEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_PREPARE, I_M_InOut.Table_Name, MInOutEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOut.Table_Name, MInOutEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOut.Table_Name, MInOutEvent.class);
 
