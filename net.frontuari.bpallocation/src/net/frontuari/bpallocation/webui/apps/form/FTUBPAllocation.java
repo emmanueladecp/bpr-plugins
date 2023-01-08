@@ -95,7 +95,7 @@ public class FTUBPAllocation extends FTUForm {
 			return;
 
 		//	Async BPartner Test
-		Integer key = new Integer(m_C_BPartner_ID);
+		Integer key = m_C_BPartner_ID;
 		if (!m_bpartnerCheck.contains(key))
 		{
 			new Thread()
@@ -123,7 +123,7 @@ public class FTUBPAllocation extends FTUForm {
 			return;
 
 		//	Async BPartner Test
-		Integer key = new Integer(m_C_BPartner2_ID);
+		Integer key = m_C_BPartner2_ID;
 		if (!m_bpartnerCheck.contains(key))
 		{
 			new Thread()
@@ -161,8 +161,8 @@ public class FTUBPAllocation extends FTUForm {
 			+ " AND p.C_BPartner_ID IN (?,?)");                   		//      #5,#6
 		if (!isMultiCurrency)
 			sql.append(" AND p.C_Currency_ID=?");				//      #7
-		if (m_AD_Org_ID != 0 )
-			sql.append(" AND p.AD_Org_ID=" + m_AD_Org_ID);
+//		if (m_AD_Org_ID != 0 )
+//			sql.append(" AND p.AD_Org_ID=" + m_AD_Org_ID);
 		sql.append(" ORDER BY p.DateTrx,p.DocumentNo");
 		
 		// role security
@@ -186,7 +186,7 @@ public class FTUBPAllocation extends FTUForm {
 			while (rs.next())
 			{
 				Vector<Object> line = new Vector<Object>();
-				line.add(new Boolean(false));       //  0-Selection
+				line.add(false);       //  0-Selection
 				line.add(rs.getTimestamp(1));       //  1-TrxDate
 				KeyNamePair pp = new KeyNamePair(rs.getInt(3), rs.getString(2));
 				line.add(pp);                       //  2-DocumentNo
@@ -329,7 +329,7 @@ public class FTUBPAllocation extends FTUForm {
 			while (rs.next())
 			{
 				Vector<Object> line = new Vector<Object>();
-				line.add(new Boolean(false));       //  0-Selection
+				line.add(false);       //  0-Selection
 				line.add(rs.getTimestamp(1));       //  1-TrxDate
 				KeyNamePair pp = new KeyNamePair(rs.getInt(3), rs.getString(2));
 				line.add(pp);                       //  2-Value
@@ -677,7 +677,7 @@ public class FTUBPAllocation extends FTUForm {
 				KeyNamePair pp = (KeyNamePair)payment.getValueAt(i, 2);   //  Value
 				//  Payment variables
 				int C_Payment_ID = pp.getKey();
-				paymentList.add(new Integer(C_Payment_ID));
+				paymentList.add(C_Payment_ID);
 				//
 				BigDecimal PaymentAmt = (BigDecimal)payment.getValueAt(i, i_payment);  //  Applied Payment
 				amountList.add(PaymentAmt);
