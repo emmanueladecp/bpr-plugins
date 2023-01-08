@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.Properties;
 
 import org.compiere.model.MInvoice;
+import org.compiere.model.Query;
 
 public class MBPRHistoryFakturPajak extends X_BPR_HistoryFakturPajak {
 
@@ -18,6 +19,12 @@ public class MBPRHistoryFakturPajak extends X_BPR_HistoryFakturPajak {
 	
 	public MBPRHistoryFakturPajak(Properties ctx, int BPR_HistoryFakturPajak_ID, String trxName) {
 		super(ctx, BPR_HistoryFakturPajak_ID, trxName);
+	}
+	
+	public static MBPRHistoryFakturPajak byInvoice(MInvoice invoice) {
+		return new Query(invoice.getCtx(), MBPRHistoryFakturPajak.Table_Name, "C_Invoice_ID=?", invoice.get_TrxName())
+				.setParameters(invoice.getC_Invoice_ID())
+				.first();
 	}
 
 	public static MBPRHistoryFakturPajak addHistory(MInvoice invoice, MBPRListFakturPajak pajak) {

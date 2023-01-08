@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.test.model;
 
 
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -8,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.List;
 
 import org.adempiere.exceptions.AdempiereException;
@@ -93,6 +95,7 @@ public class InvoiceTest extends AbstractTestCase{
 		MBPRListFakturPajak pajak = new MBPRListFakturPajak(Env.getCtx(), 0, getTrxName());
 		pajak.setFiscalYear("2022");
 		pajak.setName("001");
+		pajak.setIsActive(true);
 		pajak.saveEx();
 		
 		assertNotNull(pajak.getBPR_ListFakturPajak_ID());
@@ -107,7 +110,8 @@ public class InvoiceTest extends AbstractTestCase{
 		invoice.setPaymentRule("B");
 		invoice.setIsSOTrx(true);
 		invoice.setC_Currency_ID(C_Currency_ID_Rupiah);
-		invoice.setDateInvoiced(getLoginDate());
+		invoice.setDateInvoiced(Timestamp.valueOf("2022-12-01 00:00:00"));
+		invoice.setDateAcct(Timestamp.valueOf("2022-12-01 00:00:00"));
 		invoice.setC_PaymentTerm_ID(C_PaymentTerm_ID_Immediate);
 		invoice.set_ValueOfColumn("TypeFaktur", "080");
 		invoice.setDocStatus(MInvoice.DOCSTATUS_Drafted);
@@ -133,8 +137,8 @@ public class InvoiceTest extends AbstractTestCase{
 		MInvoice invoice2 = new MInvoice(Env.getCtx(), invoice.getC_Invoice_ID(), getTrxName());
 		assertEquals(pajak.getBPR_ListFakturPajak_ID(), invoice2.get_ValueAsInt("BPR_ListFakturPajak_ID"));
 		
-		int history = DB.getSQLValue(getTrxName(), "SELECT 1 FROM BPR_HistoryFakturPajak WHERE C_Invoice_ID=?", invoice2.getC_Invoice_ID());
-		assertEquals(1, history);
+		MBPRHistoryFakturPajak history = MBPRHistoryFakturPajak.byInvoice(invoice2);
+		assertEquals(history.getBPR_HistoryFakturPajak_ID(), invoice2.get_ValueAsInt("BPR_HistoryFakturPajak_ID"));
 	}
 	
 	@Test

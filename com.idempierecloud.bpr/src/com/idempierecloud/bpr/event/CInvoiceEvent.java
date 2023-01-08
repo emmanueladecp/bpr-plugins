@@ -43,6 +43,8 @@ public class CInvoiceEvent extends CustomEvent {
 		invoice = (MInvoice) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID))
 			checkFaktur();
+		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT))
+			checkFaktur();
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setFaktur();
 			checkDocStatusShipment();
@@ -83,10 +85,12 @@ public class CInvoiceEvent extends CustomEvent {
 		if(pajak==null)
 			throw new AdempiereException("Tidak ada nomor faktur pajak yang tersedia");
 		
-		invoice.set_ValueOfColumn("BPR_ListFakturPajak_ID", pajak.getBPR_ListFakturPajak_ID());
-		invoice.saveEx();
 		
-		MBPRHistoryFakturPajak.addHistory(invoice, pajak);
+		MBPRHistoryFakturPajak history = MBPRHistoryFakturPajak.addHistory(invoice, pajak);
+
+		invoice.set_ValueOfColumn(MBPRListFakturPajak.COLUMNNAME_BPR_ListFakturPajak_ID, pajak.getBPR_ListFakturPajak_ID());
+		invoice.set_ValueOfColumn(MBPRHistoryFakturPajak.COLUMNNAME_BPR_HistoryFakturPajak_ID, history.getBPR_HistoryFakturPajak_ID());
+		invoice.saveEx();
 	}
 	
 	public void withholding() {
