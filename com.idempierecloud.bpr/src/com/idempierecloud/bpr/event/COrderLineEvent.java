@@ -102,7 +102,7 @@ public class COrderLineEvent extends CustomEvent {
 		if(priceNet==null)
 			priceNet = Env.ZERO;
 		
-		BigDecimal tax = priceNet.multiply(taxRate);
+		BigDecimal tax = priceNet.multiply(taxRate.divide(Env.ONEHUNDRED, orderLine.getC_UOM().getStdPrecision(), RoundingMode.HALF_UP));
 		priceNet = priceNet.add(tax).setScale(orderLine.getC_UOM().getStdPrecision(), RoundingMode.HALF_UP);
 		orderLine.setPrice(priceNet);
 	}
