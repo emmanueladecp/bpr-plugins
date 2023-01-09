@@ -97,10 +97,17 @@ public class CInvoiceEvent extends CustomEvent {
 		for(MInvoiceLine line : lines) {
             if(line.get_ValueAsInt("LCO_WithholdingType_ID")>0) {
                 recalcWithholdings(line.get_ValueAsInt("LCO_WithholdingType_ID"));		
+				CalculateGrandtotal();
 			}
 		}
 	}
 	
+	private void CalculateGrandtotal() {
+		BigDecimal witholdingAmt = DB.getSQLValueBD(invoice.get_TrxName(),"SELECT COALESCE(SUM(TaxAmt),0) FROM LCO_InvoiceWithholding iw"
+				+ " WHERE iw.IsActive = 'Y' AND iw.IsCalcOnPayment = 'N' AND C_Invoice_ID=?",invoice.getC_Invoice_ID());
+		invoice.setGrandTotal(invoice.getGrandTotal().subtract(witholdingAmt));
+	}
+
 	public void recalcWithholdings(int LCO_WithholdingType_ID) {
 		
 		int noins = 0;
