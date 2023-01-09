@@ -9,7 +9,6 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
-import org.compiere.model.MOrderLine;
 import org.compiere.model.MPriceList;
 import org.compiere.model.MSysConfig;
 import org.compiere.model.MTax;
@@ -92,9 +91,8 @@ public class CInvoiceEvent extends CustomEvent {
 	public void withholding() {
 		MInvoiceLine[] lines = invoice.getLines(false);
 		for(MInvoiceLine line : lines) {
-			MOrderLine orderline = (MOrderLine)line.getC_OrderLine(); 
-			if(orderline.get_ValueAsInt("LCO_WithholdingType_ID")>0) {
-				recalcWithholdings(orderline.get_ValueAsInt("LCO_WithholdingType_ID"));
+            if(line.get_ValueAsInt("LCO_WithholdingType_ID")>0) {
+                recalcWithholdings(line.get_ValueAsInt("LCO_WithholdingType_ID"));		
 			}
 		}
 	}
