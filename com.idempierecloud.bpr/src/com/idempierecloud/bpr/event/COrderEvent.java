@@ -28,7 +28,7 @@ public class COrderEvent extends CustomEvent{
 		order = (MOrder) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			checkSalesRep();
-			checkCreditAvailable();
+			setCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkSalesRep();
@@ -44,6 +44,18 @@ public class COrderEvent extends CustomEvent{
 			updatePOReference();
 		}
 	}
+	
+    private void setCreditAvailable() {
+        if(order.isSOTrx()) {//if sales order
+            if(order.getC_BPartner_ID()>0) {
+                if(order.getC_BPartner_ID()!=order.get_ValueAsInt("C_BPartnerSR_ID")) {//if document new or c_bpartner_id is change
+                    BigDecimal SO_CreditAvailable = this.getBPCreditAvailable();
+                    order.set_ValueOfColumn("SO_CreditAvailable", SO_CreditAvailable);
+                    order.set_ValueOfColumn("C_BPartnerSR_ID", order.getC_BPartner_ID());
+                }
+            }
+        }
+    }
 	
 	private void updatePOReference() {
 		if(!order.isSOTrx() || order.getPOReference()==null || order.getPOReference().isEmpty())
