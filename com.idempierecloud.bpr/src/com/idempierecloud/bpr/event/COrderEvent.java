@@ -72,11 +72,11 @@ public class COrderEvent extends CustomEvent{
 		if(!order.isSOTrx() || order.getPOReference()==null || order.getPOReference().isEmpty() || order.getPOReference().endsWith("**"))
 			return;
 		
-		MOrder reference = new Query(order.getCtx(), MOrder.Table_Name, "C_Order_ID<>? && POReference=?", order.get_TrxName())
+		MOrder reference = new Query(order.getCtx(), MOrder.Table_Name, "C_Order_ID<>? AND POReference=?", order.get_TrxName())
 				.setParameters(order.getC_Order_ID(), order.getPOReference())
 				.first();
 		
-		if(order!=null)
+		if(reference!=null)
 			throw new AdempiereException("Duplikat PO Reference : "+reference.getDocumentNo());
 	}
 
