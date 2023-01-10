@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
-import org.compiere.model.MInOutLine;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
@@ -15,6 +14,7 @@ import org.compiere.util.DB;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
+import com.idempierecloud.bpr.model.MBPRMaterialRequestLine;
 
 public class MMovementEvent extends CustomEvent {
 
@@ -35,9 +35,26 @@ public class MMovementEvent extends CustomEvent {
 				checkMovementLineSusut();
 			}
 			checkAvailableQtyProduct();
-		}if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			if(desc!=null && desc.equals("INTRANSIT"))
 				createMovementConfirm();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_VOID)) {
+			checkMovementRequest();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
+			checkMovementRequest();
+		}
+	}
+
+	private void checkMovementRequest() {
+		for(MMovementLine line : movement.getLines(false)) {
+			MBPRMaterialRequestLine requestLine = new Query(movement.getCtx(), MBPRMaterialRequestLine.Table_Name, "M_MovementLine_ID=?", movement.get_TrxName())
+					.setParameters(line.getM_MovementLine_ID())
+					.first();
+			if(requestLine==null)
+				return;
+			
+			requestLine.setM_MovementLine_ID(0);
+			requestLine.saveEx();
 		}
 	}
 

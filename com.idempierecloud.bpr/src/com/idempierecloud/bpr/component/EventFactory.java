@@ -31,6 +31,7 @@ import org.compiere.model.I_M_InOutLineConfirm;
 import org.compiere.model.I_M_Inventory;
 import org.compiere.model.I_M_InventoryLine;
 import org.compiere.model.I_M_Movement;
+import org.compiere.model.I_M_MovementLine;
 import org.compiere.model.I_M_Production;
 import org.compiere.model.I_M_ProductionLine;
 import org.compiere.model.I_M_Requisition;
@@ -49,6 +50,7 @@ import com.idempierecloud.bpr.event.MInOutLineEvent;
 import com.idempierecloud.bpr.event.MInventoryEvent;
 import com.idempierecloud.bpr.event.MInventoryLineEvent;
 import com.idempierecloud.bpr.event.MMovementEvent;
+import com.idempierecloud.bpr.event.MMovementLineEvent;
 import com.idempierecloud.bpr.event.MProductionEvent;
 import com.idempierecloud.bpr.event.MProductionLineEvent;
 import com.idempierecloud.bpr.event.MRequisitionEvent;
@@ -95,6 +97,11 @@ public class EventFactory extends CustomEventFactory {
 		// M_Movement
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_VOID, I_M_Movement.Table_Name, MMovementEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_M_Movement.Table_Name, MMovementEvent.class);
+
+		// M_MovementLine
+		registerEvent(IEventTopics.PO_AFTER_DELETE, I_M_MovementLine.Table_Name, MMovementLineEvent.class);
 		
 		// M_Inventory
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Inventory.Table_Name, MInventoryEvent.class);

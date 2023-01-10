@@ -21,6 +21,8 @@ package com.idempierecloud.bpr.component;
 import com.idempierecloud.bpr.base.CustomModelFactory;
 import com.idempierecloud.bpr.model.I_BPR_HistoryFakturPajak;
 import com.idempierecloud.bpr.model.I_BPR_ListFakturPajak;
+import com.idempierecloud.bpr.model.I_BPR_MaterialRequest;
+import com.idempierecloud.bpr.model.I_BPR_MaterialRequestLine;
 import com.idempierecloud.bpr.model.I_BPR_POBahanBaku;
 import com.idempierecloud.bpr.model.I_BPR_POBahanBakuHeader;
 import com.idempierecloud.bpr.model.I_BPR_POBahanBakuLine;
@@ -29,6 +31,8 @@ import com.idempierecloud.bpr.model.I_BPR_PicklistLine;
 import com.idempierecloud.bpr.model.I_BPR_Timbangan;
 import com.idempierecloud.bpr.model.MBPRHistoryFakturPajak;
 import com.idempierecloud.bpr.model.MBPRListFakturPajak;
+import com.idempierecloud.bpr.model.MBPRMaterialRequest;
+import com.idempierecloud.bpr.model.MBPRMaterialRequestLine;
 import com.idempierecloud.bpr.model.MBPRPOBahanBaku;
 import com.idempierecloud.bpr.model.MBPRPOBahanBakuHeader;
 import com.idempierecloud.bpr.model.MBPRPOBahanBakuLine;
@@ -68,6 +72,8 @@ public class ModelFactory extends CustomModelFactory {
 		registerModel(I_BPR_POBahanBakuHeader.Table_Name, MBPRPOBahanBakuHeader.class);
 		registerModel(I_BPR_ListFakturPajak.Table_Name, MBPRListFakturPajak.class);
 		registerModel(I_BPR_HistoryFakturPajak.Table_Name, MBPRHistoryFakturPajak.class);
+		registerModel(I_BPR_MaterialRequest.Table_Name, MBPRMaterialRequest.class);
+		registerModel(I_BPR_MaterialRequestLine.Table_Name, MBPRMaterialRequestLine.class);
 	}
 
 }
