@@ -294,7 +294,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    StringBuffer sqlStmt = new StringBuffer();
 	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.movementqty as qty,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
-	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName");
+	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.qtyentered as qtyentered");
 	    sqlStmt.append(" from m_inoutline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
@@ -323,6 +323,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    		line.add(pp);
 	    		pp = new KeyNamePair(rs.getInt("M_InOutLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
+	    		line.add(rs.getBigDecimal("Qtyentered"));
 	    		
 	    		data.add(line);
 		    }		    
@@ -346,6 +347,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    columnNames.add(Msg.translate(Env.getCtx(), "C_UOM_ID"));
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
+	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity Entered"));
 	    
 	    return columnNames;
 	}
@@ -382,6 +384,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 				int M_Product_ID = pp.getKey();
 				pp = (KeyNamePair)miniTable.getValueAt(i, 4);
 				M_InOutLine_ID = pp.getKey();
+				BigDecimal QtyEntered = (BigDecimal)miniTable.getValueAt(i, 5);
 				MInOutLine shipmentLine = new MInOutLine(picklist.getCtx(), M_InOutLine_ID, picklist.get_TrxName());
 				
 				MBPRPicklistLine line = new MBPRPicklistLine(picklist.getCtx(), 0, picklist.get_TrxName());
@@ -391,6 +394,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 				line.setBPR_Picklist_ID(BPR_Picklist_ID);
 				line.setM_Product_ID(M_Product_ID);
 				line.setMovementQty(Qty);
+				line.set_ValueOfColumn("QtyEntered", QtyEntered);
 				line.saveEx();
 			}
 		}
