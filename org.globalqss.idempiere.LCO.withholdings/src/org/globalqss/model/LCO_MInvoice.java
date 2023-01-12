@@ -92,6 +92,10 @@ public class LCO_MInvoice extends MInvoice
 		int org_taxpayertype_id = oi.get_ValueAsInt("LCO_TaxPayerType_ID");
 		MLocation ol = MLocation.get(getCtx(), oi.getC_Location_ID(), get_TrxName());
 		int org_city_id = ol.getC_City_ID();
+		
+		noins = checkInvoiceLine();
+		if(noins>0)
+			return noins;
 
 		// Search withholding types applicable depending on IsSOTrx
 		List<X_LCO_WithholdingType> wts = new Query(getCtx(), X_LCO_WithholdingType.Table_Name, "IsSOTrx=?", get_TrxName())
@@ -374,6 +378,61 @@ public class LCO_MInvoice extends MInvoice
 		LCO_MInvoice.updateHeaderWithholding(getC_Invoice_ID(), get_TrxName());
 		saveEx();
 
+		return noins;
+	}
+
+	private int checkInvoiceLine() {
+		int witholdingType = DB.getSQLValue(get_TrxName(), "SELECT count(1) FROM C_InvoiceLine WHERE C_Invoice_ID=?", getC_Invoice_ID());
+		if(witholdingType==0)
+			return 0;
+		
+		int noins = 0;
+		
+		List<X_LCO_WithholdingType> wts = new Query(getCtx(), X_LCO_WithholdingType.Table_Name, "EXISTS(SELECT 1 FROM C_InvoiceLine il WHERE il.lco_withholdingtype_id=lco_withholdingtype.lco_withholdingtype_id and il.c_invoice_id=?)", get_TrxName())
+				.setOnlyActiveRecords(true)
+				.setClient_ID()
+				.setParameters(getC_Invoice_ID())
+				.list();
+		for (X_LCO_WithholdingType wt : wts)
+		{
+			BigDecimal base = DB.getSQLValueBD(get_TrxName(), "select coalesce(sum(linenetamt),0) from C_InvoiceLine WHERE C_Invoice_ID=? AND lco_withholdingtype_id=?", getC_Invoice_ID(), wt.getLCO_WithholdingType_ID());
+			
+			X_LCO_WithholdingCalc wc =  new Query(getCtx(), X_LCO_WithholdingCalc.Table_Name, "lco_withholdingtype_id=?", get_TrxName())
+					.setOnlyActiveRecords(true)
+					.setClient_ID()
+					.setParameters(wt.getLCO_WithholdingType_ID())
+					.first();
+			
+			MTax tax = (MTax) wc.getC_Tax();
+			
+			MLCOInvoiceWithholding iwh = new MLCOInvoiceWithholding(getCtx(), 0, get_TrxName());
+			iwh.setAD_Org_ID(getAD_Org_ID());
+			iwh.setC_Invoice_ID(getC_Invoice_ID());
+			iwh.setDateAcct(getDateAcct());
+			iwh.setDateTrx(getDateInvoiced());
+			iwh.setIsCalcOnPayment( ! wc.isCalcOnInvoice() );
+			iwh.setIsTaxIncluded(false);
+			iwh.setLCO_WithholdingType_ID(wt.getLCO_WithholdingType_ID());
+			iwh.setC_Tax_ID(tax.getC_Tax_ID());
+			iwh.setPercent(tax.getRate());
+			iwh.setProcessed(false);
+			int stdPrecision = MPriceList.getStandardPrecision(getCtx(), getM_PriceList_ID());
+			BigDecimal taxamt = tax.calculateTax(base, false, stdPrecision);
+			if (wc.getAmountRefunded() != null &&
+					wc.getAmountRefunded().compareTo(Env.ZERO) > 0) {
+				taxamt = taxamt.subtract(wc.getAmountRefunded());
+			}
+			iwh.setTaxAmt(taxamt);
+			iwh.setTaxBaseAmt(base);
+			if (    (  isSOTrx() && MSysConfig.getBooleanValue("QSSLCO_GenerateWithholdingInactiveSO", false, getAD_Client_ID(), getAD_Org_ID()) )
+				 || ( !isSOTrx() && MSysConfig.getBooleanValue("QSSLCO_GenerateWithholdingInactivePO", false, getAD_Client_ID(), getAD_Org_ID()) )) {
+				iwh.setIsActive(false);
+			}
+			iwh.saveEx();
+			noins++;
+			log.info("LCO_InvoiceWithholding saved:"+iwh.getTaxAmt());
+		}
+		
 		return noins;
 	}
 
