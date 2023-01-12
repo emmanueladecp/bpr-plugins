@@ -24,6 +24,7 @@ import org.compiere.model.I_C_Invoice;
 import org.compiere.model.I_C_Order;
 import org.compiere.model.I_C_OrderLine;
 import org.compiere.model.I_C_Payment;
+import org.compiere.model.I_I_Invoice;
 import org.compiere.model.I_M_InOut;
 import org.compiere.model.I_M_InOutConfirm;
 import org.compiere.model.I_M_InOutLine;
@@ -42,6 +43,7 @@ import com.idempierecloud.bpr.event.CInvoiceEvent;
 import com.idempierecloud.bpr.event.COrderEvent;
 import com.idempierecloud.bpr.event.COrderLineEvent;
 import com.idempierecloud.bpr.event.CPaymentEvent;
+import com.idempierecloud.bpr.event.ImportInvoiceEvent;
 import com.idempierecloud.bpr.event.LoginEvent;
 import com.idempierecloud.bpr.event.MInOutConfirmEvent;
 import com.idempierecloud.bpr.event.MInOutEvent;
@@ -143,7 +145,8 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		
-		
+		//I_Invoice
+		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_I_Invoice.Table_Name, ImportInvoiceEvent.class);
 	}
 
 }
