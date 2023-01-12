@@ -89,6 +89,7 @@ public class CInvoiceEvent extends CustomEvent {
 
 		invoice.set_ValueOfColumn(MBPRListFakturPajak.COLUMNNAME_BPR_ListFakturPajak_ID, pajak.getBPR_ListFakturPajak_ID());
 		invoice.set_ValueOfColumn(MBPRHistoryFakturPajak.COLUMNNAME_BPR_HistoryFakturPajak_ID, history.getBPR_HistoryFakturPajak_ID());
+		invoice.set_ValueOfColumn("tax_no", history.getDescription());
 		invoice.saveEx();
 	}
 	
