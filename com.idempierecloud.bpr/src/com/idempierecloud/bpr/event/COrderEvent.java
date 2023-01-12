@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -34,6 +35,8 @@ public class COrderEvent extends CustomEvent{
 			checkSalesRep();
 			checkCreditAvailable();
 			checkPOReference();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setPriceCost();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetQtyReserved();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
@@ -45,7 +48,24 @@ public class COrderEvent extends CustomEvent{
 		}
 	}
 	
-    private void setCreditAvailable() {
+	/**
+	 * Purchase Order Price Cost
+	 */
+    private void setPriceCost() {
+		if(order.isSOTrx())
+			return ;
+		
+		for(MOrderLine line : order.getLines()) {
+			if(line.get_ValueAsBoolean("isGrossUpPPN") && line.getC_Tax_ID()>0) {
+				BigDecimal rate = line.getC_Tax().getRate();
+				BigDecimal priceCost = line.getPriceEntered().add(line.getPriceEntered().multiply(rate.divide(Env.ONEHUNDRED, line.getC_Currency().getStdPrecision(), RoundingMode.HALF_UP)));
+				line.setPriceCost(priceCost);
+				line.saveEx();
+			}
+		}
+	}
+
+	private void setCreditAvailable() {
         if(order.isSOTrx()) {//if sales order
             if(order.getC_BPartner_ID()>0) {
                 if(order.getC_BPartner_ID()!=order.get_ValueAsInt("C_BPartnerSR_ID")) {//if document new or c_bpartner_id is change
