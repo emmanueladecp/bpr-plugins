@@ -53,21 +53,25 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private void resetCreditUsed() {
-		MBPartner bp = (MBPartner) order.getC_BPartner();
-		BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
-		bp.setSO_CreditUsed(creditUsed);
-		bp.saveEx();	
-		order.set_ValueOfColumn("isdone", false);
+		if(order.isSOTrx()) {
+			MBPartner bp = (MBPartner) order.getC_BPartner();
+			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
+			bp.setSO_CreditUsed(creditUsed);
+			bp.saveEx();	
+			order.set_ValueOfColumn("isdone", false);
+		}
 	}
 
 	private void setCreditUseBP() {
-		if(!order.get_ValueAsBoolean("isdone")) {
-			MBPartner bp = (MBPartner) order.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();
+		if(order.isSOTrx()) {
+			if(!order.get_ValueAsBoolean("isdone")) {
+				MBPartner bp = (MBPartner) order.getC_BPartner();
+				BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
+				bp.setSO_CreditUsed(creditUsed);
+				bp.saveEx();
+			}
+			order.set_ValueOfColumn("isdone", true);
 		}
-		order.set_ValueOfColumn("isdone", true);
 	}
 
 	/**
