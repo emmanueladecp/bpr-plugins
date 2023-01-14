@@ -1,7 +1,10 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MBPartner;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
@@ -27,12 +30,35 @@ public class CInvoiceEvent extends CustomEvent {
 		invoice = (MInvoice) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID))
 			checkFaktur();
-		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT))
+		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkFaktur();
+			resetCreditUseBP();
+		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setFaktur();
 			checkDocStatusShipment();
+			setCreditUseBP();
 		}
+	}
+	
+
+	private void setCreditUseBP() {
+		/* digunakan untuk balencing so_creditused, karena ada code di base yang akan
+		 * otomatis menambahkan SO_creditused
+		 */
+		MBPartner bp = (MBPartner) invoice.getC_BPartner();
+		BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(invoice.getGrandTotal());
+		bp.setSO_CreditUsed(creditUsed);
+		bp.saveEx();
+	}
+	private void resetCreditUseBP() {
+		/* digunakan untuk balencing so_creditused, karena ada code di base yang akan
+		 * otomatis menambahkan SO_creditused
+		 */
+		MBPartner bp = (MBPartner) invoice.getC_BPartner();
+		BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
+		bp.setSO_CreditUsed(creditUsed);
+		bp.saveEx();
 	}
 
 	private void checkFaktur() {
