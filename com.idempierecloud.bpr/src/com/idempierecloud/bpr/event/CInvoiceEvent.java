@@ -32,37 +32,10 @@ public class CInvoiceEvent extends CustomEvent {
 			checkFaktur();
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkFaktur();
-			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setFaktur();
 			checkDocStatusShipment();
-			setCreditUseBP();
-		}
-	}
-	
-
-	private void setCreditUseBP() {
-		/* digunakan untuk balencing so_creditused, karena ada code di base yang akan
-		 * otomatis menambahkan SO_creditused dan ada penambahan di SO before prepare
-		 */
-		if(invoice.isSOTrx()) {
-			MBPartner bp = (MBPartner) invoice.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(invoice.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();
-		}
-		
-	}
-	private void resetCreditUseBP() {
-		/* digunakan untuk balencing so_creditused, karena ada code di base yang akan
-		 * otomatis menambahkan SO_creditused dan ada penambahan di SO before prepare
-		 */
-		if(invoice.isSOTrx()) {
-			MBPartner bp = (MBPartner) invoice.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();
 		}
 	}
 
