@@ -213,9 +213,6 @@ public class COrderLineEvent extends CustomEvent {
 		MOrder order = (MOrder)orderLine.getC_Order();
 		if(!order.get_ValueAsBoolean("isSOTrx"))
 			return;
-		int C_DocType_ID_CustomerReturnBPR=1000084;
-		if(order.getC_DocTypeTarget_ID()==C_DocType_ID_CustomerReturnBPR)
-			return;
 		if(orderLine.getM_Product_ID()==0)
 			return;
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
