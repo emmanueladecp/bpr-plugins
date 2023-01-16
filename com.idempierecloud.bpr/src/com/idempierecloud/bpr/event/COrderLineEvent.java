@@ -55,7 +55,6 @@ public class COrderLineEvent extends CustomEvent {
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
-			setProposalRetur();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
