@@ -124,7 +124,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		row = rows.newRow();
 		row.appendChild(timbanganLabel.rightAlign());
 		row.appendChild(timbanganField.getComponent());
-		orgField.setHflex("1");
+		timbanganLabel.setHflex("1");
 
 		row.appendChild(reqLabel.rightAlign());
 		row.appendChild(reqField);
