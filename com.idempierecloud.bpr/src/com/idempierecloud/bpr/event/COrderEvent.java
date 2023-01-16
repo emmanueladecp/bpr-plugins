@@ -38,14 +38,39 @@ public class COrderEvent extends CustomEvent{
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetQtyReserved();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			resetQtyReserved();
 			updatePOReference();
+			resetCreditUsed();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			resetQtyReserved();
 			updatePOReference();
+		}
+	}
+	
+	private void resetCreditUsed() {
+		if(order.isSOTrx()) {
+			MBPartner bp = (MBPartner) order.getC_BPartner();
+			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
+			bp.setSO_CreditUsed(creditUsed);
+			bp.saveEx();	
+			order.set_ValueOfColumn("isdone", false);
+		}
+	}
+
+	private void setCreditUseBP() {
+		if(order.isSOTrx()) {
+			if(!order.get_ValueAsBoolean("isdone")) {
+				MBPartner bp = (MBPartner) order.getC_BPartner();
+				BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
+				bp.setSO_CreditUsed(creditUsed);
+				bp.saveEx();
+			}
+			order.set_ValueOfColumn("isdone", true);
 		}
 	}
 

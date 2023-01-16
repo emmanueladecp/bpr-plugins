@@ -32,10 +32,34 @@ public class CInvoiceEvent extends CustomEvent {
 			checkFaktur();
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkFaktur();
+			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setFaktur();
 			checkDocStatusShipment();
+			setCreditUseBP();
+		}
+	}
+	
+
+	private void setCreditUseBP() {
+		/* Request Set Credit Availabel ketika SO inprogress,
+		 * karena code sudah di terapkan di SO. maka agar invoice tidak menambahkan credit use, di buatkan lah code ini
+		 */
+		if(invoice.isSOTrx()) {
+			MBPartner bp = (MBPartner) invoice.getC_BPartner();
+			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(invoice.getGrandTotal());
+			bp.setSO_CreditUsed(creditUsed);
+			bp.saveEx();
+		}
+		
+	}
+	private void resetCreditUseBP() {
+		if(invoice.isSOTrx()) {
+			MBPartner bp = (MBPartner) invoice.getC_BPartner();
+			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
+			bp.setSO_CreditUsed(creditUsed);
+			bp.saveEx();
 		}
 	}
 
