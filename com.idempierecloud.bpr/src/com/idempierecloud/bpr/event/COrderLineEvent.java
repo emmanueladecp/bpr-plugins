@@ -227,7 +227,9 @@ public class COrderLineEvent extends CustomEvent {
 		priceEntered = priceEntered.add(subsidiAmt);
 		orderLine.setPriceActual(priceEntered);
 		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
-		orderLine.setPriceEntered(priceEntered);
+        int C_DocType_ID_CustomerReturnBPR=1000084;
+        if(!(docType.get_ID()==C_DocType_ID_CustomerReturnBPR))
+        	orderLine.setPriceEntered(priceEntered);
 	}
 	
 	private void calculateLinetNetAmt() {
