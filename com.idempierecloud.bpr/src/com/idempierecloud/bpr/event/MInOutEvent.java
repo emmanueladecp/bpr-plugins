@@ -6,12 +6,16 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
+import org.compiere.model.MInvoice;
+import org.compiere.model.MInvoiceLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
+import com.idempierecloud.bpr.model.MBPRPicklist;
+import com.idempierecloud.bpr.model.MBPRPicklistLine;
 
 public class MInOutEvent extends CustomEvent {
 
@@ -24,6 +28,36 @@ public class MInOutEvent extends CustomEvent {
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			checkAvailableQtyProduct();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
+			checkShipment();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
+			checkShipment();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
+			checkShipment();
+		}
+	}
+	private void checkShipment() {
+		int BPR_PiclistLine_ID = DB.getSQLValue(inout.get_TrxName(), "select bpr_picklistline_id from bpr_picklistline bp "
+				+ " join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+				+ " where bp2.docstatus not in ('VO','RE') and bp.m_inout_id = ?", inout.getM_InOut_ID());
+		if (BPR_PiclistLine_ID>0) {
+			MBPRPicklistLine picklistLine= new MBPRPicklistLine(inout.getCtx(), BPR_PiclistLine_ID, inout.get_TrxName());
+			MBPRPicklist picklist = (MBPRPicklist) picklistLine.getBPR_Picklist();
+			throw new AdempiereException("GAGAL!! Shipment : "+inout.getDocumentNo()+" Sudah digunakan oleh Picklist : "+picklist.getDocumentNo());
+		}
+		for(MInOutLine line: inout.getLines(false)) {
+			int C_InvoiceLine_ID = DB.getSQLValue(inout.get_TrxName(), "select c_invoiceline_id from c_invoiceline ci "
+					+ " join c_invoice ci2 on ci2.c_invoice_id = ci.c_invoice_id where ci2.docstatus not in ('VO','RE')"
+					+ " and ci.m_inoutline_id = ?", line.getM_InOutLine_ID());
+			if(C_InvoiceLine_ID > 0) {
+				MInvoiceLine iLine = new MInvoiceLine(line.getCtx(), C_InvoiceLine_ID, line.get_TrxName());
+				MInvoice invoice = (MInvoice) iLine.getC_Invoice();
+				if(inout.isSOTrx())
+					throw new AdempiereException("Shipment : "+inout.getDocumentNo()+"Sudah digunakan Invoice : "+invoice.getDocumentNo());
+				else
+					throw new AdempiereException("Material receipt : "+inout.getDocumentNo()+"Sudah digunakan Invoice : "+invoice.getDocumentNo());
+				
+			}
 		}
 	}
 	private void checkAvailableQtyProduct() {

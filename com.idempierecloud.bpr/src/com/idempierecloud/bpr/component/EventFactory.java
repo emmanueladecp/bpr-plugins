@@ -145,6 +145,9 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MInOut
 		registerEvent(IEventTopics.DOC_BEFORE_PREPARE, I_M_InOut.Table_Name, MInOutEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_VOID, I_M_InOut.Table_Name, MInOutEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_REVERSEACCRUAL, I_M_InOut.Table_Name, MInOutEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_REVERSECORRECT, I_M_InOut.Table_Name, MInOutEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOut.Table_Name, MInOutEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOut.Table_Name, MInOutEvent.class);
 
