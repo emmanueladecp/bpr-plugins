@@ -25,6 +25,7 @@ import org.adempiere.webui.component.Row;
 import org.adempiere.webui.component.Rows;
 import org.adempiere.webui.component.WListbox;
 import org.adempiere.webui.editor.WDateEditor;
+import org.adempiere.webui.editor.WDatetimeEditor;
 import org.adempiere.webui.editor.WTableDirEditor;
 import org.adempiere.webui.event.ValueChangeEvent;
 import org.adempiere.webui.event.ValueChangeListener;
@@ -51,6 +52,7 @@ import org.compiere.util.Trx;
 import org.compiere.util.TrxRunnable;
 import org.compiere.util.Util;
 import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Borderlayout;
 import org.zkoss.zul.Center;
 import org.zkoss.zul.Div;
@@ -81,7 +83,7 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
     private Label DocTypeLabel = new Label();
 	protected Listbox DocTypeField = ListboxFactory.newDropdownListbox();
 	private Label dateInvoiceLabel = new Label();
-	private WDateEditor dateInvoiceField = new WDateEditor();
+	private WDatetimeEditor dateInvoiceField = new WDatetimeEditor();
 
 	private int m_AD_Org_ID;
 	private int m_C_DocType_ID;
@@ -190,17 +192,22 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 	private Vector<Vector<Object>> getShipment() {
 		Vector<Vector<Object>> data = new Vector<Vector<Object>>();
 		StringBuilder sql = new StringBuilder(""
-			+ " select mi.ad_org_id, ao.name, mi.c_doctype_id, cd.name,"
-			+ " 	mi.m_inout_id, mi.documentno, mi.c_bpartner_id, concat(cb.value,'_',cb.name) as valuebp,"
-			+ " 	mi.movementdate, bp2.bpr_picklist_id, bp2.documentno "
-			+ " 	from m_inout mi "
-			+ "  left join bpr_picklistline bp on mi.m_inout_id = bp.m_inout_id "
-			+ "  left join bpr_picklist bp2 on bp.bpr_picklist_id = bp2.bpr_picklist_id "
-			+ "  join ad_org ao ON ao.ad_org_id = mi.ad_org_id "
-			+ "  join c_doctype cd on cd.c_doctype_id = mi.c_doctype_id "
-			+ "  join c_bpartner cb ON cb.c_bpartner_id = mi.c_bpartner_id "
-			+ "  where mi.docstatus in ('CO','CL') and bp2.docstatus in ('CO','CL') and mi.issotrx ='Y' and mi.c_doctype_id not in (1000015) "
-			+ "	 ");
+			+ " with a as(select m_inout_id from m_inout mi where isactive = 'Y' "
+			+ "  	and ad_client_id = 1000003 and docstatus in ('CO','CL')), "
+			+ "  b as(select mi2.m_inout_id from c_invoiceline ci "
+			+ "  	join m_inoutline mi on ci.m_inoutline_id = mi.m_inoutline_id "
+			+ "  	join m_inout mi2 on mi.m_inout_id = mi2.m_inout_id "
+			+ "	where mi2.m_inout_id in (select m_inout_id from a)"
+			+ "  )"
+			+ "  select mi.ad_org_id, ao.name, mi.c_doctype_id, cd.name, mi.m_inout_id, mi.documentno, mi.c_bpartner_id, "
+			+ "   concat(cb.value,'_',cb.name) as valuebp, 	mi.movementdate, bp2.bpr_picklist_id, bp2.documentno "
+			+ "   from m_inout mi left join bpr_picklistline bp on mi.m_inout_id = bp.m_inout_id  "
+			+ "   left join bpr_picklist bp2 on bp.bpr_picklist_id = bp2.bpr_picklist_id  "
+			+ "   join ad_org ao ON ao.ad_org_id = mi.ad_org_id "
+			+ "   join c_doctype cd on cd.c_doctype_id = mi.c_doctype_id  "
+			+ "   join c_bpartner cb ON cb.c_bpartner_id = mi.c_bpartner_id "
+			+ "   where mi.docstatus in ('CO','CL') and bp2.docstatus in ('CO','CL') and mi.issotrx ='Y'"
+			+ "   and mi.m_inout_id not in (select m_inout_id from b) ");
 		if(m_AD_Org_ID > 0)
 			sql.append(" and mi.ad_org_id=" +m_AD_Org_ID);
 		if(m_MovementDate!=null)
@@ -330,6 +337,7 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 		DocTypeField.setHflex("1");
 		row.appendChild(dateInvoiceLabel.rightAlign());
 		row.appendChild(dateInvoiceField.getComponent());
+		dateInvoiceField.setMandatory(true);
 		
 		Center center = new Center();
 		mainLayout.appendChild(center);
@@ -346,28 +354,31 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 		String name = e.getPropertyName();
 		Object value = e.getNewValue();
 		if (log.isLoggable(Level.CONFIG)) log.config(name + "=" + value);
-		if (value == null)
+		if (name == "Date" && value == null) {
+			m_MovementDate = null;
+			loadShipment();
 			return;
+		}
+		if (name == "AD_Org_ID" && value == null) {
+			m_AD_Org_ID = 0;
+			loadShipment();
+			return;
+		}
+		if (value == null) {
+			return;
+		}
+			
 		
 		// Organization
 		if (name.equals("AD_Org_ID"))
 		{
 			m_AD_Org_ID = ((Integer) value).intValue();
-			
-			loadShipment();
-		}
-		else if (name.equals("Date"))
-		{
-			m_InvoiceDate = (Timestamp) value;
-			
-			loadShipment();
-		}
-		else if (name.equals("Date"))
-		{
+		}else if (name.equals("Date")){
 			m_MovementDate = (Timestamp) value;
-			
-			loadShipment();
+		}else if (name.equals("Datetime")){
+			m_InvoiceDate = (Timestamp) value;
 		}
+		loadShipment();
 		
 	}
 	
@@ -399,7 +410,7 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 				m_C_DocType_ID = 0;
 
 			loadShipment();
-		}	
+		}
 	}
 	@Override
 	public void tableChanged(WTableModelEvent event) {
@@ -413,8 +424,8 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 		processBtn.setEnabled(count>0);
 	}
 	
-	private void generateShipment(String trxName) {
-		
+	private String generateShipment(String trxName) {
+		String Success = null;
 		for (int i = 0; i < shipmentTable.getRowCount(); i++)
 		{
 			if (((Boolean)shipmentTable.getValueAt(i, 0)).booleanValue())
@@ -434,15 +445,15 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 				invoice.setDateInvoiced(m_InvoiceDate);
 				invoice.setDateAcct(m_InvoiceDate);
 				invoice.setC_DocTypeTarget_ID(1000002);//DocType AR Receipt
+				MOrder order = (MOrder)inOut.getC_Order();
+				invoice.setPaymentRule(order.getPaymentRule());
+				invoice.setM_PriceList_ID(order.getM_PriceList_ID());
+				invoice.setC_PaymentTerm_ID(order.getC_PaymentTerm_ID());
+				invoice.saveEx();
 				
 				for(MInOutLine line : inOut.getLines(true)) {
-					MOrderLine oline = (MOrderLine) line.getC_OrderLine();
-					MOrder order = (MOrder)oline.getC_Order();
-					invoice.setPaymentRule(order.getPaymentRule());
-					invoice.setM_PriceList_ID(order.getM_PriceList_ID());
-					invoice.setC_PaymentTerm_ID(order.getC_PaymentTerm_ID());
-					invoice.saveEx();
-					
+					MOrderLine oline = (MOrderLine) line.getC_OrderLine();	
+				
 					MInvoiceLine iLine = new MInvoiceLine(invoice.getCtx(), 0, trxName);
 					iLine.setAD_Org_ID(invoice.getAD_Org_ID());
 					iLine.setC_Invoice_ID(invoice.get_ID());
@@ -450,7 +461,10 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 					iLine.setM_Product_ID(line.getM_Product_ID());
 					iLine.setQtyEntered(line.getQtyEntered());
 					iLine.setQtyInvoiced(line.getMovementQty());
-					iLine.setC_Tax_ID(order.get_ValueAsInt("C_Tax_ID"));
+					if(order.get_ValueAsInt("C_Tax_ID")>0) 
+						iLine.setC_Tax_ID(order.get_ValueAsInt("C_Tax_ID"));
+					else 
+						iLine.setC_Tax_ID(1000000);//C_Tax_ID Bebas_PPN
 					iLine.setPriceActual(oline.getPriceActual());
 					iLine.setPriceEntered(oline.getPriceEntered());
 					iLine.setPriceList(oline.getPriceList());
@@ -460,8 +474,12 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 					iLine.set_ValueOfColumn("SubsidiAmt", oline.get_Value("SubsidiAmt"));
 					iLine.saveEx();
 				}
+				if(invoice.getC_Invoice_ID()>0) {
+					Clients.showNotification("Success! invoice Document No: "+invoice.getDocumentNo());    
+				}
 			}
 		}
+		return Success;
 		
 	}
 
