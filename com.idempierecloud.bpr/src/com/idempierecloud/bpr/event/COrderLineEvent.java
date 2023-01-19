@@ -67,10 +67,17 @@ public class COrderLineEvent extends CustomEvent {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus") || orderLine.getM_Product_ID()==0)
 			return;
+
+		BigDecimal priceNet = (BigDecimal) orderLine.get_Value("PriceNet");
+		if(priceNet==null)
+			priceNet = Env.ZERO;
 		
 		MProductCategory productCategory = (MProductCategory) orderLine.getM_Product().getM_Product_Category();
-		if(!productCategory.get_ValueAsBoolean("IsPph"))
+		if(!productCategory.get_ValueAsBoolean("IsPph")) {
+			orderLine.setPrice(priceNet);
+			orderLine.set_ValueOfColumn("LCO_WithholdingType_ID",null);
 			return;
+		}
 		
 		MBPartner bp = (MBPartner) orderLine.getC_Order().getC_BPartner();
 		String pph = null;
@@ -97,13 +104,9 @@ public class COrderLineEvent extends CustomEvent {
 			throw new AdempiereException("No Withholding calc found "+pph);
 		
 		BigDecimal taxRate = calc.getC_Tax().getRate();
-		BigDecimal priceNet = (BigDecimal) orderLine.get_Value("PriceNet");
-		if(priceNet==null)
-			priceNet = Env.ZERO;
 		
-		BigDecimal tax = priceNet.multiply(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP));
-		priceNet = priceNet.add(tax).setScale(orderLine.getC_UOM().getStdPrecision(), RoundingMode.HALF_UP);
-		orderLine.setPrice(priceNet);
+		BigDecimal priceEntered = priceNet.divide(Env.ONE.subtract(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP)));
+		orderLine.setPrice(priceEntered);
 	}
 
 	private void calculateAdditionalCost() {
