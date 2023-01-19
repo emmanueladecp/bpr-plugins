@@ -20,11 +20,13 @@ package com.idempierecloud.bpr.component;
 
 import org.compiere.model.I_C_Order;
 import org.compiere.model.I_C_OrderLine;
+import org.compiere.model.I_M_InOutLine;
 import org.compiere.model.I_M_InOutLineConfirm;
 import org.compiere.model.I_M_ProductionLine;
 
 import com.idempierecloud.bpr.base.CustomCalloutFactory;
 import com.idempierecloud.bpr.callout.SetDatePromiseMOrderLine;
+import com.idempierecloud.bpr.callout.SetLocatorCustomerReturn;
 import com.idempierecloud.bpr.callout.SetMovementQtyConfirmLine;
 import com.idempierecloud.bpr.callout.SetQCPenerimaanGabahBPR;
 import com.idempierecloud.bpr.callout.SetQtyUsedProductionLine;
@@ -57,6 +59,8 @@ public class CalloutFactory extends CustomCalloutFactory {
 		registerCallout(I_BPR_QualityControl.Table_Name, "BPR_Timbangan_ID", SetQCPenerimaanGabahBPR.class);
 		// M_ProductionLine
 		registerCallout(I_M_ProductionLine.Table_Name, "QtyEntered", SetQtyUsedProductionLine.class);
+		// M_InOutLine
+		registerCallout(I_M_InOutLine.Table_Name, "M_Locator_ID", SetLocatorCustomerReturn.class);
 		// M_InOutLineConfirm
 		registerCallout(I_M_InOutLineConfirm.Table_Name, "QtyEntered", SetMovementQtyConfirmLine.class);
 	}

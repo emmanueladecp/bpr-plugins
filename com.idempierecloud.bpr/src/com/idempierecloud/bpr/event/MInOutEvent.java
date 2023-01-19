@@ -8,9 +8,11 @@ import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
+import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -28,6 +30,7 @@ public class MInOutEvent extends CustomEvent {
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			checkAvailableQtyProduct();
+			checkCustomerReturn();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
@@ -35,6 +38,35 @@ public class MInOutEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkShipment();
 		}
+	}
+	private void checkCustomerReturn() {
+		if(!inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns) || !inout.get_ValueAsBoolean("IsSusut") || inout.isReversal())
+			return;
+		
+		for(MInOutLine line : inout.getLines()) {
+			if(!line.getM_Locator().getM_LocatorType().getName().equals("RETUR"))
+				continue;
+			
+			BigDecimal qty = MUOMConversion.convertProductFrom(line.getCtx(), line.getM_Product_ID(), line.getC_UOM_ID(), line.getQtyEntered());
+			BigDecimal timbanganNetAmt = (BigDecimal) line.get_Value("TimbanganNetAmt");
+			if(timbanganNetAmt==null || timbanganNetAmt.signum()<=0)
+				throw new AdempiereException("TimbanganNetAmt invalid. "+timbanganNetAmt);
+			BigDecimal diff = qty.subtract(timbanganNetAmt);
+			if(diff.signum()<=0)
+				return;
+			
+			MInOutLine susut = new MInOutLine(inout);
+			susut.setM_Product_ID(line.getM_Product_ID());
+			susut.setQty(diff);
+			susut.setC_UOM_ID(line.getM_Product().getC_UOM_ID());
+			int LocatorSusut_ID = DB.getSQLValue(null, "SELECT M_Locator_ID From M_Locator Where M_Locator.M_LocatorType_ID = 1000000 And M_Locator.M_Warehouse_ID=?", inout.getM_Warehouse_ID());
+			susut.setM_Locator_ID(LocatorSusut_ID);
+			susut.setLine(line.getLine()+20);
+			susut.setC_OrderLine_ID(line.getC_OrderLine_ID());
+			susut.setDescription("SUSUT");
+			susut.saveEx();
+		}
+		
 	}
 	private void checkShipment() {
 		int BPR_PiclistLine_ID = DB.getSQLValue(inout.get_TrxName(), "select bpr_picklistline_id from bpr_picklistline bp "

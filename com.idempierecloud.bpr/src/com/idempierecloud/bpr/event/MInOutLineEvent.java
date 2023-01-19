@@ -23,9 +23,9 @@ public class MInOutLineEvent extends CustomEvent {
 		line = (MInOutLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkQtyEntered();
-			setLocatorCustomerReject();
+			setLocator();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
-			setLocatorCustomerReject();
+			setLocator();
 		}
 	}
 	private void checkQtyEntered() {
@@ -38,12 +38,23 @@ public class MInOutLineEvent extends CustomEvent {
 		}
 	}
 	
-	private void setLocatorCustomerReject() {
+	private void setLocator() {
 		int DocType_MM_Customer_Reject = 1000063;
+		int DocType_MM_Customer_Return = 1000015;
+		int M_LocatorType_ID = 0;
 		if(line.getM_InOut().getC_DocType_ID()== DocType_MM_Customer_Reject) {
-			int LocatorReject = DB.getSQLValue(line.get_TrxName(), "SELECT M_Locator_ID From M_Locator Where M_LocatorType_ID = 1000004 And M_Warehouse_ID=?", line.getM_InOut().getM_Warehouse_ID());							
-			line.setM_Locator_ID(LocatorReject);
+			M_LocatorType_ID = 1000006; // REJECT	
+		}else if(line.getM_InOut().getC_DocType_ID()== DocType_MM_Customer_Return) {
+			M_LocatorType_ID = 1000004;	// RETUR
 		}
+		
+		if(M_LocatorType_ID==0 || (line.getDescription()!=null && line.getDescription().equals("SUSUT")))
+			return;
+		
+		int locator = DB.getSQLValue(line.get_TrxName(), "SELECT M_Locator_ID From M_Locator Where M_LocatorType_ID = ? And M_Warehouse_ID=?", M_LocatorType_ID, line.getM_InOut().getM_Warehouse_ID());
+		line.setM_Locator_ID(locator);
+		
+		
 	}
 	
 	@Override
