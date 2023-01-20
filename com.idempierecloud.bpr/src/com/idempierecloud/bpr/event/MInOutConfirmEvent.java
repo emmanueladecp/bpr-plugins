@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.adempiere.webui.window.FDialog;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
@@ -12,6 +13,9 @@ import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
 import org.compiere.model.PO;
 import org.osgi.service.event.Event;
+import org.zkoss.zk.ui.metainfo.MessageLoader;
+import org.zkoss.zk.ui.sys.RequestInfo;
+import org.zkoss.zk.ui.util.Clients;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 
@@ -42,7 +46,6 @@ public class MInOutConfirmEvent extends CustomEvent {
 		int count = DB.getSQLValue(confirm.get_TrxName(), "select count(1) from BPR_PicklistLine pl"
 				+ " join BPR_Picklist p on pl.bpr_picklist_id = p.bpr_picklist_id"
 				+ " where pl.m_inout_id =? and p.docstatus in ('CO','CL')", confirm.getM_InOut_ID());
-		
 		if(count==0)
 			throw new AdempiereException("Belum ada picklist complete untuk shipment "+confirm.getM_InOut().getDocumentNo());
 	}
@@ -63,6 +66,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 	}
 	
 	private void createMovementReject() {
+		String DocumentNo = null;
 		int count = DB.getSQLValue(confirm.get_TrxName(), "select coalesce(sum(DifferenceQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
 		final int DocType_MovementReject = 1000098;
 		if(count>0) {
@@ -100,10 +104,10 @@ public class MInOutConfirmEvent extends CustomEvent {
 			if(!movement.processIt(MMovement.DOCACTION_Complete))
 				throw new AdempiereException("Inventory Move (Retur) gagal Complete : "+shipment.getProcessMsg());
 			movement.saveEx();
+			DocumentNo = movement.getDocumentNo();
 			log.fine("Create Movement Retur from ship/receipt confirm");
-			
 		}
-		
+		Clients.showNotification("Success! invoice Document No: "+DocumentNo);
 	}
 	
 	
