@@ -475,7 +475,7 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 					iLine.saveEx();
 				}
 				if(invoice.getC_Invoice_ID()>0) {
-					Clients.showNotification("Success! invoice Document No: "+invoice.getDocumentNo());    
+					FDialog.info(getWindowNo(), this, "Success", "Success! invoice Document No"+invoice.getDocumentNo());
 				}
 			}
 		}
