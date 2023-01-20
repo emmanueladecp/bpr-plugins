@@ -17,6 +17,7 @@ import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductCategory;
 import org.compiere.model.MProductPrice;
+import org.compiere.model.MTax;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
@@ -105,7 +106,21 @@ public class COrderLineEvent extends CustomEvent {
 		
 		BigDecimal taxRate = calc.getC_Tax().getRate();
 		
-		BigDecimal priceEntered = priceNet.divide(Env.ONE.subtract(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP)));
+		BigDecimal priceEntered = priceNet.divide(Env.ONE.subtract(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP)), 4, RoundingMode.HALF_UP);
+		
+		if(orderLine.get_ValueAsBoolean("isGrossUpPPN")) {
+			MTax ppnGrossUp = new Query(orderLine.getCtx(), MTax.Table_Name, "isGrossUpPPN='Y'", orderLine.get_TrxName())
+					.setClient_ID()
+					.first();
+			
+			if(ppnGrossUp==null)
+				throw new AdempiereException("No Tax Rate for PPN Gross Up");
+			
+			taxRate = ppnGrossUp.getRate();
+			BigDecimal ppn = priceEntered.multiply(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP));
+			priceEntered = priceEntered.add(ppn);
+		}
+		
 		orderLine.setPrice(priceEntered);
 	}
 
