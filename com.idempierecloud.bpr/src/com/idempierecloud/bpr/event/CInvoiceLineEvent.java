@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrderLine;
@@ -22,10 +24,23 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		invoiceLine = (MInvoiceLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setWitholdingType();
+			setOngkosAngkut_SubsidiAmt();
 		}
 			
 	}
 	
+	private void setOngkosAngkut_SubsidiAmt() {
+		if(invoiceLine.getC_OrderLine_ID()>0) {
+			MOrderLine oLine = (MOrderLine) invoiceLine.getC_OrderLine();
+			BigDecimal ongkosAngkut = (BigDecimal)oLine.get_Value("OngkosAngkut");
+			BigDecimal SubsidiAmt = (BigDecimal)oLine.get_Value("SubsidiAmt");
+			if(ongkosAngkut.compareTo(BigDecimal.ZERO)>0)
+				invoiceLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
+			if(SubsidiAmt.compareTo(BigDecimal.ZERO)>0)
+				invoiceLine.set_ValueOfColumn("SubsidiAmt", SubsidiAmt);
+		}
+	}
+
 	private void setWitholdingType() {
 		if(invoiceLine.getC_Invoice().isSOTrx() || invoiceLine.getC_OrderLine_ID()==0)
 			return;
