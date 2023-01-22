@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
-import org.adempiere.webui.window.FDialog;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
@@ -13,8 +12,6 @@ import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
 import org.compiere.model.PO;
 import org.osgi.service.event.Event;
-import org.zkoss.zk.ui.metainfo.MessageLoader;
-import org.zkoss.zk.ui.sys.RequestInfo;
 import org.zkoss.zk.ui.util.Clients;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -107,7 +104,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 			DocumentNo = movement.getDocumentNo();
 			log.fine("Create Movement Retur from ship/receipt confirm");
 		}
-		Clients.showNotification("Success! invoice Document No: "+DocumentNo);
+		Clients.showNotification("Create Inventory Move: "+DocumentNo+" from ship/receipt confirm");
 	}
 	
 	
