@@ -47,6 +47,11 @@ public class MProductionLineEvent extends CustomEvent {
 				throw new AdempiereException("Berat Produk belum diset "+prodLine.getM_Product().getName());
 			
 			BigDecimal qtyUsed = prodLine.getMovementQty().divide(prodLine.getM_Product().getWeight(), 0, RoundingMode.UP);
+			BigDecimal qty = (BigDecimal) relatedProduct.get_Value("Qty");
+			if(qty==null)
+					qty = Env.ONE;
+			
+			qtyUsed = qtyUsed.multiply(qty);
 			
 			if(line==null) {
 				line = new MProductionLineExt(prodLine.getCtx(), 0, prodLine.get_TrxName());
