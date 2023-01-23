@@ -34,10 +34,15 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			MOrderLine oLine = (MOrderLine) invoiceLine.getC_OrderLine();
 			BigDecimal ongkosAngkut = (BigDecimal)oLine.get_Value("OngkosAngkut");
 			BigDecimal SubsidiAmt = (BigDecimal)oLine.get_Value("SubsidiAmt");
-			if(ongkosAngkut.compareTo(BigDecimal.ZERO)>0)
-				invoiceLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
-			if(SubsidiAmt.compareTo(BigDecimal.ZERO)>0)
-				invoiceLine.set_ValueOfColumn("SubsidiAmt", SubsidiAmt);
+			if(ongkosAngkut!=null) {
+				if(ongkosAngkut.compareTo(BigDecimal.ZERO)>0 && ongkosAngkut!=null) 
+					invoiceLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
+			}
+			if(SubsidiAmt!=null) {
+				if(SubsidiAmt.compareTo(BigDecimal.ZERO)>0) 
+					invoiceLine.set_ValueOfColumn("SubsidiAmt", SubsidiAmt);
+			}
+				
 		}
 	}
 
