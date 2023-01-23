@@ -44,6 +44,7 @@ public class COrderLineEvent extends CustomEvent {
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setPricePOTurus();
 			setWitholdingType();
+			calculateGrossUp();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
@@ -53,6 +54,7 @@ public class COrderLineEvent extends CustomEvent {
 			checkSOCreditLimit();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setWitholdingType();
+			calculateGrossUp();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
@@ -64,6 +66,51 @@ public class COrderLineEvent extends CustomEvent {
 		}
 	}	
 	
+	private void calculateGrossUp() {
+		// If Sales Order, Skip
+		if(orderLine.getC_Order().isSOTrx())
+			return;
+		
+		// if no one grossup checked 
+		if(!orderLine.get_ValueAsBoolean("isGrossUpPPh") && !orderLine.get_ValueAsBoolean("isGrossUpPPN"))
+			return;
+	
+		BigDecimal priceNet = (BigDecimal) orderLine.get_Value("PriceNet");
+		if(priceNet==null)
+			priceNet = Env.ZERO;
+		
+		BigDecimal priceEntered = priceNet;
+		if(orderLine.get_ValueAsBoolean("isGrossUpPPh")) {
+			X_LCO_WithholdingType type = new X_LCO_WithholdingType(orderLine.getCtx(), orderLine.get_ValueAsInt(""), orderLine.get_TrxName());
+		
+			X_LCO_WithholdingCalc calc = new Query(orderLine.getCtx(), X_LCO_WithholdingCalc.Table_Name, X_LCO_WithholdingCalc.COLUMNNAME_LCO_WithholdingType_ID+"=?", orderLine.get_TrxName())
+					.setParameters(type.getLCO_WithholdingType_ID())
+					.first();
+	
+			if(calc==null)
+				throw new AdempiereException("No Withholding calc found "+type.getName());
+			
+			BigDecimal taxRate = calc.getC_Tax().getRate();
+			
+			priceEntered = priceNet.divide(Env.ONE.subtract(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP)), 4, RoundingMode.HALF_UP);
+		}
+		
+		if(orderLine.get_ValueAsBoolean("isGrossUpPPN")) {
+			MTax ppnGrossUp = new Query(orderLine.getCtx(), MTax.Table_Name, "isGrossUpPPN='Y'", orderLine.get_TrxName())
+					.setClient_ID()
+					.first();
+			
+			if(ppnGrossUp==null)
+				throw new AdempiereException("No Tax Rate for PPN Gross Up");
+			
+			BigDecimal taxRate = ppnGrossUp.getRate();
+			BigDecimal ppn = priceEntered.multiply(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP));
+			priceEntered = priceEntered.add(ppn);
+		}
+		
+		orderLine.setPrice(priceEntered);
+	}
+
 	private void setWitholdingType() {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus") || orderLine.getM_Product_ID()==0)
@@ -96,32 +143,6 @@ public class COrderLineEvent extends CustomEvent {
 			throw new AdempiereException("No Withholding Type found "+pph);
 		
 		orderLine.set_ValueOfColumn("LCO_WithholdingType_ID", type.getLCO_WithholdingType_ID());
-		
-		X_LCO_WithholdingCalc calc = new Query(orderLine.getCtx(), X_LCO_WithholdingCalc.Table_Name, X_LCO_WithholdingCalc.COLUMNNAME_LCO_WithholdingType_ID+"=?", orderLine.get_TrxName())
-				.setParameters(type.getLCO_WithholdingType_ID())
-				.first();
-
-		if(calc==null)
-			throw new AdempiereException("No Withholding calc found "+pph);
-		
-		BigDecimal taxRate = calc.getC_Tax().getRate();
-		
-		BigDecimal priceEntered = priceNet.divide(Env.ONE.subtract(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP)), 4, RoundingMode.HALF_UP);
-		
-		if(orderLine.get_ValueAsBoolean("isGrossUpPPN")) {
-			MTax ppnGrossUp = new Query(orderLine.getCtx(), MTax.Table_Name, "isGrossUpPPN='Y'", orderLine.get_TrxName())
-					.setClient_ID()
-					.first();
-			
-			if(ppnGrossUp==null)
-				throw new AdempiereException("No Tax Rate for PPN Gross Up");
-			
-			taxRate = ppnGrossUp.getRate();
-			BigDecimal ppn = priceEntered.multiply(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP));
-			priceEntered = priceEntered.add(ppn);
-		}
-		
-		orderLine.setPrice(priceEntered);
 	}
 
 	private void calculateAdditionalCost() {
