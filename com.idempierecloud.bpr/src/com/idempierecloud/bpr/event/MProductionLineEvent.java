@@ -35,7 +35,7 @@ public class MProductionLineEvent extends CustomEvent {
 	
 	private void checkRelatedProduct() {
 		List<X_M_RelatedProduct> relatedProducts = getRelatedProducts();
-		if(!prodLine.isEndProduct() && relatedProducts.size()==0 && prodLine.isProcessed())
+		if(!prodLine.isEndProduct() || relatedProducts.size()==0 || prodLine.isProcessed())
 			return;
 		
 		for(X_M_RelatedProduct relatedProduct : relatedProducts) {
