@@ -81,7 +81,7 @@ public class COrderLineEvent extends CustomEvent {
 		
 		BigDecimal priceEntered = priceNet;
 		if(orderLine.get_ValueAsBoolean("isGrossUpPPh")) {
-			X_LCO_WithholdingType type = new X_LCO_WithholdingType(orderLine.getCtx(), orderLine.get_ValueAsInt(""), orderLine.get_TrxName());
+			X_LCO_WithholdingType type = new X_LCO_WithholdingType(orderLine.getCtx(), orderLine.get_ValueAsInt("LCO_WithholdingType_ID"), orderLine.get_TrxName());
 		
 			X_LCO_WithholdingCalc calc = new Query(orderLine.getCtx(), X_LCO_WithholdingCalc.Table_Name, X_LCO_WithholdingCalc.COLUMNNAME_LCO_WithholdingType_ID+"=?", orderLine.get_TrxName())
 					.setParameters(type.getLCO_WithholdingType_ID())
@@ -104,7 +104,7 @@ public class COrderLineEvent extends CustomEvent {
 				throw new AdempiereException("No Tax Rate for PPN Gross Up");
 			
 			BigDecimal taxRate = ppnGrossUp.getRate();
-			BigDecimal ppn = priceEntered.multiply(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP));
+			BigDecimal ppn = priceNet.multiply(taxRate.divide(Env.ONEHUNDRED, 4, RoundingMode.HALF_UP));
 			priceEntered = priceEntered.add(ppn);
 		}
 		
