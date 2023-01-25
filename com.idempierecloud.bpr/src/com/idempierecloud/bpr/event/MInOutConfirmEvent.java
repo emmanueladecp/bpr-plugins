@@ -12,7 +12,6 @@ import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
 import org.compiere.model.PO;
 import org.osgi.service.event.Event;
-import org.zkoss.zk.ui.util.Clients;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 
@@ -63,7 +62,6 @@ public class MInOutConfirmEvent extends CustomEvent {
 	}
 	
 	private void createMovementReject() {
-		String DocumentNo = null;
 		int count = DB.getSQLValue(confirm.get_TrxName(), "select coalesce(sum(DifferenceQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
 		final int DocType_MovementReject = 1000098;
 		if(count>0) {
@@ -101,10 +99,8 @@ public class MInOutConfirmEvent extends CustomEvent {
 			if(!movement.processIt(MMovement.DOCACTION_Complete))
 				throw new AdempiereException("Inventory Move (Retur) gagal Complete : "+shipment.getProcessMsg());
 			movement.saveEx();
-			DocumentNo = movement.getDocumentNo();
-			log.fine("Create Movement Retur from ship/receipt confirm");
+			log.info("Create Movement Reject from ship/receipt confirm "+movement.getDocumentNo());
 		}
-		Clients.showNotification("Create Inventory Move: "+DocumentNo+" from ship/receipt confirm");
 	}
 	
 	
