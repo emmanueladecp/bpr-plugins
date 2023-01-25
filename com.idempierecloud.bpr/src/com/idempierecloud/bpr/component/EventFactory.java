@@ -88,6 +88,8 @@ public class EventFactory extends CustomEventFactory {
 		
 		// C_InvoiceLine
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_InvoiceLine.Table_Name, CInvoiceLineEvent.class);
+		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_C_InvoiceLine.Table_Name, CInvoiceLineEvent.class);
+		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_I_Invoice.Table_Name, ImportInvoiceEvent.class);
 		
 		// C_Order
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Order.Table_Name, COrderEvent.class);
@@ -155,8 +157,6 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		
-		//I_Invoice
-		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_I_Invoice.Table_Name, ImportInvoiceEvent.class);
 	}
 
 }
