@@ -13,6 +13,7 @@ import org.compiere.model.PO;
 import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -45,6 +46,11 @@ public class MProductionEvent extends CustomEvent{
 			if(relatedProduct!=null) {
 				MProductionLineExt parent = MProductionLineExt.getLine(line.getCtx(), relatedProduct.getM_Product_ID(), line.getM_Production_ID(), line.get_TrxName());
 				BigDecimal requiredQty = parent.getMovementQty().divide(parent.getM_Product().getWeight(), 0, RoundingMode.UP);
+				BigDecimal qty = (BigDecimal) relatedProduct.get_Value("Qty");
+				if(qty==null)
+						qty = Env.ONE;
+				
+				requiredQty = requiredQty.multiply(qty);
 				if(parent!=null && requiredQty.compareTo(line.getQtyUsed())>0)
 					throw new AdempiereException("Qty "+line.getM_Product().getName()+" must be equal or more than Qty "+parent.getM_Product().getName());
 			}

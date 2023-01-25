@@ -3,7 +3,9 @@ package com.idempierecloud.bpr.event;
 import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
+import org.compiere.model.MDocType;
 import org.compiere.model.MInOutLine;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -26,8 +28,26 @@ public class MInOutLineEvent extends CustomEvent {
 			setLocator();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setLocator();
+			setLocatorByOrder();
 		}
 	}
+	
+	
+	private void setLocatorByOrder() {
+		if(line.getC_OrderLine_ID()==0)
+			return;
+		
+		MOrderLine orderLine = (MOrderLine) line.getC_OrderLine();
+		
+		
+		if(!orderLine.getC_Order().getC_DocType().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder))
+			return;
+		
+		if(orderLine.get_ValueAsInt("M_Locator_ID")>0)
+			line.setM_Locator_ID(orderLine.get_ValueAsInt("M_Locator_ID"));
+	}
+
+
 	private void checkQtyEntered() {
 		BigDecimal qtyEntered = line.getQtyEntered();
 		
