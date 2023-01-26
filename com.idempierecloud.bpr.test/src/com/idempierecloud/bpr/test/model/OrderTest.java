@@ -17,6 +17,8 @@ import com.idempierecloud.bpr.test.AbstractTestCase;
 public class OrderTest extends AbstractTestCase {
 
 	private static final int C_DOCTYPE_GT_ORDER_BPR1 = 1000048;
+	private static final int C_DOCTYPE_POS_Order = 1000056;
+	private static final int M_Product_ID_FG_Ultima10KG=1003643;
 	private static final int C_BPARTNER_ARI_SAPUTRA = 1001591;
 	private static final int C_BPARTNER_LOCATION_ARI_SAPUTRA = 1001584;
 	private static final int AD_ORG_KANTOR_16 = 1000006;
@@ -40,6 +42,33 @@ public class OrderTest extends AbstractTestCase {
 	private static final int C_BPartner_Location_ID_PALEMBANG=1000024;
 	private static final int AD_Org_ID_BPR1=1000003;
 	
+	@Test
+	public void test_qtyOrdered_uomCOnvertion() throws Exception{
+		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
+		order.setAD_Org_ID(AD_Org_ID_BPR1);
+		order.setIsSOTrx(true);
+		order.setC_DocTypeTarget_ID(C_DOCTYPE_POS_Order);
+		order.setDateOrdered(getLoginDate());
+		order.setM_PriceList_ID(M_PRICELIST_SUMATERA_GT);
+		order.setC_BPartner_ID(1001428);//KARYAWAN BPR 1 - TUNAI
+		order.setC_BPartner_Location_ID(C_BPartner_Location_ID_PALEMBANG);
+		order.setM_Warehouse_ID(M_WAREHOUSE_GUDANG_BPR1);
+		order.setPaymentRule(MOrder.PAYMENTRULE_OnCredit);
+		order.setC_PaymentTerm_ID(C_PAYMENT_TERM_IMMEDIATE);
+		order.setDocStatus(MOrder.STATUS_Drafted);
+		order.saveEx();
+		
+		MOrderLine orderLine = new MOrderLine(order);
+		orderLine.setM_Product_ID(M_Product_ID_FG_Ultima10KG);
+		orderLine.setQty(new BigDecimal(1));
+		orderLine.setQtyOrdered(new BigDecimal(1));
+		orderLine.setC_UOM_ID(C_UOM_ZAK);
+		orderLine.setPrice();
+		orderLine.setC_Tax_ID(C_TAX_STANDARD);
+		orderLine.saveEx();
+		
+		assertEquals(orderLine.getQtyOrdered(), BigDecimal.valueOf(10).setScale(2));
+	}
 	@Test
 	public void test_so_credit_available() throws Exception{
 		MOrder order = new MOrder(Env.getCtx(), 0, getTrxName());
@@ -74,7 +103,6 @@ public class OrderTest extends AbstractTestCase {
 		if(SO_CreditAvailable.compareTo(order.getGrandTotal())<0)
 			isCorrect = true;
 		assertFalse(isCorrect);
-		orderLine.saveEx();
 	}
 	@Test
 	public void test_linenetamt_include_ongkos_angkut() throws Exception{

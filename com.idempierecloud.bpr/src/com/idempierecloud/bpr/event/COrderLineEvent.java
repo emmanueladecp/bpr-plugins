@@ -42,6 +42,7 @@ public class COrderLineEvent extends CustomEvent {
 		
 		orderLine = (MOrderLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+			setQtyOrdered();
 			setPricePOTurus();
 			setWitholdingType();
 			calculateGrossUp();
@@ -53,6 +54,7 @@ public class COrderLineEvent extends CustomEvent {
 			setDiscount();
 			checkSOCreditLimit();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			setQtyOrdered();
 			setWitholdingType();
 			calculateGrossUp();
 			calculateOngkosAngkut();
@@ -324,6 +326,15 @@ public class COrderLineEvent extends CustomEvent {
 				orderLine.setPriceActual(orderLine.getPriceList());
 			}
 		}
+	}
+	
+	private void setQtyOrdered() {
+		if(orderLine.getC_UOM_ID()!=orderLine.getM_Product().getC_UOM_ID()) {
+			if(orderLine.getM_Product_ID()==0)
+				return;
+			BigDecimal qtyOrdered = MUOMConversion.convertProductFrom(orderLine.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), orderLine.getQtyEntered());
+			orderLine.setQtyOrdered(qtyOrdered);
+		}	
 	}
 	
 	@Override
