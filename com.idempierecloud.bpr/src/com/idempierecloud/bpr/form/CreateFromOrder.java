@@ -61,7 +61,7 @@ public class CreateFromOrder extends CreateFrom {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
 		StringBuffer sqlStmt = new StringBuffer();
-		sqlStmt.append("SELECT AD_Org_ID, Name AS OrganizationName FROM AD_Org WHERE AD_Client_ID=?");
+		sqlStmt.append("SELECT AD_Org_ID, Name AS OrganizationName FROM AD_Org WHERE isActive='Y' and AD_Client_ID=?");
 		
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
