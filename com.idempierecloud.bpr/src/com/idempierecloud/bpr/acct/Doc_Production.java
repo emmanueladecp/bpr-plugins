@@ -381,7 +381,7 @@ public class Doc_Production extends Doc
 							costMap.put(line0.get_ID()+ "_"+ line0.getM_AttributeSetInstance_ID(),costs0);
 							if(relatedProduct!=null && relatedProduct.getM_Product_ID()==product.getM_Product_ID())
 								relatedCost = relatedCost.add(costs0);
-							else 
+							else if(relatedProduct==null)
 								bomCost = bomCost.add(costs0);
 						}
 					}else if(prodline.isEndProduct()){
