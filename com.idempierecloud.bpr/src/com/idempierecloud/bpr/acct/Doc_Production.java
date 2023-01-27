@@ -30,6 +30,7 @@ import org.compiere.acct.DocLine;
 import org.compiere.acct.Fact;
 import org.compiere.acct.FactLine;
 import org.compiere.model.MAcctSchema;
+import org.compiere.model.MCost;
 import org.compiere.model.MCostDetail;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductionLineMA;
@@ -223,8 +224,8 @@ public class Doc_Production extends Doc
 			MProduct product = (MProduct) prodline.getM_Product();
 			String CostingLevel = product.getCostingLevel(as);
 			String costingMethod = product.getCostingMethod(as);
-			boolean isZakProduct = product.getC_UOM().getUOMSymbol().equals("ZAK");
 			BigDecimal qtyEndProduct = Env.ZERO;
+			log.info("jenis produk "+prodline.get_ValueAsString("JenisProduk"));
 
 			if (MAcctSchema.COSTINGLEVEL_BatchLot.equals(CostingLevel) ) 
 			{
@@ -274,8 +275,11 @@ public class Doc_Production extends Doc
 				{
 					costs = cd.getAmt();
 				} 
-				else 
+				else if(prodline.get_ValueAsString("JenisProduk").equals("T"))
 				{
+					ProductCost pc = line.getProductCost();
+					costs = pc.getProductCosts(as, line.getAD_Org_ID(), MCost.COSTINGMETHOD_StandardCosting, line.getC_OrderLine_ID(), false);
+				}else {
 					costs = line.getProductCosts(as, line.getAD_Org_ID(), false);
 				}
 				costMap.put(line.get_ID()+ "_"+ line.getM_AttributeSetInstance_ID(), costs);
@@ -377,7 +381,7 @@ public class Doc_Production extends Doc
 							costMap.put(line0.get_ID()+ "_"+ line0.getM_AttributeSetInstance_ID(),costs0);
 							if(relatedProduct!=null && relatedProduct.getM_Product_ID()==product.getM_Product_ID())
 								relatedCost = relatedCost.add(costs0);
-							else if(relatedProduct==null)
+							else 
 								bomCost = bomCost.add(costs0);
 						}
 					}else if(prodline.isEndProduct()){
