@@ -374,6 +374,11 @@ public class Doc_Production extends Doc
 							{
 								costs0 = cd0.getAmt();
 							} 
+							else if(bomProLine.get_ValueAsString("JenisProduk").equals("T"))
+							{
+								ProductCost pc = line0.getProductCost();
+								costs0 = pc.getProductCosts(as, line0.getAD_Org_ID(), MCost.COSTINGMETHOD_StandardCosting, line0.getC_OrderLine_ID(), false);
+							}
 							else 
 							{
 								costs0 = line0.getProductCosts(as, line0.getAD_Org_ID(), false);
