@@ -18,6 +18,8 @@
 
 package com.idempierecloud.bpr.component;
 
+import org.compiere.model.I_M_CostDetail;
+
 import com.idempierecloud.bpr.base.CustomModelFactory;
 import com.idempierecloud.bpr.model.I_BPR_HistoryFakturPajak;
 import com.idempierecloud.bpr.model.I_BPR_ListFakturPajak;
@@ -40,6 +42,7 @@ import com.idempierecloud.bpr.model.MBPRPicklist;
 import com.idempierecloud.bpr.model.MBPRPicklistLine;
 import com.idempierecloud.bpr.model.MBPRRMA;
 import com.idempierecloud.bpr.model.MBPRRMALine;
+import com.idempierecloud.bpr.model.MCostDetail;
 import com.idempierecloud.bpr.model.MProductionExt;
 import com.idempierecloud.bpr.model.MProductionLineExt;
 import com.idempierecloud.bpr.model.X_BPR_Timbangan;
@@ -74,6 +77,7 @@ public class ModelFactory extends CustomModelFactory {
 		registerModel(I_BPR_HistoryFakturPajak.Table_Name, MBPRHistoryFakturPajak.class);
 		registerModel(I_BPR_MaterialRequest.Table_Name, MBPRMaterialRequest.class);
 		registerModel(I_BPR_MaterialRequestLine.Table_Name, MBPRMaterialRequestLine.class);
+		registerModel(I_M_CostDetail.Table_Name, MCostDetail.class);
 	}
 
 }
