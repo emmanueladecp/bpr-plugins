@@ -2,7 +2,6 @@ package com.idempierecloud.bpr.event;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
-import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MLocation;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -12,52 +11,39 @@ import org.osgi.service.event.Event;
 import com.idempierecloud.bpr.base.CustomEvent;
 import com.idempierecloud.bpr.util.WebService;
 
-public class CBPartnerLocationEvent extends CustomEvent {
+public class CLocationEvent extends CustomEvent {
 
-	private static CLogger log = CLogger.getCLogger(CBPartnerLocationEvent.class);
+	private static CLogger log = CLogger.getCLogger(CLocationEvent.class);
 	
-	private MBPartnerLocation bpLocation = null;
+	private MLocation location = null;
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
-		log.fine("bp location Event : "+event.getTopic());
+		log.fine("location Event : "+event.getTopic());
 		
-		bpLocation = (MBPartnerLocation) po;
+		location = (MLocation) po;
 		if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
-			updateLocation();
 			sendToRMP();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
-			updateLocation();
 			sendToRMP();
 		}
 	}
 	
 	private void sendToRMP() {
-		String client = Env.getContext(bpLocation.getCtx(), "#AD_Client_Name");
+		String client = Env.getContext(location.getCtx(), "#AD_Client_Name");
 		if(!client.equals("Belitang"))
 			return;
 		
-		String[] columns = {"C_BPartner_ID","C_Country_ID","C_Region_ID","C_City_ID",
-				"BPR_District_ID","BPR_Village_ID","newcust_latitude","newcust_longitude",
-				"IsShipTo","IsBillTo"};
+		String[] columns = {"Address1","City","Postal","C_Country_ID"};
 		String[] values = new String[columns.length];
 		for(int i=0;i<columns.length;i++) {
-			values[i] = bpLocation.get_ValueAsString(columns[i]);
+			values[i] = location.get_ValueAsString(columns[i]);
 		}
 		WebService webService = new WebService();
-		webService.createData("createBPLocation", "C_BPartner_Location", columns, values);
+		webService.createData("addLocation", "C_Location", columns, values);
 		webService.run();
 		if(webService.isError())
 			throw new AdempiereException(webService.getMessage());
-	}
-	
-	private void updateLocation() {
-		if(bpLocation.getC_Location_ID()==0)
-			return;
-		
-		MLocation location = (MLocation) bpLocation.getC_Location();
-		location.setAddress1(bpLocation.getName());
-		location.saveEx();
 	}
 
 	@Override
