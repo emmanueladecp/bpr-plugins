@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MSysConfig;
 import org.compiere.util.CLogger;
 import org.zkoss.json.JSONArray;
 import org.zkoss.json.JSONObject;
@@ -19,10 +21,16 @@ public class WebService {
 	private String message = "";
 	private boolean isError = false;
 	private CLogger log;
+	private String ws_host,ws_user,ws_pass;
 	
 	public WebService()
 	{
 		log = CLogger.getCLogger(WebService.class);
+		ws_host = MSysConfig.getValue("WS_HOST");
+		ws_user = MSysConfig.getValue("WS_USER");
+		ws_pass = MSysConfig.getValue("WS_PASS");
+		if(ws_host==null || ws_user==null || ws_pass==null)
+			throw new AdempiereException("No Web Service Value on Sys Config");
 	}
 	
 	public boolean isError()
@@ -38,8 +46,8 @@ public class WebService {
 	private JSONObject getLogin()
 	{
 		JSONObject login = new JSONObject();
-		login.put("user", "belitangAdmin");
-		login.put("pass", "belitangAdmin");
+		login.put("user", ws_user);
+		login.put("pass", ws_pass);
 		login.put("lang", "en_US");
 		login.put("ClientID", "1000003");
 		login.put("RoleID", "1000006");
@@ -88,7 +96,7 @@ public class WebService {
 
 		try {
 		    //Create connection
-			URL url = new URL("http://testing.sep-food.com:8080/ADInterface/services/rest/"+endpoint);
+			URL url = new URL(ws_host+"/ADInterface/services/rest/"+endpoint);
 			connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod("POST");
 			connection.setRequestProperty("Content-Type", 
@@ -130,7 +138,8 @@ public class WebService {
 			    }
 			  } catch (Exception e) {
 			    e.printStackTrace();
-			    return e.getLocalizedMessage();
+			    isError = true;
+			    message = e.getLocalizedMessage();
 			  } finally {
 			    if (connection != null) {
 			      connection.disconnect();

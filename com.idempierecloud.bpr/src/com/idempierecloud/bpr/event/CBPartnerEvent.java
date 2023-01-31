@@ -22,12 +22,18 @@ public class CBPartnerEvent extends CustomEvent {
 		log.fine("BPartner Event : "+event.getTopic());
 		
 		bp = (MBPartner) po;
-		if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW))
-			sendToRMP();
-		else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE))
+		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
+			restrictRMP();
+		else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW))
 			sendToRMP();
 	}
 	
+	private void restrictRMP() {
+		String client = Env.getContext(bp.getCtx(), "#AD_Client_Name");
+		if(!client.equals("Belitang"))
+			throw new AdempiereException("Not Allowed. Create on Belitang");
+	}
+
 	private void sendToRMP() {
 		String client = Env.getContext(bp.getCtx(), "#AD_Client_Name");
 		if(!client.equals("Belitang"))

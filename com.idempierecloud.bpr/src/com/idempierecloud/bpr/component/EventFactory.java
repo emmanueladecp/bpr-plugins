@@ -82,16 +82,17 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.AFTER_LOGIN, null, LoginEvent.class);
 
 		// C_BPartner
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_BPartner.Table_Name, CBPartnerEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_NEW, I_C_BPartner.Table_Name, CBPartnerEvent.class);
-		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_C_BPartner.Table_Name, CBPartnerEvent.class);
 		
 		// C_BPartner_Location
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_BPartner_Location.Table_Name, CBPartnerLocationEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_NEW, I_C_BPartner_Location.Table_Name, CBPartnerLocationEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_C_BPartner_Location.Table_Name, CBPartnerLocationEvent.class);
 
 		// C_Location
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Location.Table_Name, CLocationEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_NEW, I_C_Location.Table_Name, CLocationEvent.class);
-		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_C_Location.Table_Name, CLocationEvent.class);
 		
 		// C_Invoice
 		registerEvent(IEventTopics.DOC_BEFORE_VOID, I_C_Invoice.Table_Name, CInvoiceEvent.class);

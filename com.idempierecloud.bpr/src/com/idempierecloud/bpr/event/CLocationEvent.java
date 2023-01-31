@@ -22,11 +22,17 @@ public class CLocationEvent extends CustomEvent {
 		log.fine("location Event : "+event.getTopic());
 		
 		location = (MLocation) po;
-		if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
-			sendToRMP();
-		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
+		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
+			restrictRMP();
+		else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 			sendToRMP();
 		}
+	}
+	
+	private void restrictRMP() {
+		String client = Env.getContext(location.getCtx(), "#AD_Client_Name");
+		if(!client.equals("Belitang"))
+			throw new AdempiereException("Not Allowed. Create on Belitang");
 	}
 	
 	private void sendToRMP() {
