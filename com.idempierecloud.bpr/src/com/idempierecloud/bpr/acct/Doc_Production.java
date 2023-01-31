@@ -32,7 +32,7 @@ import org.compiere.acct.FactLine;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MCost;
 //import org.compiere.model.MCostDetail;
-import com.idempierecloud.bpr.model.MCostDetail;
+import com.idempierecloud.bpr.model.MCostDetailExt;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductionLineMA;
 import org.compiere.model.ProductCost;
@@ -235,7 +235,7 @@ public class Doc_Production extends Doc
 					for (int j = 0; j < mas.length; j++)
 					{
 						MProductionLineMA ma = mas[j];													
-						MCostDetail cd = MCostDetail.get (as.getCtx(), "M_ProductionLine_ID=?",
+						MCostDetailExt cd = MCostDetailExt.get (as.getCtx(), "M_ProductionLine_ID=?",
 								line.get_ID(), ma.getM_AttributeSetInstance_ID(), as.getC_AcctSchema_ID(), getTrxName());	
 						if (cd != null)
 							costs = costs.add(cd.getAmt());	
@@ -251,7 +251,7 @@ public class Doc_Production extends Doc
 				} 
 				else
 				{
-					MCostDetail cd = MCostDetail.get (as.getCtx(), "M_ProductionLine_ID=?",
+					MCostDetailExt cd = MCostDetailExt.get (as.getCtx(), "M_ProductionLine_ID=?",
 							line.get_ID(), line.getM_AttributeSetInstance_ID(), as.getC_AcctSchema_ID(), getTrxName());
 					if (cd != null) 
 					{
@@ -270,7 +270,7 @@ public class Doc_Production extends Doc
 			
 				// MZ Goodwill
 				// if Production CostDetail exist then get Cost from Cost Detail
-				MCostDetail cd = MCostDetail.get (as.getCtx(), "M_ProductionLine_ID=?",
+				MCostDetailExt cd = MCostDetailExt.get (as.getCtx(), "M_ProductionLine_ID=?",
 						line.get_ID(), line.getM_AttributeSetInstance_ID(), as.getC_AcctSchema_ID(), getTrxName());
 				if (cd != null) 
 				{
@@ -326,7 +326,7 @@ public class Doc_Production extends Doc
 										BigDecimal maCost = BigDecimal.ZERO ;
 										MProductionLineMA ma = bomLineMA[j];								
 										// get cost of children
-										MCostDetail cd0 = MCostDetail.get (as.getCtx(), "M_ProductionLine_ID=?",									
+										MCostDetailExt cd0 = MCostDetailExt.get (as.getCtx(), "M_ProductionLine_ID=?",									
 												line0.get_ID(), ma.getM_AttributeSetInstance_ID(), as.getC_AcctSchema_ID(), getTrxName());
 										if (cd0 != null) 
 											maCost = cd0.getAmt();
@@ -349,7 +349,7 @@ public class Doc_Production extends Doc
 							else
 							{
 								// get cost of children  for batch costing level 
-								MCostDetail cd0 = MCostDetail.get (as.getCtx(), "M_ProductionLine_ID=?",
+								MCostDetailExt cd0 = MCostDetailExt.get (as.getCtx(), "M_ProductionLine_ID=?",
 										line0.get_ID(), line0.getM_AttributeSetInstance_ID(), as.getC_AcctSchema_ID(), getTrxName());
 								BigDecimal costs0;
 								if (cd0 != null) 
@@ -368,7 +368,7 @@ public class Doc_Production extends Doc
 						else
 						{
 						// get cost of children
-							MCostDetail cd0 = MCostDetail.get (as.getCtx(), "M_ProductionLine_ID=?",
+							MCostDetailExt cd0 = MCostDetailExt.get (as.getCtx(), "M_ProductionLine_ID=?",
 									line0.get_ID(), line0.getM_AttributeSetInstance_ID(), as.getC_AcctSchema_ID(), getTrxName());
 							BigDecimal costs0;
 							if (cd0 != null) 
@@ -473,7 +473,7 @@ public class Doc_Production extends Doc
 			{
 				if (line.isProductionBOM())
 				{
-					if (!MCostDetail.createProduction(as, line.getAD_Org_ID(),
+					if (!MCostDetailExt.createProduction(as, line.getAD_Org_ID(),
 							line.getM_Product_ID(), line.getM_AttributeSetInstance_ID(),
 							line.get_ID(), 0,
 							bomCost.negate(), qtyProduced,
@@ -489,7 +489,7 @@ public class Doc_Production extends Doc
 					 {
 						MProductionLineMA ma = mas[j];
 						BigDecimal maCost = costMap.get(line.get_ID()+ "_"+ ma.getM_AttributeSetInstance_ID());		
-						if (!MCostDetail.createProduction(as, line.getAD_Org_ID(),
+						if (!MCostDetailExt.createProduction(as, line.getAD_Org_ID(),
 								line.getM_Product_ID(), ma.getM_AttributeSetInstance_ID(),
 								line.get_ID(), 0,
 								maCost, ma.getMovementQty(),
@@ -503,7 +503,7 @@ public class Doc_Production extends Doc
 				 else
 				 {
 					 
-					 if (!MCostDetail.createProduction(as, line.getAD_Org_ID(),
+					 if (!MCostDetailExt.createProduction(as, line.getAD_Org_ID(),
 							line.getM_Product_ID(), line.getM_AttributeSetInstance_ID(),
 							line.get_ID(), 0,
 							costs, line.getQty(),
@@ -518,7 +518,7 @@ public class Doc_Production extends Doc
 			{		
 				if (line.isProductionBOM() && !(MAcctSchema.COSTINGMETHOD_StandardCosting.equals(costingMethod)))
 				{
-					if (!MCostDetail.createProduction(as, line.getAD_Org_ID(),
+					if (!MCostDetailExt.createProduction(as, line.getAD_Org_ID(),
 							line.getM_Product_ID(), line.getM_AttributeSetInstance_ID(),
 							line.get_ID(), 0,
 							bomCost.negate(), line.getQty(),
@@ -530,7 +530,7 @@ public class Doc_Production extends Doc
 				}
 				else
 				{
-					if (!MCostDetail.createProduction(as, line.getAD_Org_ID(),
+					if (!MCostDetailExt.createProduction(as, line.getAD_Org_ID(),
 						line.getM_Product_ID(), line.getM_AttributeSetInstance_ID(),
 						line.get_ID(), 0,
 						costs, line.getQty(),
