@@ -27,7 +27,7 @@ public class CBPartnerLocationEvent extends CustomEvent {
 			restrictRMP();
 		else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 			updateLocation();
-			sendToRMP();
+			//sendToRMP();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
 			updateLocation();
 		}
