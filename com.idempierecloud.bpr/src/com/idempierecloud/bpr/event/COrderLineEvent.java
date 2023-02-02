@@ -238,7 +238,7 @@ public class COrderLineEvent extends CustomEvent {
 		
 		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
 		if(price==null)
-			throw new AdempiereException("No Product Price for "+relatedProduct.getName());
+			throw new AdempiereException("No Product Price for "+relatedProduct.getName()+" M_PriceList_Version_ID:"+M_PriceList_Version_ID);
 		orderLine.setPriceEntered(price.getPriceList());
 		orderLine.setPriceList(price.getPriceList());
 		orderLine.setPriceActual(price.getPriceList());
