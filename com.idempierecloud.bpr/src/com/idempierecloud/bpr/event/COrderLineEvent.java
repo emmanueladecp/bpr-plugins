@@ -235,10 +235,10 @@ public class COrderLineEvent extends CustomEvent {
 		
 		MProduct relatedProduct = new MProduct(orderLine.getCtx(), orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
 		int M_PriceList_Version_ID = DB.getSQLValue(orderLine.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE isActive='Y' AND M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", orderLine.getC_Order().getM_PriceList_ID(), orderLine.getC_Order().getDateOrdered());
-		if(M_PriceList_Version_ID<=0)
-			throw new AdempiereException("No Product Price for "+relatedProduct.getName());
 		
 		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
+		if(price==null)
+			throw new AdempiereException("No Product Price for "+relatedProduct.getName());
 		orderLine.setPriceEntered(price.getPriceList());
 		orderLine.setPriceList(price.getPriceList());
 		orderLine.setPriceActual(price.getPriceList());
