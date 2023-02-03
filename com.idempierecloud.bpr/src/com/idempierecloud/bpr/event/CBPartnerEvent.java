@@ -22,8 +22,8 @@ public class CBPartnerEvent extends CustomEvent {
 		log.fine("BPartner Event : "+event.getTopic());
 		
 		bp = (MBPartner) po;
-		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
-			restrictRMP();
+		//if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
+			//restrictRMP();
 //		else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW))
 //			sendToRMP();
 	}

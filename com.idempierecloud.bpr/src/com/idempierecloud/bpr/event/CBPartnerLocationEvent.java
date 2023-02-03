@@ -23,9 +23,10 @@ public class CBPartnerLocationEvent extends CustomEvent {
 		log.fine("bp location Event : "+event.getTopic());
 		
 		bpLocation = (MBPartnerLocation) po;
-		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
-			restrictRMP();
-		else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
+//		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
+//			restrictRMP();
+//		else
+		if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 			updateLocation();
 			//sendToRMP();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {

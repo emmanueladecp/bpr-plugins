@@ -22,8 +22,8 @@ public class CLocationEvent extends CustomEvent {
 		log.fine("location Event : "+event.getTopic());
 		
 		location = (MLocation) po;
-		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
-			restrictRMP();
+//		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW))
+//			restrictRMP();
 //		else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 //			sendToRMP();
 //		}
