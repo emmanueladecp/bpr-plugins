@@ -83,8 +83,11 @@ public class COrderLineEvent extends CustomEvent {
 		
 		BigDecimal priceEntered = priceNet;
 		if(orderLine.get_ValueAsBoolean("isGrossUpPPh")) {
+			if(orderLine.get_ValueAsInt("LCO_WithholdingType_ID")==0)
+				throw new AdempiereException("No Withholding type found "+orderLine.getLine());
+				
 			X_LCO_WithholdingType type = new X_LCO_WithholdingType(orderLine.getCtx(), orderLine.get_ValueAsInt("LCO_WithholdingType_ID"), orderLine.get_TrxName());
-		
+			
 			X_LCO_WithholdingCalc calc = new Query(orderLine.getCtx(), X_LCO_WithholdingCalc.Table_Name, X_LCO_WithholdingCalc.COLUMNNAME_LCO_WithholdingType_ID+"=?", orderLine.get_TrxName())
 					.setParameters(type.getLCO_WithholdingType_ID())
 					.first();
@@ -125,7 +128,6 @@ public class COrderLineEvent extends CustomEvent {
 		MProductCategory productCategory = (MProductCategory) orderLine.getM_Product().getM_Product_Category();
 		if(!productCategory.get_ValueAsBoolean("IsPph")) {
 			orderLine.setPrice(priceNet);
-			orderLine.set_ValueOfColumn("LCO_WithholdingType_ID",null);
 			return;
 		}
 		
