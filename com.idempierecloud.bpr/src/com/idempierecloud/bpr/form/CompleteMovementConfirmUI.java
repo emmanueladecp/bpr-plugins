@@ -112,6 +112,7 @@ public class CompleteMovementConfirmUI extends CustomForm implements ValueChange
 		columnNames.add("Shipment Confirm");
 		columnNames.add("Shipment");
 		columnNames.add("Movement Date");
+		columnNames.add("Picklist");
 		
 		return columnNames;
 	}
@@ -123,6 +124,7 @@ public class CompleteMovementConfirmUI extends CustomForm implements ValueChange
 		invoiceTable.setColumnClass(i++, String.class, true);           //  1-Shipment Confirm
 		invoiceTable.setColumnClass(i++, String.class, true);           //  2-Shipment
 		invoiceTable.setColumnClass(i++, Timestamp.class, true);        //  3-Movement Date
+		invoiceTable.setColumnClass(i++, String.class, true);        	//  4-Picklist
 		invoiceTable.autoSize();
 	}
 
@@ -130,10 +132,13 @@ public class CompleteMovementConfirmUI extends CustomForm implements ValueChange
 		Vector<Vector<Object>> data = new Vector<Vector<Object>>();
 		StringBuilder sql = new StringBuilder(""
 			+ " select  c.m_inoutconfirm_id , c.documentno as confirmno,"
-			+ " s.m_inout_id , s.documentno as shipmentno, s.movementdate"
-			+ " from m_inoutconfirm c"
+			+ " s.m_inout_id , s.documentno as shipmentno, s.movementdate, bp2.bpr_picklist_id, "
+			+ " concat(bp2.documentno,' | ',bp2.bpr_nokendaraan,' | ',bp2.bpr_driver)  "
+			+ " from m_inoutconfirm c "
 			+ " join m_inout s on c.m_inout_id =s.m_inout_id"
-			+ " where c.docstatus in ('DR')"
+			+ " left join bpr_picklistline bp on s.m_inout_id = bp.m_inout_id "
+			+ " join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+			+ " where c.docstatus in ('DR','IP')"
 			+ " AND c.AD_Org_ID=?");
 		
 		if(m_MovementDate!=null)
@@ -160,6 +165,8 @@ public class CompleteMovementConfirmUI extends CustomForm implements ValueChange
 				pp = new KeyNamePair(rs.getInt(3), rs.getString(4));
 				line.add(pp);                       //  2-BPartner
 				line.add(rs.getTimestamp(5));       //  3-TrxDate
+				pp = new KeyNamePair(rs.getInt(6), rs.getString(7));
+				line.add(pp);                       //  4-Picklist
 				
 				data.add(line);
 			}
