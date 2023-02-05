@@ -64,7 +64,7 @@ public class MMovementEvent extends CustomEvent {
 			throw new AdempiereException("No Document Type Confirm Movement");
 		
 		MMovement movementConfirm = new MMovement(movement.getCtx(), 0, movement.get_TrxName());
-		movementConfirm.setAD_Org_ID(movement.getAD_Org_ID());
+		movementConfirm.setAD_Org_ID(movement.getM_WarehouseTo().getAD_Org_ID());
 		movementConfirm.set_ValueOfColumn("moveReference", movement.getDocumentNo());
 		movementConfirm.setC_DocType_ID(DocType_MovementConfirm);
 		movementConfirm.setM_Warehouse_ID(movement.getM_Warehouse_ID());
