@@ -150,6 +150,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
+			.append(" and R.c_doctype_id <> 1000011 ")
 			.append(" and r.isSoTrx='Y' ")
 			.append(" and dts.ispicklist='Y' ")
 			.append(" and case when dts.isshipconfirm='Y' then r.DocStatus in ('IP')")
