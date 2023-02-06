@@ -283,6 +283,7 @@ public class CreateFromOrder extends CreateFrom {
 				if(reqLine.get_ValueAsInt("RelatedProduct_ID")>0)
 					line.set_ValueOfColumn("RelatedProduct_ID", reqLine.get_Value("RelatedProduct_ID"));
 				line.set_ValueOfColumn("QtyPack", reqLine.get_Value("QtyPack"));
+				line.setM_AttributeSetInstance_ID(0);
 				line.saveEx();
 				
 				reqLine.setC_OrderLine_ID(line.getC_OrderLine_ID());
