@@ -12,7 +12,6 @@ import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
-import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -98,11 +97,27 @@ public class MInOutEvent extends CustomEvent {
 		
 		MInOutLine[] lines = inout.getLines(true);
 		for (MInOutLine line : lines) {
-			BigDecimal qtyAvailable = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0)"
+			BigDecimal qtyonhand = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0)"
 					+ "	FROM M_Storageonhand s"
 					+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+			
+			BigDecimal qtyIntransit = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(s.confirmedqty), 0)"
+					+ "	FROM M_InOutLineConfirm s"
+					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
+					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
+					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+			
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit);
+			
 			if(qtyAvailable.compareTo(line.getMovementQty())<0)
-				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Movement = "+line.getMovementQty()+", pada Shipment Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());
+				throw new AdempiereException("Gagal Complete!!"
+						+", Quantity Available : "+qtyAvailable
+						+", Quantity OnHand : "+qtyonhand
+						+", Quantity Intransit : "+qtyIntransit
+						+", Quantity Movement : "+line.getMovementQty()
+						+", pada Shipment Line : "+line.getLine()
+						+", Product : "+line.getM_Product().toString()
+						+" locator "+line.getM_Locator().getValue());
 		}
 	}
 	
