@@ -34,7 +34,6 @@ public class COrderEvent extends CustomEvent{
 			setCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
-			checkSalesRep();
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
