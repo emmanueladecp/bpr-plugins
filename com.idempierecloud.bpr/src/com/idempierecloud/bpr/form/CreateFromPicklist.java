@@ -20,12 +20,19 @@ import org.adempiere.webui.component.ListboxFactory;
 import org.adempiere.webui.component.Panel;
 import org.adempiere.webui.component.Row;
 import org.adempiere.webui.component.Rows;
+import org.adempiere.webui.editor.WSearchEditor;
+import org.adempiere.webui.event.ValueChangeEvent;
+import org.adempiere.webui.event.ValueChangeListener;
+import org.adempiere.webui.util.ZKUpdateUtil;
 import org.compiere.apps.IStatusBar;
 import org.compiere.grid.CreateFrom;
 import org.compiere.minigrid.IMiniTable;
 import org.compiere.model.GridTab;
 import org.compiere.model.MInOutLine;
+import org.compiere.model.MLookup;
+import org.compiere.model.MLookupFactory;
 import org.compiere.util.DB;
+import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Msg;
@@ -36,10 +43,11 @@ import org.zkoss.zul.Vlayout;
 import com.idempierecloud.bpr.model.MBPRPicklistLine;
 import com.idempierecloud.bpr.model.X_BPR_Picklist;
 
-public class CreateFromPicklist extends CreateFrom  implements EventListener<Event> {
+public class CreateFromPicklist extends CreateFrom  implements EventListener<Event>, ValueChangeListener {
 
 	private Integer AD_Client_ID;
 	private Integer AD_Org_ID;
+	protected int C_BPartner_ID = 0;
 	private WCreateFromWindow window;
 	private boolean m_actionActive = false;
 	private int M_InOut_ID;
@@ -49,6 +57,8 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
     protected Listbox orgField = ListboxFactory.newDropdownListbox();
     protected Label shipmentLabel = new Label();
     protected Listbox shipmentField = ListboxFactory.newDropdownListbox();
+    protected Label bpartnerLabel = new Label();
+    protected WSearchEditor bpartnerField = null;
 
 	public CreateFromPicklist(GridTab mTab) {
 		super(mTab);
@@ -76,10 +86,11 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	private void zkInit() throws Exception{
 		orgLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		shipmentLabel.setText(Msg.translate(Env.getCtx(), "M_InOut_ID"));
-
+		bpartnerLabel.setText(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+		
 		Vlayout vlayout = new Vlayout();
 		vlayout.setVflex("1");
-		vlayout.setWidth("60%");
+		vlayout.setWidth("100%");
     	Panel parameterPanel = window.getParameterPanel();
 		parameterPanel.appendChild(vlayout);
 
@@ -97,6 +108,12 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		row.appendChild(shipmentLabel.rightAlign());
 		row.appendChild(shipmentField);
 		shipmentField.setHflex("1");
+		
+		row = rows.newRow();
+		row.appendCellChild(bpartnerLabel.rightAlign());
+		ZKUpdateUtil.setHflex(bpartnerField.getComponent(), "true");
+		row.appendCellChild(bpartnerField.getComponent(),1);
+		bpartnerField.showMenu();
 	}
 	
 	private void initOrgData(){
@@ -139,6 +156,21 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		
 		shipmentField.addActionListener(this);
 	}
+	
+	protected void initBPartner ()
+	{
+		//  load BPartner
+		int AD_Column_ID = 3795;        //  inout.C_BPartner_ID
+		MLookup lookup = MLookupFactory.get (Env.getCtx(), getGridTab().getWindowNo(), 0, AD_Column_ID, DisplayType.Search);
+		bpartnerField = new WSearchEditor ("C_BPartner_ID", true, false, true, lookup);
+		
+		C_BPartner_ID = Env.getContextAsInt(Env.getCtx(), getGridTab().getWindowNo(), "C_BPartner_ID");
+		bpartnerField.setValue(Integer.valueOf(C_BPartner_ID));
+		bpartnerField.addValueChangeListener(this);
+		if(C_BPartner_ID>0) {
+			initShipmentData();
+		}
+	}   //  initBPartner
 	
 	protected ArrayList<KeyNamePair> loadShipmentData() {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
@@ -184,6 +216,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		return list;
 	}
 	
+
 	protected ArrayList<KeyNamePair> loadOrganizationData() {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
@@ -221,6 +254,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		window.setTitle(getTitle());
 		
 		initOrgData();
+		initBPartner();
 		return true;
 	}
 	
@@ -300,18 +334,24 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
 	    sqlStmt.append(" join m_inout r on rl.m_inout_id=r.m_inout_id");
-	    sqlStmt.append(" where r.m_inout_id=? and r.M_InOut_ID=rl.M_InOut_ID");
+	    sqlStmt.append(" where r.M_InOut_ID=rl.M_InOut_ID and r.ad_client_id = 1000003");
 	    sqlStmt.append(" and not exists(select 1 from BPR_PicklistLine ol");
 	    sqlStmt.append(" left join BPR_Picklist o");
 		sqlStmt.append(" on ol.BPR_Picklist_ID = o.BPR_Picklist_ID");
 		sqlStmt.append(" where rl.M_InOut_ID = ol.M_InOut_ID");
 		sqlStmt.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE'))");
-	    
+		
+		if(C_BPartner_ID>0)
+			sqlStmt.append(" and r.c_bpartner_id = "+C_BPartner_ID);
+		if(M_InOut_ID>0) 
+			sqlStmt.append(" and r.m_inout_id=?");
+			
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
 	    try{
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
-	    	pstmt.setInt(1, M_InOut_ID);
+	    	if(M_InOut_ID>0)
+	    		pstmt.setInt(1, M_InOut_ID);
 		    
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
@@ -366,6 +406,19 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		
 		statusBar.setStatusLine("Qty  "+qty);
 	}
+	
+	public void valueChange(ValueChangeEvent e) {
+		if (log.isLoggable(Level.CONFIG)) log.config(e.getPropertyName() + "=" + e.getNewValue());
+
+		if (e.getPropertyName().equals("C_BPartner_ID"))
+		{
+			Integer newBpValue = (Integer)e.getNewValue();
+			C_BPartner_ID = newBpValue == null?0:newBpValue.intValue();
+			loadShipment();
+		} 
+		window.tableChanged(null);
+	}	
+	
 
 	@Override
 	public boolean save(IMiniTable miniTable, String trxName) {
