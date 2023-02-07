@@ -2,19 +2,24 @@ package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MInOut;
+import org.compiere.model.MInOutLine;
+import org.compiere.model.MInvoice;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
+import org.compiere.process.DocAction;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.osgi.service.event.Event;
+import org.compiere.model.MDocType;
 
 import com.idempierecloud.bpr.base.CustomEvent;
 
@@ -47,6 +52,7 @@ public class COrderEvent extends CustomEvent{
 			resetQtyReserved();
 			updatePOReference();
 			resetCreditUsed();
+			checkCreditOrder();
 			checkshipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			resetQtyReserved();
@@ -62,7 +68,9 @@ public class COrderEvent extends CustomEvent{
 					+ " where mi2.docstatus in ('CO') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
 			MInOut shipment = new MInOut(line.getCtx(), m_inout_id, line.get_TrxName());
 			if(m_inout_id > 0) {
-				throw new AdempiereException("Order ini telah digunakan Shipment/Receipt : "+shipment.getDocumentNo());
+				String msg = order.isSOTrx()?"Sales":"Purchase"+" Order Line "+line.getLine()+" sudah digunakan. Silahkan void/reverse correct "+
+							(order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo();
+				throw new AdempiereException(msg);
 			}
 		}
 		
@@ -168,6 +176,31 @@ public class COrderEvent extends CustomEvent{
 	private void checkSalesRep() {
 		if(order.get_ValueAsInt("SalesRep_ID2")>0)
 			order.setSalesRep_ID(order.get_ValueAsInt("SalesRep_ID2"));
+	}
+	
+	private String checkCreditOrder() {
+		if(order.isSOTrx()&& order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
+			List<MInvoice> invoices = new Query(order.getCtx(), MInvoice.Table_Name, "C_Order_ID=?", order.get_TrxName())
+					.setParameters(order.getC_Order_ID())
+					.list();
+			for(MInvoice invoice : invoices){
+				if(invoice.processIt(DocAction.ACTION_Reverse_Correct))
+					invoice.saveEx();
+				else
+					return "Failed cancel invoice "+invoice.toString();
+			}
+			
+			List<MInOut> shipments = new Query(order.getCtx(), MInOut.Table_Name, "C_Order_ID=?", order.get_TrxName())
+					.setParameters(order.getC_Order_ID())
+					.list();
+			for(MInOut shipment : shipments){
+				if(shipment.processIt(DocAction.ACTION_Reverse_Correct))
+					shipment.saveEx();
+				else
+					return "Failed cancel shipment "+shipment.toString();
+			}
+		}
+		return null;
 	}
 	
 	@Override
