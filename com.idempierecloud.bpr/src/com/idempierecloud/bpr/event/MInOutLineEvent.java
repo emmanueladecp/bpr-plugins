@@ -28,11 +28,22 @@ public class MInOutLineEvent extends CustomEvent {
 			setLocator();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setLocator();
+			setLocatorTurus();
 			setLocatorByOrder();
 		}
 	}
 	
 	
+	private void setLocatorTurus() {
+		if(line.getC_OrderLine_ID()==0 || line.getC_OrderLine().getC_Order().isSOTrx())
+			return;
+		
+		MOrderLine orderLine = (MOrderLine) line.getC_OrderLine();
+		if(orderLine.get_ValueAsInt("M_Locator_ID")>0)
+			line.setM_Locator_ID(orderLine.get_ValueAsInt("M_Locator_ID"));
+	}
+
+
 	private void setLocatorByOrder() {
 		if(line.getC_OrderLine_ID()==0)
 			return;
