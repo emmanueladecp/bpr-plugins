@@ -1,7 +1,5 @@
 package com.idempierecloud.bpr.form;
 
-import static org.compiere.model.SystemIDs.COLUMN_C_INVOICE_C_BPARTNER_ID;
-
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.logging.Level;
@@ -27,7 +25,6 @@ import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
 import org.compiere.model.MOrder;
 import org.compiere.util.CLogger;
-import org.compiere.util.DB;
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
@@ -55,14 +52,12 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
     protected WSearchEditor bpartnerField = null;
     protected Label timbanganLabel = new Label();
     protected WStringEditor timbanganField = null;
+    protected Label locatorLabel = new Label();
+    protected Listbox locatorField = ListboxFactory.newDropdownListbox();
 	private int p_WindowNo;
 	
 	int C_Order_ID = ((Integer) getGridTab().getValue("C_Order_ID")).intValue();
-	MOrder order = new MOrder(Env.getCtx(), C_Order_ID, null);
-	
-    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
-    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
-		
+	MOrder order = new MOrder(Env.getCtx(), C_Order_ID, null);	
     
 	
 	public WCreateFromOrder(GridTab mTab) {
@@ -96,6 +91,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		reqLabel.setText(Msg.translate(Env.getCtx(), "M_Requisition_ID"));
 		if(isturus.equals("Y")) {
 			bpartnerLabel.setText(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+			locatorLabel.setText(Msg.translate(Env.getCtx(), "M_Locator_ID"));
 		}
 		timbanganLabel.setText(Msg.translate(Env.getCtx(), "Nota Timbangan"));
 
@@ -129,6 +125,13 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		row.appendChild(reqLabel.rightAlign());
 		row.appendChild(reqField);
 		reqField.setHflex("1");
+
+		if(isturus.equals("Y")) {
+			row = rows.newRow();
+			row.appendChild(locatorLabel.rightAlign());
+			row.appendChild(locatorField);
+			locatorField.setHflex("1");
+		}
 	}	
 	
 	public boolean dynInit() throws Exception
@@ -212,6 +215,8 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		orgField.setSelectedIndex(idxSelected);
 		orgField.setEnabled(true);
 		orgField.addActionListener(this);
+		
+		initLocatorData();
 	}
 	
 	private void initRequisitionData(){
@@ -230,6 +235,23 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		
 		reqField.addActionListener(this);
 	}
+	
+	private void initLocatorData(){
+		window.getWListbox().clear();
+		
+		locatorField.removeActionListener(this);
+		locatorField.removeAllItems();
+		
+		KeyNamePair pp = new KeyNamePair(0, "");
+		locatorField.addItem(pp);
+		
+		ArrayList<KeyNamePair> list = loadLocatorData();
+		for (KeyNamePair knp : list){
+			locatorField.addItem(knp);
+		}
+		
+		locatorField.addActionListener(this);	
+	}
 
 	@Override
 	public void onEvent(Event e) throws Exception {
@@ -243,6 +265,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 				AD_Org_ID = pp.getKey();
 			else 
 				AD_Org_ID = 0;
+			initLocatorData();
 			initRequisitionData();
 		}else if (e.getTarget().equals(reqField)){
 			KeyNamePair pp = reqField.getSelectedItem().toKeyNamePair();
@@ -252,6 +275,12 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 				M_Requisition_ID = 0;
 
 			loadRequisition();
+		}else if (e.getTarget().equals(locatorField)){
+			KeyNamePair pp = locatorField.getSelectedItem().toKeyNamePair();
+			if (pp!=null)
+				M_Locator_ID = pp.getKey();
+			else
+				M_Locator_ID = 0;
 		}
 		
 		m_actionActive = false;				

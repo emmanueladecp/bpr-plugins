@@ -29,10 +29,15 @@ public class CreateFromOrder extends CreateFrom {
 	protected int C_BPartner_ID = 0;
 	protected String NotaTimbangan = null;
 	protected boolean isSOTrx = true;
+	protected int M_Locator_ID = 0;
 	
 	int C_Order_ID = ((Integer) getGridTab().getValue("C_Order_ID")).intValue();
 	MOrder order = new MOrder(Env.getCtx(), C_Order_ID, null);
 
+
+    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
+    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
+	
 	
 	public CreateFromOrder(GridTab mTab) {
 		super(mTab);
@@ -68,6 +73,31 @@ public class CreateFromOrder extends CreateFrom {
 		try{
 			pstmt = DB.prepareStatement(sqlStmt.toString(), null);
 			pstmt.setInt(1, AD_Client_ID);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				list.add(new KeyNamePair(rs.getInt(1), rs.getString(2)));
+			}			
+		}catch (SQLException e){
+			log.log(Level.SEVERE, sqlStmt.toString(), e);
+		}finally{
+			DB.close(rs, pstmt);
+			pstmt = null;
+			rs = null;
+		}		
+		return list;
+	}
+	
+	protected ArrayList<KeyNamePair> loadLocatorData() {
+		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
+		
+		StringBuffer sqlStmt = new StringBuffer();
+		sqlStmt.append("SELECT M_Locator_ID, Value FROM M_Locator WHERE isActive='Y' and AD_Org_ID=?");
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try{
+			pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			pstmt.setInt(1, AD_Org_ID);
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				list.add(new KeyNamePair(rs.getInt(1), rs.getString(2)));
@@ -163,9 +193,6 @@ public class CreateFromOrder extends CreateFrom {
 	    
 	    if(M_Requisition_ID>0)
 	    	sqlStmt.append(" and r.m_requisition_id=?");
-		
-	    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
-	    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
 			
 	    if(isturus.equals("Y")) {
 	    	if(C_BPartner_ID>0)
@@ -284,6 +311,8 @@ public class CreateFromOrder extends CreateFrom {
 					line.set_ValueOfColumn("RelatedProduct_ID", reqLine.get_Value("RelatedProduct_ID"));
 				line.set_ValueOfColumn("QtyPack", reqLine.get_Value("QtyPack"));
 				line.setM_AttributeSetInstance_ID(0);
+				if(M_Locator_ID>0)
+					line.set_ValueOfColumn("M_Locator_ID", M_Locator_ID);
 				line.saveEx();
 				
 				reqLine.setC_OrderLine_ID(line.getC_OrderLine_ID());
