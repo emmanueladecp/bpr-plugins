@@ -20,19 +20,12 @@ import org.adempiere.webui.component.ListboxFactory;
 import org.adempiere.webui.component.Panel;
 import org.adempiere.webui.component.Row;
 import org.adempiere.webui.component.Rows;
-import org.adempiere.webui.editor.WSearchEditor;
-import org.adempiere.webui.event.ValueChangeEvent;
-import org.adempiere.webui.event.ValueChangeListener;
-import org.adempiere.webui.util.ZKUpdateUtil;
 import org.compiere.apps.IStatusBar;
 import org.compiere.grid.CreateFrom;
 import org.compiere.minigrid.IMiniTable;
 import org.compiere.model.GridTab;
 import org.compiere.model.MInOutLine;
-import org.compiere.model.MLookup;
-import org.compiere.model.MLookupFactory;
 import org.compiere.util.DB;
-import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Msg;
@@ -43,7 +36,7 @@ import org.zkoss.zul.Vlayout;
 import com.idempierecloud.bpr.model.MBPRPicklistLine;
 import com.idempierecloud.bpr.model.X_BPR_Picklist;
 
-public class CreateFromPicklist extends CreateFrom  implements EventListener<Event>, ValueChangeListener {
+public class CreateFromPicklist extends CreateFrom  implements EventListener<Event> {
 
 	private Integer AD_Client_ID;
 	private Integer AD_Org_ID;
@@ -58,7 +51,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
     protected Label shipmentLabel = new Label();
     protected Listbox shipmentField = ListboxFactory.newDropdownListbox();
     protected Label bpartnerLabel = new Label();
-    protected WSearchEditor bpartnerField = null;
+    protected Listbox bpartnerField = ListboxFactory.newDropdownListbox();
 
 	public CreateFromPicklist(GridTab mTab) {
 		super(mTab);
@@ -109,11 +102,9 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		row.appendChild(shipmentField);
 		shipmentField.setHflex("1");
 		
-		row = rows.newRow();
-		row.appendCellChild(bpartnerLabel.rightAlign());
-		ZKUpdateUtil.setHflex(bpartnerField.getComponent(), "true");
-		row.appendCellChild(bpartnerField.getComponent(),1);
-		bpartnerField.showMenu();
+		row.appendChild(bpartnerLabel.rightAlign());
+		row.appendChild(bpartnerField);
+		bpartnerField.setHflex("1");
 	}
 	
 	private void initOrgData(){
@@ -157,20 +148,22 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		shipmentField.addActionListener(this);
 	}
 	
-	protected void initBPartner ()
-	{
-		//  load BPartner
-		int AD_Column_ID = 3795;        //  inout.C_BPartner_ID
-		MLookup lookup = MLookupFactory.get (Env.getCtx(), getGridTab().getWindowNo(), 0, AD_Column_ID, DisplayType.Search);
-		bpartnerField = new WSearchEditor ("C_BPartner_ID", true, false, true, lookup);
+	protected void initBPartner (){
+		window.getWListbox().clear();
 		
-		C_BPartner_ID = Env.getContextAsInt(Env.getCtx(), getGridTab().getWindowNo(), "C_BPartner_ID");
-		bpartnerField.setValue(Integer.valueOf(C_BPartner_ID));
-		bpartnerField.addValueChangeListener(this);
-		if(C_BPartner_ID>0) {
-			initShipmentData();
+		bpartnerField.removeActionListener(this);
+		bpartnerField.removeAllItems();
+		
+		KeyNamePair pp = new KeyNamePair(0, "");
+		bpartnerField.addItem(pp);
+		
+		ArrayList<KeyNamePair> list = loadBPShipment();
+		for (KeyNamePair knp : list){
+			bpartnerField.addItem(knp);
 		}
-	}   //  initBPartner
+		
+		bpartnerField.addActionListener(this);
+	}
 	
 	protected ArrayList<KeyNamePair> loadShipmentData() {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
@@ -180,6 +173,51 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 			.append(" from M_InOut r")
 			.append(" join c_order o on r.c_order_id=o.c_order_id")
 			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
+			.append(" where r.AD_Client_ID=? ")
+			.append(" and r.AD_Org_ID=? ")
+			.append(" and R.c_doctype_id <> 1000011 ")
+			.append(" and r.isSoTrx='Y' ")
+			.append(" and dts.ispicklist='Y' ")
+			.append(" and case when dts.isshipconfirm='Y' then r.DocStatus in ('IP')")
+			.append(" else r.DocStatus in ('CO', 'CL') end")
+		    .append(" and exists(select 1 from M_InOutLine rl")
+		    .append(" where r.M_InOut_ID=rl.M_InOut_ID")
+		    .append(" and not exists(select 1 from BPR_PicklistLine ol")
+		    .append(" left join BPR_Picklist o on")
+			.append(" ol.BPR_Picklist_ID = o.BPR_Picklist_ID")
+			.append(" where rl.M_InOut_ID = ol.M_InOut_ID")
+			.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE')))");
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try{
+			pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			pstmt.setInt(1, AD_Client_ID);
+			pstmt.setInt(2, AD_Org_ID);
+				
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				list.add(new KeyNamePair(rs.getInt(1), rs.getString(2)));
+			}			
+		}catch (SQLException e){
+			log.log(Level.SEVERE, sqlStmt.toString(), e);
+		}finally{
+			DB.close(rs, pstmt);
+			pstmt = null;
+			rs = null;
+		}		
+		return list;
+	}
+	
+	protected ArrayList<KeyNamePair> loadBPShipment() {
+		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
+		
+		StringBuffer sqlStmt = new StringBuffer();
+		sqlStmt.append(" select distinct cb.c_bpartner_id, cb.name ")
+			.append(" from M_InOut r")
+			.append(" join c_order o on r.c_order_id=o.c_order_id")
+			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
+			.append(" join c_bpartner cb on r.c_bpartner_id = cb.c_bpartner_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
 			.append(" and R.c_doctype_id <> 1000011 ")
@@ -318,6 +356,13 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 				M_InOut_ID = 0;
 
 			loadShipment();
+		}else if (e.getTarget().equals(bpartnerField)){
+			KeyNamePair pp = bpartnerField.getSelectedItem().toKeyNamePair();
+			if (pp!=null)
+				C_BPartner_ID = pp.getKey();
+			else
+				C_BPartner_ID = 0;
+			loadShipment();
 		}
 		
 		m_actionActive = false;				
@@ -406,18 +451,6 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		
 		statusBar.setStatusLine("Qty  "+qty);
 	}
-	
-	public void valueChange(ValueChangeEvent e) {
-		if (log.isLoggable(Level.CONFIG)) log.config(e.getPropertyName() + "=" + e.getNewValue());
-
-		if (e.getPropertyName().equals("C_BPartner_ID"))
-		{
-			Integer newBpValue = (Integer)e.getNewValue();
-			C_BPartner_ID = newBpValue == null?0:newBpValue.intValue();
-			loadShipment();
-		} 
-		window.tableChanged(null);
-	}	
 	
 
 	@Override
