@@ -181,7 +181,7 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private String checkCreditOrder() {
-		if(order.isSOTrx()&& order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
+		if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
 			List<MInvoice> invoices = new Query(order.getCtx(), MInvoice.Table_Name, "C_Order_ID=?", order.get_TrxName())
 					.setParameters(order.getC_Order_ID())
 					.list();
