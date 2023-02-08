@@ -56,7 +56,7 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private void checkshipment() {
-        if(order.isSOTrx()&& order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
+        if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
         	return;
         }else {
         	MOrderLine[] lines = order.getLines();
