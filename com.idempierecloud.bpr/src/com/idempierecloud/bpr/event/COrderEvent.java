@@ -48,6 +48,7 @@ public class COrderEvent extends CustomEvent{
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetQtyReserved();
+			checkCreditOrder();
 			checkshipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			resetQtyReserved();
