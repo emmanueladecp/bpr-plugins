@@ -7,6 +7,7 @@ import java.util.List;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
+import org.compiere.model.MDocType;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
@@ -62,19 +63,22 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private void checkshipment() {
-		MOrderLine[] lines = order.getLines();
-		for(MOrderLine line:lines) {
-			int m_inout_id = DB.getSQLValue(line.get_TrxName(), "select mi2.m_inout_id from m_inoutline mi "
-					+ " join m_inout mi2 on mi.m_inout_id = mi2.m_inout_id "
-					+ " where mi2.docstatus in ('CO') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
-			MInOut shipment = new MInOut(line.getCtx(), m_inout_id, line.get_TrxName());
-			if(m_inout_id > 0) {
-				String msg = order.isSOTrx()?"Sales":"Purchase"+" Order Line "+line.getLine()+" sudah digunakan. Silahkan void/reverse correct "+
-							(order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo();
-				throw new AdempiereException(msg);
-			}
-		}
-		
+        if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
+        	return;
+        }else {
+        	MOrderLine[] lines = order.getLines();
+    		for(MOrderLine line:lines) {
+    			int m_inout_id = DB.getSQLValue(line.get_TrxName(), "select mi2.m_inout_id from m_inoutline mi "
+    					+ " join m_inout mi2 on mi.m_inout_id = mi2.m_inout_id "
+    					+ " where mi2.docstatus not in ('RE','VO') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
+    			MInOut shipment = new MInOut(line.getCtx(), m_inout_id, line.get_TrxName());
+    			if(m_inout_id > 0) {
+					String msg = order.isSOTrx()?"Sales":"Purchase"+" Order Line "+line.getLine()+" sudah digunakan. Silahkan void/reverse correct "+
+								(order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo();
+					throw new AdempiereException(msg);
+				}
+    		}
+        }
 	}
 
 	private void resetCreditUsed() {
