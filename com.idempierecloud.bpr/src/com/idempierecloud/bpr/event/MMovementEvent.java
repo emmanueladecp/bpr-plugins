@@ -34,6 +34,7 @@ public class MMovementEvent extends CustomEvent {
 				checkMovementLine();
 				checkMovementLineSusut();
 			}
+			checkReversal();
 			checkAvailableQtyProduct();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			if(desc!=null && desc.equals("INTRANSIT"))
@@ -42,6 +43,20 @@ public class MMovementEvent extends CustomEvent {
 			checkMovementRequest();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
 			checkMovementRequest();
+		}
+	}
+
+	private void checkReversal() {
+		if(movement.getReversal_ID()==0)
+			return;
+		
+		if(movement.getMovementDate().after(movement.getReversal().getMovementDate())) {
+			String sql = "DELETE FROM M_MovementLineMA"
+					+ " WHERE EXISTS(SELECT 1 FROM M_MovementLine"
+					+ " WHERE M_MovementLine.M_MovementLine_ID=M_MovementLineMA.M_MovementLine_ID"
+					+ " AND M_MovementLine.M_Movement_ID=?)";
+			int deletedMAS = DB.executeUpdate(sql, movement.getM_Movement_ID(), movement.get_TrxName());
+			log.info("Deleted MAS "+deletedMAS+" "+movement.toString());
 		}
 	}
 
