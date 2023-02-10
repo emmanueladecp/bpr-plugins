@@ -374,11 +374,13 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    StringBuffer sqlStmt = new StringBuffer();
 	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.movementqty as qty,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
-	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.qtyentered as qtyentered");
+	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.qtyentered as qtyentered,");
+	    sqlStmt.append(" cb.c_bpartner_id,cb.name as BPName");
 	    sqlStmt.append(" from m_inoutline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
 	    sqlStmt.append(" join m_inout r on rl.m_inout_id=r.m_inout_id");
+	    sqlStmt.append(" join c_bpartner cb on r.c_bpartner_id = cb.c_bpartner_id");
 	    sqlStmt.append(" where r.M_InOut_ID=rl.M_InOut_ID and r.ad_client_id = 1000003");
 	    sqlStmt.append(" and not exists(select 1 from BPR_PicklistLine ol");
 	    sqlStmt.append(" left join BPR_Picklist o");
@@ -387,7 +389,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		sqlStmt.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE'))");
 		
 		if(C_BPartner_ID>0)
-			sqlStmt.append(" and r.c_bpartner_id = "+C_BPartner_ID);
+			sqlStmt.append(" and r.c_bpartner_id = ?");
 		if(M_InOut_ID>0) 
 			sqlStmt.append(" and r.m_inout_id=?");
 			
@@ -397,7 +399,11 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
 	    	if(M_InOut_ID>0)
 	    		pstmt.setInt(1, M_InOut_ID);
-		    
+		    if(M_InOut_ID > 0 && C_BPartner_ID>0) {
+		    	pstmt.setInt(2, C_BPartner_ID);
+		    }else if(M_InOut_ID == 0 && C_BPartner_ID > 0) {
+		    	pstmt.setInt(1, C_BPartner_ID);
+		    }
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
 		    	Vector<Object> line = new Vector<Object>(13);
@@ -409,7 +415,9 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    		line.add(pp);
 	    		pp = new KeyNamePair(rs.getInt("M_InOutLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
-	    		line.add(rs.getBigDecimal("Qtyentered"));
+	    		line.add(rs.getBigDecimal("Qtyentered")); //5-QtyEntered
+	    		pp = new KeyNamePair(rs.getInt("C_BPartner_ID"), rs.getString("BPName")); //6-C_BPartner
+	    		line.add(pp);
 	    		
 	    		data.add(line);
 		    }		    
@@ -434,6 +442,8 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
 	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity Entered"));
+	    columnNames.add(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+	    
 	    
 	    return columnNames;
 	}
