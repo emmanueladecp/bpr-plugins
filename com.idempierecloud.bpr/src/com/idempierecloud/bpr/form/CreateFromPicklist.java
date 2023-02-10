@@ -40,6 +40,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 
 	private Integer AD_Client_ID;
 	private Integer AD_Org_ID;
+	protected int C_BPartner_ID = 0;
 	private WCreateFromWindow window;
 	private boolean m_actionActive = false;
 	private int M_InOut_ID;
@@ -49,6 +50,8 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
     protected Listbox orgField = ListboxFactory.newDropdownListbox();
     protected Label shipmentLabel = new Label();
     protected Listbox shipmentField = ListboxFactory.newDropdownListbox();
+    protected Label bpartnerLabel = new Label();
+    protected Listbox bpartnerField = ListboxFactory.newDropdownListbox();
 
 	public CreateFromPicklist(GridTab mTab) {
 		super(mTab);
@@ -76,10 +79,11 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	private void zkInit() throws Exception{
 		orgLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		shipmentLabel.setText(Msg.translate(Env.getCtx(), "M_InOut_ID"));
-
+		bpartnerLabel.setText(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+		
 		Vlayout vlayout = new Vlayout();
 		vlayout.setVflex("1");
-		vlayout.setWidth("60%");
+		vlayout.setWidth("100%");
     	Panel parameterPanel = window.getParameterPanel();
 		parameterPanel.appendChild(vlayout);
 
@@ -97,6 +101,10 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		row.appendChild(shipmentLabel.rightAlign());
 		row.appendChild(shipmentField);
 		shipmentField.setHflex("1");
+		
+		row.appendChild(bpartnerLabel.rightAlign());
+		row.appendChild(bpartnerField);
+		bpartnerField.setHflex("1");
 	}
 	
 	private void initOrgData(){
@@ -138,6 +146,23 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		}
 		
 		shipmentField.addActionListener(this);
+	}
+	
+	protected void initBPartner (){
+		window.getWListbox().clear();
+		
+		bpartnerField.removeActionListener(this);
+		bpartnerField.removeAllItems();
+		
+		KeyNamePair pp = new KeyNamePair(0, "");
+		bpartnerField.addItem(pp);
+		
+		ArrayList<KeyNamePair> list = loadBPShipment();
+		for (KeyNamePair knp : list){
+			bpartnerField.addItem(knp);
+		}
+		
+		bpartnerField.addActionListener(this);
 	}
 	
 	protected ArrayList<KeyNamePair> loadShipmentData() {
@@ -184,6 +209,52 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		return list;
 	}
 	
+	protected ArrayList<KeyNamePair> loadBPShipment() {
+		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
+		
+		StringBuffer sqlStmt = new StringBuffer();
+		sqlStmt.append(" select distinct cb.c_bpartner_id, cb.name ")
+			.append(" from M_InOut r")
+			.append(" join c_order o on r.c_order_id=o.c_order_id")
+			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
+			.append(" join c_bpartner cb on r.c_bpartner_id = cb.c_bpartner_id")
+			.append(" where r.AD_Client_ID=? ")
+			.append(" and r.AD_Org_ID=? ")
+			.append(" and R.c_doctype_id <> 1000011 ")
+			.append(" and r.isSoTrx='Y' ")
+			.append(" and dts.ispicklist='Y' ")
+			.append(" and case when dts.isshipconfirm='Y' then r.DocStatus in ('IP')")
+			.append(" else r.DocStatus in ('CO', 'CL') end")
+		    .append(" and exists(select 1 from M_InOutLine rl")
+		    .append(" where r.M_InOut_ID=rl.M_InOut_ID")
+		    .append(" and not exists(select 1 from BPR_PicklistLine ol")
+		    .append(" left join BPR_Picklist o on")
+			.append(" ol.BPR_Picklist_ID = o.BPR_Picklist_ID")
+			.append(" where rl.M_InOut_ID = ol.M_InOut_ID")
+			.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE')))");
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try{
+			pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			pstmt.setInt(1, AD_Client_ID);
+			pstmt.setInt(2, AD_Org_ID);
+				
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				list.add(new KeyNamePair(rs.getInt(1), rs.getString(2)));
+			}			
+		}catch (SQLException e){
+			log.log(Level.SEVERE, sqlStmt.toString(), e);
+		}finally{
+			DB.close(rs, pstmt);
+			pstmt = null;
+			rs = null;
+		}		
+		return list;
+	}
+	
+
 	protected ArrayList<KeyNamePair> loadOrganizationData() {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
@@ -221,6 +292,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		window.setTitle(getTitle());
 		
 		initOrgData();
+		initBPartner();
 		return true;
 	}
 	
@@ -284,6 +356,13 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 				M_InOut_ID = 0;
 
 			loadShipment();
+		}else if (e.getTarget().equals(bpartnerField)){
+			KeyNamePair pp = bpartnerField.getSelectedItem().toKeyNamePair();
+			if (pp!=null)
+				C_BPartner_ID = pp.getKey();
+			else
+				C_BPartner_ID = 0;
+			loadShipment();
 		}
 		
 		m_actionActive = false;				
@@ -295,24 +374,36 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    StringBuffer sqlStmt = new StringBuffer();
 	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.movementqty as qty,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
-	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.qtyentered as qtyentered");
+	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.qtyentered as qtyentered,");
+	    sqlStmt.append(" cb.c_bpartner_id,cb.name as BPName");
 	    sqlStmt.append(" from m_inoutline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
 	    sqlStmt.append(" join m_inout r on rl.m_inout_id=r.m_inout_id");
-	    sqlStmt.append(" where r.m_inout_id=? and r.M_InOut_ID=rl.M_InOut_ID");
+	    sqlStmt.append(" join c_bpartner cb on r.c_bpartner_id = cb.c_bpartner_id");
+	    sqlStmt.append(" where r.M_InOut_ID=rl.M_InOut_ID and r.ad_client_id = 1000003");
 	    sqlStmt.append(" and not exists(select 1 from BPR_PicklistLine ol");
 	    sqlStmt.append(" left join BPR_Picklist o");
 		sqlStmt.append(" on ol.BPR_Picklist_ID = o.BPR_Picklist_ID");
 		sqlStmt.append(" where rl.M_InOut_ID = ol.M_InOut_ID");
 		sqlStmt.append(" and rl.M_Product_ID = ol.M_Product_ID and o.docstatus not in ('VO','RE'))");
-	    
+		
+		if(C_BPartner_ID>0)
+			sqlStmt.append(" and r.c_bpartner_id = ?");
+		if(M_InOut_ID>0) 
+			sqlStmt.append(" and r.m_inout_id=?");
+			
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
 	    try{
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
-	    	pstmt.setInt(1, M_InOut_ID);
-		    
+	    	if(M_InOut_ID>0)
+	    		pstmt.setInt(1, M_InOut_ID);
+		    if(M_InOut_ID > 0 && C_BPartner_ID>0) {
+		    	pstmt.setInt(2, C_BPartner_ID);
+		    }else if(M_InOut_ID == 0 && C_BPartner_ID > 0) {
+		    	pstmt.setInt(1, C_BPartner_ID);
+		    }
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
 		    	Vector<Object> line = new Vector<Object>(13);
@@ -324,7 +415,9 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    		line.add(pp);
 	    		pp = new KeyNamePair(rs.getInt("M_InOutLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
-	    		line.add(rs.getBigDecimal("Qtyentered"));
+	    		line.add(rs.getBigDecimal("Qtyentered")); //5-QtyEntered
+	    		pp = new KeyNamePair(rs.getInt("C_BPartner_ID"), rs.getString("BPName")); //6-C_BPartner
+	    		line.add(pp);
 	    		
 	    		data.add(line);
 		    }		    
@@ -349,6 +442,8 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
 	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity Entered"));
+	    columnNames.add(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
+	    
 	    
 	    return columnNames;
 	}
@@ -366,6 +461,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		
 		statusBar.setStatusLine("Qty  "+qty);
 	}
+	
 
 	@Override
 	public boolean save(IMiniTable miniTable, String trxName) {
