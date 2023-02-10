@@ -30,6 +30,7 @@ public class MInOutEvent extends CustomEvent {
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			checkAvailableQtyProduct();
 			checkCustomerReturn();
+			checkReversal();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
@@ -37,6 +38,13 @@ public class MInOutEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkShipment();
 		}
+	}
+	private void checkReversal() {
+		if(inout.getReversal_ID()==0)
+			return;
+		
+		inout.setDocumentNo(inout.getReversal().getDocumentNo()+"^");
+		inout.saveEx();				
 	}
 	private void checkCustomerReturn() {
 		if(!inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns) || !inout.get_ValueAsBoolean("IsSusut") || inout.isReversal())

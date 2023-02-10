@@ -73,8 +73,10 @@ public class COrderEvent extends CustomEvent{
     					+ " where mi2.docstatus not in ('RE','VO') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
     			MInOut shipment = new MInOut(line.getCtx(), m_inout_id, line.get_TrxName());
     			if(m_inout_id > 0) {
-    				throw new AdempiereException("Order ini telah digunakan Shipment/Receipt : "+shipment.getDocumentNo());
-    			}
+					String msg = order.isSOTrx()?"Sales":"Purchase"+" Order Line "+line.getLine()+" sudah digunakan. Silahkan void/reverse correct "+
+								(order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo();
+					throw new AdempiereException(msg);
+				}
     		}
         }
 	}
