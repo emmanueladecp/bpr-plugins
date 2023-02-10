@@ -50,6 +50,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 		if(confirm.getM_InOut_ID()==0)
 			return;
 		confirm.setProcessed(true);
+		confirm.setDocStatus(MInOutConfirm.STATUS_Completed);
 		confirm.saveEx();
 		
 		MInOut shipment = (MInOut) confirm.getM_InOut();
