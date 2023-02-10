@@ -74,6 +74,9 @@ public class MMovementEvent extends CustomEvent {
 	}
 
 	private void createMovementConfirm() {
+		if(movement.getReversal_ID()>0)
+			return;
+		
 		int DocType_MovementConfirm = DB.getSQLValue(movement.get_TrxName(), "SELECT C_DocType_ID FROM C_DocType WHERE AD_Client_ID=? AND DocBaseType='MMM' AND Description='CONFIRM'", movement.getAD_Client_ID());
 		if(DocType_MovementConfirm==0)
 			throw new AdempiereException("No Document Type Confirm Movement");
