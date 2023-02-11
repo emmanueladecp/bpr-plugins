@@ -136,8 +136,8 @@ public class CreateFromOrder extends CreateFrom {
 	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
 	    String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
 	    		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
-			
-	    if(isturus.equals("Y")) {
+		int isRMP = DB.getSQLValue(order.get_TrxName(), "select count(AD_Client_ID) from ad_client ac where value like 'RMP' and ad_client_id =?", AD_Client_ID);
+	    if(isturus.equals("Y")&&isRMP<1) {
 	    	if(C_BPartner_ID>0)
 				sqlStmt.append(" and r.c_bpartner_id=? ");
 	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku
@@ -153,7 +153,7 @@ public class CreateFromOrder extends CreateFrom {
 			int index = 1;
 			pstmt.setInt(index++, AD_Client_ID);
 			pstmt.setInt(index++, AD_Org_ID);
-			if(isturus.equals("Y")) {
+			if(isturus.equals("Y")&&isRMP<1) {
 				if(C_BPartner_ID>0)
 					pstmt.setInt(index++, C_BPartner_ID);
 			}
@@ -193,8 +193,8 @@ public class CreateFromOrder extends CreateFrom {
 	    
 	    if(M_Requisition_ID>0)
 	    	sqlStmt.append(" and r.m_requisition_id=?");
-			
-	    if(isturus.equals("Y")) {
+	    int isRMP = DB.getSQLValue(order.get_TrxName(), "select count(AD_Client_ID) from ad_client ac where value like 'RMP' and ad_client_id =?", AD_Client_ID);
+	    if(isturus.equals("Y")&&isRMP<1) {
 	    	if(C_BPartner_ID>0)
 		    	sqlStmt.append(" and r.c_bpartner_id=?");
 	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku
@@ -203,7 +203,7 @@ public class CreateFromOrder extends CreateFrom {
 	    	sqlStmt.append(" and r.C_DocType_ID<>1000088 ");
 	    }
 	    
-	    sqlStmt.append(" and r.docstatus in ('CO') ");
+	    sqlStmt.append(" and r.docstatus in ('CO') and r.ad_client_id = "+AD_Client_ID);
 	    
 	    
 	    PreparedStatement pstmt = null;
@@ -213,7 +213,7 @@ public class CreateFromOrder extends CreateFrom {
 	    	int index = 1;
 	    	if(M_Requisition_ID>0)
 	    		pstmt.setInt(index++, M_Requisition_ID);
-	    	if(isturus.equals("Y")) {
+	    	if(isturus.equals("Y")&&isRMP<1) {
 	    		if(C_BPartner_ID>0)
 	    			pstmt.setInt(index++, C_BPartner_ID);
 	    	}
