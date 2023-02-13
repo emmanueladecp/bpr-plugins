@@ -150,11 +150,14 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		StringBuffer sqlStmt = new StringBuffer();
 		sqlStmt.append(" select r.BPR_MaterialRequest_ID, r.documentNo ")
 			.append(" from BPR_MaterialRequest r")
+			.append(" join bpr_materialrequestline bm on r.bpr_materialrequest_id = bm.bpr_materialrequest_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.M_Warehouse_ID=? ")
 			.append(" and r.M_WarehouseTo_ID=? ")
 			.append(" and r.DocStatus='CO' ")
-			.append(" and EXISTS(select 1 from bpr_materialrequestline rl where rl.BPR_MaterialRequest_id=r.BPR_MaterialRequest_id and m_movementline_id is null) ")
+			.append(" and bm.movementqty -(select coalesce(sum(mm3.movementqty),0)from M_MovementLine mm3 ")
+			.append(" join m_movement mm4 on mm3.m_movement_id = mm4.m_movement_id where mm4.docstatus not in ('VO','RE') ")
+			.append(" and mm3.bpr_materialrequestline_id=bm.bpr_materialrequestline_id )>0")
 			;
 		
 		PreparedStatement pstmt = null;
@@ -288,13 +291,17 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	{
 	    Vector<Vector<Object>> data = new Vector<Vector<Object>>();
 	    StringBuffer sqlStmt = new StringBuffer();
-	    sqlStmt.append(" select rl.bpr_materialrequestline_id, r.documentno, rl.movementqty as qty,");
+	    sqlStmt.append(" select rl.bpr_materialrequestline_id, r.documentno,");
+	    sqlStmt.append(" rl.movementqty - (select coalesce(sum(mm3.movementqty),0)from M_MovementLine mm3 join m_movement mm4 on mm3.m_movement_id = mm4.m_movement_id");
+	    sqlStmt.append(" where mm4.docstatus not in ('VO','RE') and mm3.bpr_materialrequestline_id=rl.bpr_materialrequestline_id ) as qty ,");
 	    sqlStmt.append(" p.name as productname, w.value as locator");
 	    sqlStmt.append(" from bpr_materialrequestline rl");
 	    sqlStmt.append(" join bpr_materialrequest r on rl.bpr_materialrequest_id=r.bpr_materialrequest_id");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join m_locator w on rl.m_locatortoalias_id = w.m_locator_id");
-	    sqlStmt.append(" where rl.m_movementline_id is null AND r.m_warehouse_id=? and r.m_warehouseto_id=?");
+	    sqlStmt.append(" where r.m_warehouse_id=? and r.m_warehouseto_id=? ");
+	    sqlStmt.append(" and rl.movementqty -(select coalesce(sum(mm2.movementqty),0)from M_MovementLine mm2 ");
+	    sqlStmt.append(" join m_movement mm on mm2.m_movement_id = mm.m_movement_id where mm.docstatus not in ('VO','RE') and mm2.bpr_materialrequestline_id=rl.bpr_materialrequestline_id )>0 ");
 	    if(BPR_MaterialRequest_ID>0)
 	    	sqlStmt.append(" and r.bpr_materialrequest_id=?");
 	    
@@ -383,9 +390,8 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 				line.setM_LocatorTo_ID(m_locatorTo_ID);
 				line.set_ValueOfColumn("M_LocatorToAlias_ID", requestLine.getM_LocatorToAlias_ID());
 				line.setMovementQty(Qty);
+				line.set_ValueOfColumn("bpr_materialrequestline_id", requestLine.getBPR_MaterialRequestLine_ID());
 				line.saveEx();
-				
-				requestLine.setM_MovementLine_ID(line.getM_MovementLine_ID());
 				requestLine.saveEx();
 				
 			}
