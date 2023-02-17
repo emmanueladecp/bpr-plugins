@@ -18,6 +18,7 @@
 
 package com.idempierecloud.bpr.component;
 
+import org.compiere.model.I_A_Asset_Addition;
 import org.compiere.model.I_M_CostDetail;
 
 import com.idempierecloud.bpr.base.CustomModelFactory;
@@ -31,6 +32,7 @@ import com.idempierecloud.bpr.model.I_BPR_POBahanBakuLine;
 import com.idempierecloud.bpr.model.I_BPR_Picklist;
 import com.idempierecloud.bpr.model.I_BPR_PicklistLine;
 import com.idempierecloud.bpr.model.I_BPR_Timbangan;
+import com.idempierecloud.bpr.model.MAssetAdditionExt;
 import com.idempierecloud.bpr.model.MBPRHistoryFakturPajak;
 import com.idempierecloud.bpr.model.MBPRListFakturPajak;
 import com.idempierecloud.bpr.model.MBPRMaterialRequest;
@@ -78,6 +80,7 @@ public class ModelFactory extends CustomModelFactory {
 		registerModel(I_BPR_MaterialRequest.Table_Name, MBPRMaterialRequest.class);
 		registerModel(I_BPR_MaterialRequestLine.Table_Name, MBPRMaterialRequestLine.class);
 		registerModel(I_M_CostDetail.Table_Name, MCostDetailExt.class);
+		registerModel(I_A_Asset_Addition.Table_Name, MAssetAdditionExt.class);
 	}
 
 }
