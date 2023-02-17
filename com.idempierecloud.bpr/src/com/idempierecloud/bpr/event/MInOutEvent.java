@@ -155,8 +155,6 @@ public class MInOutEvent extends CustomEvent {
 						+ ", pada Shipment Line : "+line.getLine()
 						+ ", Product : "+line.getM_Product().toString()
 						+ ", Locator "+line.getM_Locator().getValue());
-			}else {
-				throw new AdempiereException("Gagal Complete!!");
 			}
 		}
 	}
