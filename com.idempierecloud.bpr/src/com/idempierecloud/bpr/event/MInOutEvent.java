@@ -107,7 +107,7 @@ public class MInOutEvent extends CustomEvent {
 			BigDecimal qtyIntransit = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(s.confirmedqty), 0)"
 					+ "	FROM M_InOutLineConfirm s"
 					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
-					+ "	JOIN M_InOutLine iol ON s.sM_InOutLine_ID=iol.M_InOutLine_ID"
+					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
 					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
 					+ " AND iol.M_inoutline_ID <> ?", line.getM_Product_ID(),line.getM_Locator_ID(),line.getM_InOutLine_ID());
 			
