@@ -117,15 +117,15 @@ public class MInOutEvent extends CustomEvent {
 					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
 					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
 					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
-					+ " AND iol.M_inoutline_ID <> ?", line.getM_Product_ID(),line.getM_Locator_ID(),line.getM_InOutLine_ID());
+					, line.getM_Product_ID(),line.getM_Locator_ID());
 			
 			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit);
 			
-			if(qtyAvailable.compareTo(line.getMovementQty())<0)
+			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0)
 				throw new AdempiereException("Gagal Complete!!"
 						+", Quantity Available : "+qtyAvailable
 						+", Quantity OnHand : "+qtyonhand
-						+", Quantity Intransit : "+qtyIntransit
+						+", Quantity Intransit : "+qtyIntransit.subtract(line.getMovementQty())
 						+", Quantity Movement : "+line.getMovementQty()
 						+", pada Shipment Line : "+line.getLine()
 						+", Product : "+line.getM_Product().toString()
@@ -138,20 +138,21 @@ public class MInOutEvent extends CustomEvent {
 			return;
 		MInOutLine[] lines = inout.getLines(true);
 		for (MInOutLine line : lines) {
-			BigDecimal qtyOrderedSO = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(co.qtyordered,0) from c_orderline co where co.c_orderline_id = ?", line.getC_OrderLine_ID());
+			BigDecimal qtyOrderedSO = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(co.qtyordered,0) "
+					+ " from c_orderline co where co.c_orderline_id = ?", line.getC_OrderLine_ID());
 			
 			BigDecimal MovementQty = DB.getSQLValueBD(inout.get_TrxName(),"Select coalesce(sum(mi.movementqty),0) from m_inoutline mi "
 					+ " join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
-					+ " where mi2.docstatus not in ('VO','RE') and mi.c_orderline_id = ? and mi.m_inoutline_id <> ?", line.getC_OrderLine_ID(),line.getM_InOut_ID());
+					+ " where mi2.docstatus not in ('VO','RE') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
 			
 			BigDecimal qtyAvailable = qtyOrderedSO.subtract(MovementQty);
 			
-			if(qtyAvailable.compareTo(line.getMovementQty())<0) {
+			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0) {
 				throw new AdempiereException("Gagal Complete!! Quantity Movement melebihi Quantity Ordered pada SO"
 						+ ", Quantity Ordered SO : "+ qtyOrderedSO
 						+ ", Quantity Available : "+ qtyAvailable
 						+ ", Quantity Movement : "+ line.getMovementQty()
-						+ ", SUM Quantity Movement : "+ MovementQty
+						+ ", SUM Quantity Movement : "+ MovementQty.subtract(qtyAvailable)
 						+ ", pada Shipment Line : "+line.getLine()
 						+ ", Product : "+line.getM_Product().toString()
 						+ ", Locator "+line.getM_Locator().getValue());
