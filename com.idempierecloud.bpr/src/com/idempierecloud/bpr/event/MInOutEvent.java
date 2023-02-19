@@ -111,7 +111,7 @@ public class MInOutEvent extends CustomEvent {
 					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
 					, line.getM_Product_ID(),line.getM_Locator_ID());
 			
-			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit);
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).setScale(0);
 			
 			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0)
 				throw new AdempiereException("Gagal Complete!!"
@@ -137,7 +137,7 @@ public class MInOutEvent extends CustomEvent {
 					+ " join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
 					+ " where mi2.docstatus not in ('VO','RE') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
 			
-			BigDecimal qtyAvailable = qtyOrderedSO.subtract(MovementQty);
+			BigDecimal qtyAvailable = qtyOrderedSO.subtract(MovementQty).setScale(0);
 			
 			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0) {
 				throw new AdempiereException("Gagal Complete!! Quantity Movement melebihi Quantity Ordered pada SO"
