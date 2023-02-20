@@ -47,10 +47,12 @@ public class COrderEvent extends CustomEvent{
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
+			resetMStorageReservation();
 			resetQtyReserved();
 			checkCreditOrder();
 			checkshipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
+			resetMStorageReservation();
 			resetQtyReserved();
 			updatePOReference();
 			resetCreditUsed();
@@ -155,6 +157,22 @@ public class COrderEvent extends CustomEvent{
 			throw new AdempiereException("Duplikat PO Reference : "+reference.getDocumentNo());
 	}
 
+	private void resetMStorageReservation() {
+		for(MOrderLine line : order.getLines()) {
+			if(line.getQtyReserved().setScale(0).compareTo(BigDecimal.ZERO)>0) {
+				
+				final String sqli = "DELETE FROM M_Storagereservationlog WHERE DocumentNo =? and M_Product_ID=? AND M_Warehouse_ID=? AND M_AttributeSetInstance_ID=? AND IsSOTrx=?";
+				DB.executeUpdateEx(sqli, new Object[] {order.getDocumentNo(), line.getM_Product_ID(), 
+						line.getM_Warehouse_ID(), line.getM_AttributeSetInstance_ID(), order.isSOTrx()}, line.get_TrxName());
+				
+				final String sql = "UPDATE M_StorageReservation SET Qty=Qty-?, Updated=getDate(), UpdatedBy=? " +
+						"WHERE M_Product_ID=? AND M_Warehouse_ID=? AND M_AttributeSetInstance_ID=? AND IsSOTrx=?";
+				DB.executeUpdateEx(sql, new Object[] {line.getQtyReserved(), Env.getAD_User_ID(Env.getCtx()), line.getM_Product_ID(), 
+						line.getM_Warehouse_ID(), line.getM_AttributeSetInstance_ID(), order.isSOTrx()}, line.get_TrxName());
+			}
+		}
+	}
+	
 	private void resetQtyReserved() {
 		for(MOrderLine line : order.getLines()) {
 			line.setQtyReserved(Env.ZERO);
