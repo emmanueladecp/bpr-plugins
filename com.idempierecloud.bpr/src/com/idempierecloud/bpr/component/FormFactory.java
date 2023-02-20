@@ -24,6 +24,9 @@ import com.idempierecloud.bpr.form.CompleteMovementConfirmUI;
 import com.idempierecloud.bpr.form.GenerateInvoiceFromShipment;
 import com.idempierecloud.bpr.form.TandaTerimaFakturUI;
 import com.idempierecloud.bpr.form.WAllocation;
+import com.idempierecloud.bpr.form.WBPAllocation;
+import com.idempierecloud.bpr.form.WPaymentAllocation;
+import com.idempierecloud.bpr.form.WVAllocation;
 
 /**
  * Form Factory
@@ -47,6 +50,9 @@ public class FormFactory extends CustomFormFactory {
 		registerForm(CompleteMovementConfirmUI.class);
 		registerForm(GenerateInvoiceFromShipment.class);
 		registerForm(CompleteARReceipt.class);
+		registerForm(WPaymentAllocation.class);
+		registerForm(WVAllocation.class);
+		registerForm(WBPAllocation.class);
 	}
 
 }
