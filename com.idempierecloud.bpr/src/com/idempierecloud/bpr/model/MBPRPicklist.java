@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 
-import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.ModelValidationEngine;
 import org.compiere.model.ModelValidator;
 import org.compiere.model.Query;
@@ -52,6 +51,7 @@ public class MBPRPicklist extends X_BPR_Picklist implements DocAction, DocOption
 		}else if(docStatus.equals(STATUS_Completed)) {
 			options[index++] = ACTION_Close;
 			options[index++] = ACTION_Void;
+			options[index++] = ACTION_ReActivate;
 		}else if(docStatus.equals(STATUS_Voided)) {
 			options[index++] = ACTION_None;
 		}else if(docStatus.equals(STATUS_Closed)) {
@@ -170,7 +170,26 @@ public class MBPRPicklist extends X_BPR_Picklist implements DocAction, DocOption
 	@Override
 	public boolean reActivateIt() {
 		
-		return false;
+		if (log.isLoggable(Level.INFO)) log.info(toString());
+		// Before reActivate
+		m_processMsg = ModelValidationEngine.get().fireDocValidate(this,ModelValidator.TIMING_BEFORE_REACTIVATE);
+		if (m_processMsg != null)
+			return false;	
+		
+		for(MBPRPicklistLine line : getLines()) {
+			line.setProcessed(false);
+			line.saveEx();
+		}
+		
+		setProcessed(false);
+		setProcessing(false);
+
+		// After reActivate
+		m_processMsg = ModelValidationEngine.get().fireDocValidate(this,ModelValidator.TIMING_AFTER_REACTIVATE);
+		if (m_processMsg != null)
+			return false;				
+		
+		return true;
 	}
 
 	@Override
