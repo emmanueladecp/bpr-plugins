@@ -293,9 +293,9 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	{
 	    Vector<Vector<Object>> data = new Vector<Vector<Object>>();
 	    StringBuffer sqlStmt = new StringBuffer();
-	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.movementqty as qty,");
+	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.qtyentered as qtyentered,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
-	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.qtyentered as qtyentered");
+	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.movementqty as qty");
 	    sqlStmt.append(" from m_inoutline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
@@ -317,14 +317,14 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		    while (rs.next()){
 		    	Vector<Object> line = new Vector<Object>(13);
 	    		line.add(false);   	// 0-Selection
-	    		line.add(rs.getBigDecimal("Qty"));  // 1-Qty
+	    		line.add(rs.getBigDecimal("Qtyentered"));
 	    		KeyNamePair pp = new KeyNamePair(rs.getInt("C_UOM_ID"), rs.getString("UOMName")); // 2-UOM
 	    		line.add(pp);
 	    		pp = new KeyNamePair(rs.getInt("M_Product_ID"), rs.getString("ProductValue")); //3-Product
 	    		line.add(pp);
 	    		pp = new KeyNamePair(rs.getInt("M_InOutLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
-	    		line.add(rs.getBigDecimal("Qtyentered"));
+	    		line.add(rs.getBigDecimal("Qty")); 
 	    		
 	    		data.add(line);
 		    }		    
@@ -344,11 +344,12 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		//  Header Info
 	    Vector<String> columnNames = new Vector<String>(14);
 	    columnNames.add(Msg.getMsg(Env.getCtx(), "Select"));
-	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity"));
+	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity Entered"));
 	    columnNames.add(Msg.translate(Env.getCtx(), "C_UOM_ID"));
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
-	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity Entered"));
+	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity"));
+	    
 	    
 	    return columnNames;
 	}
@@ -378,14 +379,14 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		for (int i = 0; i < miniTable.getRowCount(); i++)
 		{
 			if (((Boolean)miniTable.getValueAt(i, 0)).booleanValue()) {
-				BigDecimal Qty = (BigDecimal)miniTable.getValueAt(i, 1);
+				BigDecimal QtyEntered = (BigDecimal)miniTable.getValueAt(i, 1);
 				KeyNamePair pp = (KeyNamePair)miniTable.getValueAt(i, 2);
 				//int C_UOM_ID = pp.getKey();
 				pp = (KeyNamePair)miniTable.getValueAt(i, 3);
 				int M_Product_ID = pp.getKey();
 				pp = (KeyNamePair)miniTable.getValueAt(i, 4);
 				M_InOutLine_ID = pp.getKey();
-				BigDecimal QtyEntered = (BigDecimal)miniTable.getValueAt(i, 5);
+				BigDecimal Qty = (BigDecimal)miniTable.getValueAt(i, 5);
 				MInOutLine shipmentLine = new MInOutLine(picklist.getCtx(), M_InOutLine_ID, picklist.get_TrxName());
 				
 				MBPRPicklistLine line = new MBPRPicklistLine(picklist.getCtx(), 0, picklist.get_TrxName());
