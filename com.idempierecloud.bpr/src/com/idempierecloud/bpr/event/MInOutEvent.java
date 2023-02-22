@@ -145,7 +145,8 @@ public class MInOutEvent extends CustomEvent {
 					+ " join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
 					+ " left join bpr_picklistline bp on bp.m_inout_id = mi2.m_inout_id "
 					+ " left join bpr_picklist bp2 on bp.bpr_picklist_id = bp2.bpr_picklist_id "
-					+ " where mi.c_orderline_id = ? and mi2.docstatus in ('IP') and bp2.docstatus in ('CO')", line.getC_OrderLine_ID());
+                    + " where mi.c_orderline_id = ? and mi2.docstatus in ('IP') and bp2.docstatus in ('CO')"
+                    + " and mi.m_inoutline_id <> ?", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());
 			
 			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
 			
