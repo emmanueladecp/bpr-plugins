@@ -1,16 +1,22 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MClient;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
+import org.compiere.model.MMovementLineMA;
+import org.compiere.model.MProduct;
+import org.compiere.model.MStorageOnHand;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -30,7 +36,7 @@ public class MMovementEvent extends CustomEvent {
 		String desc = movement.getC_DocType().getDescription();
 		
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			if(desc!=null && desc.equals("CONFIRM")) {
+			if(desc!=null && desc.equals("CONFIRM") && movement.getReversal_ID()==0) {
 				checkMovementLine();
 				checkMovementLineSusut();
 			}
@@ -50,13 +56,54 @@ public class MMovementEvent extends CustomEvent {
 		if(movement.getReversal_ID()==0)
 			return;
 		
-		if(movement.getMovementDate().after(movement.getReversal().getMovementDate())) {
-			String sql = "DELETE FROM M_MovementLineMA"
-					+ " WHERE EXISTS(SELECT 1 FROM M_MovementLine"
-					+ " WHERE M_MovementLine.M_MovementLine_ID=M_MovementLineMA.M_MovementLine_ID"
-					+ " AND M_MovementLine.M_Movement_ID=?)";
-			int deletedMAS = DB.executeUpdate(sql, movement.getM_Movement_ID(), movement.get_TrxName());
-			log.info("Deleted MAS "+deletedMAS+" "+movement.toString());
+		for(MMovementLine line : movement.getLines(false)) {
+			int no = MMovementLineMA.deleteMovementLineMA(line.getM_MovementLine_ID(), movement.get_TrxName());
+			if (no > 0)
+				if (log.isLoggable(Level.CONFIG)) log.config("Delete old #" + no);
+		
+			if (line.getM_AttributeSetInstance_ID() == 0)
+			{
+							
+				MProduct product = MProduct.get(movement.getCtx(), line.getM_Product_ID());
+				String MMPolicy = product.getMMPolicy();
+				MStorageOnHand[] storages = MStorageOnHand.getWarehouse(movement.getCtx(), 0, line.getM_Product_ID(), 0, 
+						null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), movement.get_TrxName());
+	
+				BigDecimal qtyToDeliver = line.getMovementQty();
+	
+				for (MStorageOnHand storage: storages)
+				{
+					if (storage.getQtyOnHand().compareTo(qtyToDeliver) >= 0)
+					{
+						MMovementLineMA ma = new MMovementLineMA (line, 
+								storage.getM_AttributeSetInstance_ID(),
+								qtyToDeliver,storage.getDateMaterialPolicy(),true);
+						ma.saveEx();		
+						qtyToDeliver = Env.ZERO;
+						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
+					}
+					else
+					{	
+						MMovementLineMA ma = new MMovementLineMA (line, 
+									storage.getM_AttributeSetInstance_ID(),
+									storage.getQtyOnHand(),storage.getDateMaterialPolicy(),true);
+						ma.saveEx();	
+						qtyToDeliver = qtyToDeliver.subtract(storage.getQtyOnHand());
+						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
+					}
+					if (qtyToDeliver.signum() == 0)
+						break;
+				}
+								
+				//	No AttributeSetInstance found for remainder
+				if (qtyToDeliver.signum() != 0)
+				{
+					MMovementLineMA ma = MMovementLineMA.addOrCreate(line, 0, qtyToDeliver, movement.getMovementDate(),true) ;
+					ma.saveEx();
+					if (log.isLoggable(Level.FINE)) log.fine("##: " + ma);
+					
+				}
+			}	//	attributeSetInstance
 		}
 	}
 
