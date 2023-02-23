@@ -1,20 +1,24 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MClient;
 import org.compiere.model.MInOut;
-import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
-import org.compiere.model.MInOutLineConfirm;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MInOutLineMA;
+import org.compiere.model.MProduct;
+import org.compiere.model.MStorageOnHand;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -34,8 +38,10 @@ public class MInOutEvent extends CustomEvent {
 			checkQtySalesOrder();
 			checkAvailableQtyProduct();
 			checkCustomerReturn();
-			checkReversal();
+			checkReversalDocumentNo();
 			setProcessedLine();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkReversal();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
@@ -44,13 +50,81 @@ public class MInOutEvent extends CustomEvent {
 			checkShipment();
 		}
 	}
-	private void checkReversal() {
+	
+	private void checkReversalDocumentNo() {
 		if(inout.getReversal_ID()==0)
 			return;
 		
 		inout.setDocumentNo(inout.getReversal().getDocumentNo()+"^");
 		inout.saveEx();				
 	}
+	
+	private void checkReversal() {
+		if(inout.getReversal_ID()==0 || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns))
+			return;
+		
+		for(MInOutLine line : inout.getLines(false)) {
+			BigDecimal qty = line.getMovementQty();
+			
+			int no = MInOutLineMA.deleteInOutLineMA(line.getM_InOutLine_ID(), line.get_TrxName());
+			if (no > 0)
+				if (log.isLoggable(Level.CONFIG)) log.config("Delete old #" + no);
+			
+			if(Env.ZERO.compareTo(qty)==0)
+				return;
+			
+			
+
+			MProduct product = line.getProduct();
+
+			//	Attribute Set Instance
+			//  Create an  Attribute Set Instance to any receipt FIFO/LIFO
+			if (product != null && line.getM_AttributeSetInstance_ID() == 0)
+			{
+				String MMPolicy = product.getMMPolicy();
+				MStorageOnHand[] storages = MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
+						null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), inout.get_TrxName());
+	
+				BigDecimal qtyToDeliver = line.getMovementQty();
+	
+				for (MStorageOnHand storage: storages)
+				{
+					if (storage.getQtyOnHand().compareTo(qtyToDeliver) >= 0)
+					{
+						MInOutLineMA ma = new MInOutLineMA (line, 
+								storage.getM_AttributeSetInstance_ID(),
+								qtyToDeliver,storage.getDateMaterialPolicy(),true);
+						ma.saveEx();		
+						qtyToDeliver = Env.ZERO;
+						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
+					}
+					else
+					{	
+						MInOutLineMA ma = new MInOutLineMA (line, 
+									storage.getM_AttributeSetInstance_ID(),
+									storage.getQtyOnHand(),storage.getDateMaterialPolicy(),true);
+						ma.saveEx();	
+						qtyToDeliver = qtyToDeliver.subtract(storage.getQtyOnHand());
+						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
+					}
+					if (qtyToDeliver.signum() == 0)
+						break;
+				}
+								
+				//	No AttributeSetInstance found for remainder
+				if (qtyToDeliver.signum() != 0)
+				{
+					MInOutLineMA ma = MInOutLineMA.addOrCreate(line, 0, qtyToDeliver, inout.getMovementDate(),true) ;
+					ma.saveEx();
+					if (log.isLoggable(Level.FINE)) log.fine("##: " + ma);
+					
+				}
+			}
+					
+					
+		}
+	}
+	
 	private void checkCustomerReturn() {
 		if(!inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns) || !inout.get_ValueAsBoolean("IsSusut") || inout.isReversal())
 			return;
