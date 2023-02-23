@@ -2,6 +2,7 @@ package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
 import java.util.logging.Level;
+import java.util.List;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -39,6 +40,7 @@ public class MMovementEvent extends CustomEvent {
 			if(desc!=null && desc.equals("CONFIRM") && movement.getReversal_ID()==0) {
 				checkMovementLine();
 				checkMovementLineSusut();
+				checkMaterialMove();
 			}
 			checkReversal();
 			checkAvailableQtyProduct();
@@ -49,7 +51,41 @@ public class MMovementEvent extends CustomEvent {
 			checkMovementRequest();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
 			checkMovementRequest();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
+			if(desc!=null && desc.equals("INTRANSIT")) {
+				checkConfirmMovement();
+			}
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
+			if(desc!=null && desc.equals("INTRANSIT")) {
+				checkConfirmMovement();
+			}
 		}
+	}
+
+	private void checkConfirmMovement() {
+		List<MMovement> confirms = new Query(movement.getCtx(), MMovement.Table_Name, "MoveReference = ?", movement.get_TrxName())
+				.setParameters(movement.getDocumentNo())
+				.list();
+		for(MMovement confirm : confirms) {
+			if(confirm.getDocStatus().equals(MMovement.STATUS_Completed)) {
+				throw new AdempiereException("Tidak dapat Reverse Material move. Confirm Move sudah di Complete");
+			}
+		}
+		
+	}
+
+	private void checkMaterialMove() {
+		if(movement.get_ValueAsString("MoveReference").equalsIgnoreCase(null))
+			return;
+		List<MMovement> materials = new Query(movement.getCtx(), MMovement.Table_Name, "DocumentNo = ?", movement.get_TrxName())
+				.setParameters(movement.get_ValueAsString("MoveReference"))
+				.list();
+		for(MMovement material : materials) {
+			if(material.getDocStatus().equals(MMovement.STATUS_Reversed)) {
+				throw new AdempiereException("Tidak dapat Complete Confirm Move. Material Move sudah di Reverse");
+			}
+		}
+			
 	}
 
 	private void checkReversal() {
