@@ -37,7 +37,7 @@ public class CreateFromOrder extends CreateFrom {
 
     String isturus = DB.getSQLValueString(order.get_TrxName(), "select coalesce (cd.isturus,'N') from c_order co "
     		+ " join c_doctype cd on co.c_doctypetarget_id = cd.c_doctype_id where c_order_id = ?", C_Order_ID);
-	
+    int isRMP = DB.getSQLValue(order.get_TrxName(), "select count(AD_Client_ID) from ad_client ac where value like 'RMP' and ad_client_id =?", AD_Client_ID);
 	
 	public CreateFromOrder(GridTab mTab) {
 		super(mTab);
@@ -119,8 +119,12 @@ public class CreateFromOrder extends CreateFrom {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
 		StringBuffer sqlStmt = new StringBuffer();
-		sqlStmt.append(" select r.M_Requisition_ID, r.documentNo ")
-			.append(" from M_Requisition r")
+		if(isturus.equals("Y")&&isRMP<1) {
+			sqlStmt.append(" select r.M_Requisition_ID, r.documentNo || ' - ' || r.DateRequired as DocumentNo");
+		}else {
+			sqlStmt.append(" select r.M_Requisition_ID, r.documentNo || ' - ' || r.DateRequired as DocumentNo");
+		}
+		sqlStmt.append(" from M_Requisition r")
 		    .append(" left join bpr_timbangan t on t.bpr_timbangan_id=r.bpr_timbangan_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
@@ -141,6 +145,7 @@ public class CreateFromOrder extends CreateFrom {
 	    	if(C_BPartner_ID>0)
 				sqlStmt.append(" and r.c_bpartner_id=? ");
 	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku
+	    	sqlStmt.append(" order by r.DateRequired DESC");
 	    }
 	    else {
 	    	sqlStmt.append(" and r.C_DocType_ID<>1000088 ");
@@ -191,21 +196,20 @@ public class CreateFromOrder extends CreateFrom {
 	    if(NotaTimbangan!=null && !NotaTimbangan.isEmpty())
 	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
 	    
-	    if(M_Requisition_ID>0)
+	    sqlStmt.append(" and r.docstatus in ('CO') and r.ad_client_id = "+AD_Client_ID);
+	    if(M_Requisition_ID>0) {
 	    	sqlStmt.append(" and r.m_requisition_id=?");
-	    int isRMP = DB.getSQLValue(order.get_TrxName(), "select count(AD_Client_ID) from ad_client ac where value like 'RMP' and ad_client_id =?", AD_Client_ID);
+	    }
 	    if(isturus.equals("Y")&&isRMP<1) {
-	    	if(C_BPartner_ID>0)
-		    	sqlStmt.append(" and r.c_bpartner_id=?");
-	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku
+	    	if(C_BPartner_ID>0) {
+	    		sqlStmt.append(" and r.c_bpartner_id=?");
+	    	}
+	    	sqlStmt.append(" and r.C_DocType_ID=1000088 ");//doctype PR Bahan Baku	  
 	    }
 	    else {
 	    	sqlStmt.append(" and r.C_DocType_ID<>1000088 ");
 	    }
-	    
-	    sqlStmt.append(" and r.docstatus in ('CO') and r.ad_client_id = "+AD_Client_ID);
-	    
-	    
+ 
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;	    
 	    try{
