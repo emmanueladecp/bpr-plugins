@@ -375,6 +375,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.qtyentered as qtyentered,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
 	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.movementqty as qty");
+        sqlStmt.append(" cb.c_bpartner_id,cb.name as BPName");
 	    sqlStmt.append(" from m_inoutline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
@@ -415,6 +416,8 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    		pp = new KeyNamePair(rs.getInt("M_InOutLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
 	    		line.add(rs.getBigDecimal("Qty")); 
+                pp = new KeyNamePair(rs.getInt("C_BPartner_ID"), rs.getString("BPName")); //6-C_BPartner
+                line.add(pp);
 	    		
 	    		data.add(line);
 		    }		    
@@ -439,6 +442,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
 	    columnNames.add(Msg.translate(Env.getCtx(), "Quantity"));
+        columnNames.add(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
 	    
 	    
 	    return columnNames;
