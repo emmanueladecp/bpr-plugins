@@ -44,10 +44,15 @@ public class MMovementEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_VOID)) {
 			checkMovementRequest();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
+			checkMovementRequest();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
 			if(desc!=null && desc.equals("INTRANSIT")) {
 				checkConfirmMovement();
 			}
-			checkMovementRequest();
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
+			if(desc!=null && desc.equals("INTRANSIT")) {
+				checkConfirmMovement();
+			}
 		}
 	}
 
