@@ -374,7 +374,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	    StringBuffer sqlStmt = new StringBuffer();
 	    sqlStmt.append(" select rl.m_inoutline_id, r.documentno, rl.qtyentered as qtyentered,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
-	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.movementqty as qty");
+	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, rl.movementqty as qty,");
         sqlStmt.append(" cb.c_bpartner_id,cb.name as BPName");
 	    sqlStmt.append(" from m_inoutline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
