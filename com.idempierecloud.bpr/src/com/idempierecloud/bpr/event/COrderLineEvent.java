@@ -53,6 +53,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
+			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			setWitholdingType();
@@ -63,10 +64,22 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
+			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}
 	}	
+	
+	private void setIfOrderlineFOC() {
+		final int Doctype_ManualOrder = 1000060; 
+		if(orderLine.getC_Order().getC_DocTypeTarget_ID()==Doctype_ManualOrder && orderLine.getC_Order().isSOTrx()) {
+			if(orderLine.get_ValueAsBoolean("isFOC")) {
+				orderLine.setPrice(BigDecimal.ZERO);
+				orderLine.setLineNetAmt(BigDecimal.ZERO);
+				orderLine.set_ValueOfColumn("subsidiamt", BigDecimal.ZERO);;
+			}
+		}
+	}
 	
 	private void calculateGrossUp() {
 		// If Sales Order, Skip
