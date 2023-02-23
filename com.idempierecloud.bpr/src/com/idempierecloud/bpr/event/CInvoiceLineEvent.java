@@ -36,7 +36,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	}
 	
 	private void setIfOrderlineFOC() {
-		if(invoiceLine.getC_OrderLine_ID()>0) {
+		if(invoiceLine.getC_OrderLine_ID()>0 && invoiceLine.getC_Invoice().isSOTrx()) {
 			MOrderLine oline = (MOrderLine) invoiceLine.getC_OrderLine();
 			if(oline.get_ValueAsBoolean("isFOC")) {
 				invoiceLine.setPrice(BigDecimal.ZERO);
