@@ -132,7 +132,7 @@ public class CreateFromOrder extends CreateFrom {
 		    .append(" and exists(select 1 from M_Requisitionline rl")
 		    .append(" left join c_orderline ol on rl.c_orderline_id=ol.c_orderline_id")
 		    .append(" left join c_order o on ol.c_order_id=o.c_order_id")
-		    .append(" where r.m_requisition_id=rl.m_requisition_id")
+		    .append(" where r.isactive = 'Y' AND r.m_requisition_id=rl.m_requisition_id")
 		    .append(" and rl.c_orderline_id is null or o.docstatus in ('VO','RE'))")
 		;
 
@@ -196,7 +196,7 @@ public class CreateFromOrder extends CreateFrom {
 	    if(NotaTimbangan!=null && !NotaTimbangan.isEmpty())
 	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
 	    
-	    sqlStmt.append(" and r.docstatus in ('CO') and r.ad_client_id = "+AD_Client_ID);
+	    sqlStmt.append(" and r.isactive = 'Y' and rl.isactive='Y' and r.docstatus in ('CO') and r.ad_client_id = "+AD_Client_ID);
 	    if(M_Requisition_ID>0) {
 	    	sqlStmt.append(" and r.m_requisition_id=?");
 	    }
