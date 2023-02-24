@@ -123,6 +123,8 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_VOID, I_M_Movement.Table_Name, MMovementEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_M_Movement.Table_Name, MMovementEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_REVERSECORRECT, I_M_Movement.Table_Name, MMovementEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_REVERSEACCRUAL, I_M_Movement.Table_Name, MMovementEvent.class);
 
 		// M_MovementLine
 		registerEvent(IEventTopics.PO_AFTER_DELETE, I_M_MovementLine.Table_Name, MMovementLineEvent.class);
