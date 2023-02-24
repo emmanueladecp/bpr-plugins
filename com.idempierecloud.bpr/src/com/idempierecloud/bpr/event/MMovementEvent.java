@@ -103,9 +103,9 @@ public class MMovementEvent extends CustomEvent {
 				MProduct product = MProduct.get(movement.getCtx(), line.getM_Product_ID());
 				String MMPolicy = product.getMMPolicy();
 				MStorageOnHand[] storages = MStorageOnHand.getWarehouse(movement.getCtx(), 0, line.getM_Product_ID(), 0, 
-						null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), movement.get_TrxName());
+						null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_LocatorTo_ID(), movement.get_TrxName());
 	
-				BigDecimal qtyToDeliver = line.getMovementQty();
+				BigDecimal qtyToDeliver = line.getMovementQty().abs();
 	
 				for (MStorageOnHand storage: storages)
 				{
@@ -113,7 +113,7 @@ public class MMovementEvent extends CustomEvent {
 					{
 						MMovementLineMA ma = new MMovementLineMA (line, 
 								storage.getM_AttributeSetInstance_ID(),
-								qtyToDeliver,storage.getDateMaterialPolicy(),true);
+								qtyToDeliver.negate(),storage.getDateMaterialPolicy(),true);
 						ma.saveEx();		
 						qtyToDeliver = Env.ZERO;
 						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
@@ -122,7 +122,7 @@ public class MMovementEvent extends CustomEvent {
 					{	
 						MMovementLineMA ma = new MMovementLineMA (line, 
 									storage.getM_AttributeSetInstance_ID(),
-									storage.getQtyOnHand(),storage.getDateMaterialPolicy(),true);
+									storage.getQtyOnHand().negate(),storage.getDateMaterialPolicy(),true);
 						ma.saveEx();	
 						qtyToDeliver = qtyToDeliver.subtract(storage.getQtyOnHand());
 						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
