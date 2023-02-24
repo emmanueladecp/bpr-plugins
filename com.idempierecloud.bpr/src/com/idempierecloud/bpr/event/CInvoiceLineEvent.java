@@ -27,12 +27,23 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			setWitholdingType();
 			setOngkosAngkut_SubsidiAmt();
 			setQtyInvoice();
+			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyInvoice();
+			setIfOrderlineFOC();
 		}
 			
 	}
 	
+	private void setIfOrderlineFOC() {
+		if(invoiceLine.getC_OrderLine_ID()>0 && invoiceLine.getC_Invoice().isSOTrx()) {
+			MOrderLine oline = (MOrderLine) invoiceLine.getC_OrderLine();
+			if(oline.get_ValueAsBoolean("isFOC")) {
+				invoiceLine.setPrice(BigDecimal.ZERO);
+			}
+		}
+	}
+
 	private void setQtyInvoice() {
 		if(invoiceLine.getC_UOM_ID()!=invoiceLine.getM_Product().getC_UOM_ID()) {
 			if(invoiceLine.getM_Product_ID()==0)
