@@ -34,9 +34,20 @@ public class MProductionEvent extends CustomEvent{
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkQtyUsed();
 			checkRelatedProduct();
+			checkWIP();
 		}
 	}
 	
+	private void checkWIP() {
+		if(!production.get_ValueAsBoolean("IsWIP"))
+			return;
+		
+		BigDecimal totalQty = DB.getSQLValueBD(production.get_TrxName(), "SELECT COALESCE(SUM(movementqty),0) FROM M_ProductionLine WHERE M_Production_ID=?", production.getM_Production_ID());
+		
+		if(totalQty.signum()!=0)
+			throw new AdempiereException("total Bahan Baku dan WIP tidak sama. diff "+totalQty);
+	}
+
 	private void checkRelatedProduct() {
 		if(production.getReversal_ID()>0)
 			return;
