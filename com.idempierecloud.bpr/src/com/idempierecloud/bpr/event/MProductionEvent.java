@@ -24,6 +24,7 @@ public class MProductionEvent extends CustomEvent{
 
 	private static CLogger log = CLogger.getCLogger(MProductionEvent.class);
 	private final static int C_Doctype_ID_BPR_RiceToRice = 1000066;
+	private final static int C_Doctype_ID_BPR_WIPRice = 1000086;
 	
 	private MProductionExt production = null;
 
@@ -41,11 +42,12 @@ public class MProductionEvent extends CustomEvent{
 	private void checkWIP() {
 		if(!production.get_ValueAsBoolean("IsWIP"))
 			return;
-		
-		BigDecimal totalQty = DB.getSQLValueBD(production.get_TrxName(), "SELECT COALESCE(SUM(movementqty),0) FROM M_ProductionLine WHERE M_Production_ID=?", production.getM_Production_ID());
-		
-		if(totalQty.signum()!=0)
-			throw new AdempiereException("total Bahan Baku dan WIP tidak sama. diff "+totalQty);
+		if(production.get_ValueAsInt("C_DocType_ID")==C_Doctype_ID_BPR_WIPRice) {
+			BigDecimal totalQty = DB.getSQLValueBD(production.get_TrxName(), "SELECT COALESCE(SUM(movementqty),0) FROM M_ProductionLine WHERE M_Production_ID=?", production.getM_Production_ID());
+			
+			if(totalQty.signum()!=0)
+				throw new AdempiereException("total Bahan Baku dan WIP tidak sama. diff "+totalQty);	
+		}
 	}
 
 	private void checkRelatedProduct() {
