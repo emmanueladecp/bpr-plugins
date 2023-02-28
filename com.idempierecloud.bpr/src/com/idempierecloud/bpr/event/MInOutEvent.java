@@ -73,7 +73,7 @@ public class MInOutEvent extends CustomEvent {
 				MStorageOnHand[] storages = MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
 						null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), inout.get_TrxName());
 	
-				BigDecimal qtyToDeliver = line.getMovementQty();
+				BigDecimal qtyToDeliver = line.getMovementQty().abs();
 	
 				for (MStorageOnHand storage: storages)
 				{
@@ -81,7 +81,7 @@ public class MInOutEvent extends CustomEvent {
 					{
 						MInOutLineMA ma = new MInOutLineMA (line, 
 								storage.getM_AttributeSetInstance_ID(),
-								qtyToDeliver,storage.getDateMaterialPolicy(),true);
+								qtyToDeliver.negate(),storage.getDateMaterialPolicy(),true);
 						ma.saveEx();		
 						qtyToDeliver = Env.ZERO;
 						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
@@ -90,7 +90,7 @@ public class MInOutEvent extends CustomEvent {
 					{	
 						MInOutLineMA ma = new MInOutLineMA (line, 
 									storage.getM_AttributeSetInstance_ID(),
-									storage.getQtyOnHand(),storage.getDateMaterialPolicy(),true);
+									storage.getQtyOnHand().negate(),storage.getDateMaterialPolicy(),true);
 						ma.saveEx();	
 						qtyToDeliver = qtyToDeliver.subtract(storage.getQtyOnHand());
 						if (log.isLoggable(Level.FINE)) log.fine( ma + ", QtyToDeliver=" + qtyToDeliver);		
