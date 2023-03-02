@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Properties;
 
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MAcctSchema;
 import org.compiere.model.MCost;
+import org.compiere.model.MProduct;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
@@ -77,33 +79,36 @@ public class MBPRPOBahanBaku extends X_BPR_POBahanBaku {
 				.append(" AND C_AcctSchema_ID=1000003")
 				.append(" AND M_CostType_ID=1000003")
 				.append(" AND M_CostElement_ID=1000003")
-				.append(" AND EXISTS(")
-				.append(" select 1 from m_product")
-				.append(" where m_cost.m_product_id=m_product.m_product_id")
-				.append(" and m_product_category_id in(")
-				.append(" select M_Product_Category_id from M_Product_Category_Acct")
-				.append(" where C_AcctSchema_ID=1000003")
-				.append(" and costingMethod=?")
-				.append(" and Costinglevel='O')")
-				.append(" )")
-				.append(" and exists(SELECT 1 FROM BPR_POBahanBakuHeader bahanbaku")
-				.append(" WHERE bahanbaku.m_product_id=m_cost.m_product_id")
-				.append(" )")
+				.append(" AND M_Product_ID=?")
 				;
 		
-		List<MCost> costs = new Query(getCtx(), MCost.Table_Name, whereSql.toString(), get_TrxName())
-				.setParameters(getAD_Org_ID(), getCostingMethod())
+		List<MBPRPOBahanBakuHeader> masters = new Query(getCtx(), MBPRPOBahanBakuHeader.Table_Name, "AD_Client_ID=?", get_TrxName())
+				.setParameters(getAD_Client_ID())
+				.setOnlyActiveRecords(true)
 				.list();
 		
-		for(MCost cost : costs) {
-			MBPRPOBahanBakuHeader master = MBPRPOBahanBakuHeader.get(cost.getCtx(), cost.getM_Product_ID(), cost.get_TrxName());
+		MAcctSchema as = MAcctSchema.get(1000003);
+		
+		for(MBPRPOBahanBakuHeader master : masters) {
+			MCost cost = new Query(getCtx(), MCost.Table_Name, whereSql.toString(), get_TrxName())
+					.setParameters(getAD_Org_ID(), master.getM_Product_ID())
+					.first();
+			
+			BigDecimal newCostPrice = Env.ZERO;
+			if(cost==null) {
+				cost = new MCost((MProduct) master.getM_Product(), 0, as, getAD_Org_ID(), 1000003);
+				cost.saveEx();
+				newCostPrice = getAmount();
+			}else {
+				newCostPrice = master.getAmount().multiply(this.getAmount()).setScale(2, RoundingMode.HALF_UP);
+			}
 			
 			MBPRPOBahanBakuLine line = new MBPRPOBahanBakuLine(this);
 			line.setName(cost.getM_Product().getName());
 			line.setM_Cost_UU(cost.getM_Cost_UU());
 			line.setM_Product_ID(cost.getM_Product_ID());
 			line.setCurrentCostPrice(cost.getCurrentCostPrice());
-			line.setNewCostPrice(master.getAmount().multiply(this.getAmount()).setScale(2, RoundingMode.HALF_UP));
+			line.setNewCostPrice(newCostPrice);
 			line.saveEx();
 		}
 		return success;
