@@ -135,9 +135,7 @@ public class MInOutEvent extends CustomEvent {
 			BigDecimal MovementQty = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(sum(mi.movementqty),0) "
 					+ " from m_inoutline mi "
 					+ " join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
-					+ " left join bpr_picklistline bp on bp.m_inout_id = mi2.m_inout_id "
-					+ " left join bpr_picklist bp2 on bp.bpr_picklist_id = bp2.bpr_picklist_id "
-                    + " where mi.c_orderline_id = ? and mi2.docstatus in ('IP') and bp2.docstatus in ('CO')"
+                    + " where mi.c_orderline_id = 1006679 and mi2.docstatus not in ('RE','VO')"
                     + " and mi.m_inoutline_id <> ?", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());
 			
 			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
@@ -149,7 +147,7 @@ public class MInOutEvent extends CustomEvent {
 						+ ", Quantity Ordered SO : "+ oline.getQtyOrdered()
 						+ ", Quantity Available : "+ qtyAvailable
 						+ ", Quantity Movement : "+ line.getMovementQty()
-						+ ", SUM Quantity Movement yang sudah picklist : "+ MovementQty
+						+ ", SUM Quantity Movement : "+ MovementQty
 						+ ", pada Shipment Line : "+line.getLine()
 						+ ", Product : "+line.getM_Product().toString()
 						+ ", Locator "+line.getM_Locator().getValue());
