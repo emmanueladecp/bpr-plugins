@@ -217,7 +217,7 @@ public class MInOutEvent extends CustomEvent {
 			BigDecimal MovementQty = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(sum(mi.movementqty),0) "
 					+ " from m_inoutline mi "
 					+ " join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
-                    + " where mi.c_orderline_id = 1006679 and mi2.docstatus not in ('RE','VO')"
+                    + " where mi.c_orderline_id = ? and mi2.docstatus not in ('RE','VO')"
                     + " and mi.m_inoutline_id <> ?", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());
 			
 			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
