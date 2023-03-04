@@ -19,7 +19,8 @@ Require-Bundle: org.apache.commons.lang3,
  zul,
  zweb,
  org.adempiere.ui
-Import-Package: org.compiere.model,
+Import-Package: groovyjarjarantlr.collections.impl;version="3.0.8",
+ org.compiere.model,
  org.globalqss.model,
  org.osgi.service.event
 Service-Component: OSGI-INF/ModelFactory.xml,OSGI-INF/EventFactory.xml,OSGI-INF/CalloutFactory.xml,OSGI-INF/ProcessFactory.xml,OSGI-INF/FormFactory.xml,OSGI-INF/CreateFormFactory.xml, OSGI-INF/DocFactory.xml
