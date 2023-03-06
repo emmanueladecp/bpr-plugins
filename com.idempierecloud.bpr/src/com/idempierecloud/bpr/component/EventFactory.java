@@ -41,6 +41,7 @@ import org.compiere.model.I_M_ProductionLine;
 import org.compiere.model.I_M_Requisition;
 
 import com.idempierecloud.bpr.base.CustomEventFactory;
+import com.idempierecloud.bpr.event.MBPRPicklistEvent;
 import com.idempierecloud.bpr.event.CBPartnerEvent;
 import com.idempierecloud.bpr.event.CBPartnerLocationEvent;
 import com.idempierecloud.bpr.event.CInvoiceEvent;
@@ -62,6 +63,7 @@ import com.idempierecloud.bpr.event.MMovementLineEvent;
 import com.idempierecloud.bpr.event.MProductionEvent;
 import com.idempierecloud.bpr.event.MProductionLineEvent;
 import com.idempierecloud.bpr.event.MRequisitionEvent;
+import com.idempierecloud.bpr.model.I_BPR_Picklist;
 
 /**
  * Event Factory
@@ -167,6 +169,10 @@ public class EventFactory extends CustomEventFactory {
 		//MInOutLine
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
+		
+		//BPR_Picklist
+		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_BPR_Picklist.Table_Name, MBPRPicklistEvent.class);
+		
 		
 	}
 
