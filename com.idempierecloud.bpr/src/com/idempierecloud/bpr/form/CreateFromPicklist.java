@@ -318,7 +318,7 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 	protected void configureMiniTable (IMiniTable miniTable)
 	{
 		miniTable.setColumnClass(0, Boolean.class, false);     //  Selection
-		miniTable.setColumnClass(1, BigDecimal.class, false);  //  Qty
+		miniTable.setColumnClass(1, BigDecimal.class, true);  //  Qty
 		miniTable.setColumnClass(2, String.class, true);       //  UOM
 		miniTable.setColumnClass(3, String.class, true);   	   //  Product Value
 		miniTable.setColumnClass(4, String.class, true);       //  Product Name
