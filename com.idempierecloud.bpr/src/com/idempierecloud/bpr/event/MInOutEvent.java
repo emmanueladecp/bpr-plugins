@@ -29,6 +29,7 @@ public class MInOutEvent extends CustomEvent {
 
 	private static CLogger log = CLogger.getCLogger(CInvoiceEvent.class);
 	private MInOut inout = null;
+	BigDecimal qtyIntransitReal;
 	
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -197,11 +198,17 @@ public class MInOutEvent extends CustomEvent {
 			
 			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).setScale(0);
 			
+			if(inout.getDocStatus().equals(MInOut.DOCSTATUS_Drafted)) {
+				qtyIntransitReal = qtyIntransit;
+			}else {
+				qtyIntransitReal = qtyIntransit.subtract(line.getMovementQty());
+			}
+			
 			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0)
 				throw new AdempiereException("Gagal Complete!!"
 						+", Quantity Available : "+qtyAvailable
 						+", Quantity OnHand : "+qtyonhand
-						+", Quantity Intransit : "+qtyIntransit.subtract(line.getMovementQty())
+						+", Quantity Intransit : "+qtyIntransitReal
 						+", Quantity Movement : "+line.getMovementQty()
 						+", pada Shipment Line : "+line.getLine()
 						+", Product : "+line.getM_Product().toString()
@@ -215,14 +222,19 @@ public class MInOutEvent extends CustomEvent {
 		MInOutLine[] lines = inout.getLines(true);
 		for (MInOutLine line : lines) {
 			BigDecimal MovementQty = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(sum(mi.movementqty),0) "
-					+ " from m_inoutline mi "
-					+ " join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
-                    + " where mi.c_orderline_id = ? and mi2.docstatus not in ('RE','VO')"
-                    + " and mi.m_inoutline_id <> ?", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());
+					+ "	from m_inoutline mi "
+					+ "	join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
+					+ "	left join m_inoutlineconfirm mi3 on mi3.m_inoutline_id = mi.m_inoutline_id "
+					+ "	join m_inoutconfirm mi4 on mi3.m_inoutconfirm_id = mi4.m_inoutconfirm_id "
+					+ "	join bpr_picklistline bp on bp.m_inout_id = mi2.m_inout_id "
+					+ "	left join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+					+ " where mi.c_orderline_id = ? and mi2.docstatus not in ('RE','VO')"
+					+ " and bp2.docstatus in ('CO') and mi4.docstatus not in ('RE','VO')"
+					+ " and mi.m_inoutline_id not in (?) ", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());			
 			
 			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
 			
-			BigDecimal qtyAvailable = oline.getQtyOrdered().subtract(oline.getQtyDelivered()).subtract(MovementQty);
+			BigDecimal qtyAvailable = oline.getQtyOrdered().subtract(MovementQty);
 			
 			if(qtyAvailable.compareTo(line.getMovementQty())<0) {
 				throw new AdempiereException("Gagal Complete!! Quantity Movement melebihi Quantity Ordered pada SO"

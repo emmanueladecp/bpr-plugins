@@ -27,12 +27,19 @@ public class MInOutConfirmEvent extends CustomEvent {
 		log.fine("Minout Confirm Event : "+event.getTopic());
 		confirm = (MInOutConfirm) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setProcessed();
 			checkPicklist();	
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			completeShipment();	
 			createMovementReject();
 		}
 	
+	}
+
+	private void setProcessed() {
+		MInOut inout = (MInOut) confirm.getM_InOut();
+		inout.setProcessed(false);
+		inout.saveEx();
 	}
 
 	private void checkPicklist() {
