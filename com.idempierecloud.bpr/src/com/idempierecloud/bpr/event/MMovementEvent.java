@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.List;
 
@@ -37,10 +38,16 @@ public class MMovementEvent extends CustomEvent {
 		String desc = movement.getC_DocType().getDescription();
 		
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			if(desc!=null && desc.equals("CONFIRM") && movement.getReversal_ID()==0) {
-				checkMovementLine();
-				checkMovementLineSusut();
-				checkMaterialMove();
+			if(desc!=null && desc.equals("CONFIRM")) {
+				if(movement.getReversal_ID()==0) {
+					checkMovementLine();
+					checkMovementLineSusut();
+					checkMaterialMove();
+					setMaterialDate();
+				}else {
+					setMaterialDate();
+				}
+				
 			}
 			checkReversal();
 			checkAvailableQtyProduct();
@@ -258,6 +265,11 @@ public class MMovementEvent extends CustomEvent {
 		}
 	}
 
+
+	private void setMaterialDate() {
+		movement.setMovementDate(new Timestamp(System.currentTimeMillis()));
+	}
+	
 	@Override
 	protected void doHandleEvent() {
 		
