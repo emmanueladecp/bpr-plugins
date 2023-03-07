@@ -7,12 +7,15 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
 import org.compiere.model.MInOut;
+import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInOutLineMA;
-import org.compiere.model.MInvoice;
-import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MProduct;
 import org.compiere.model.MStorageOnHand;
+import org.compiere.model.MInOutLineConfirm;
+import org.compiere.model.MInvoice;
+import org.compiere.model.MInvoiceLine;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -28,16 +31,19 @@ public class MInOutEvent extends CustomEvent {
 
 	private static CLogger log = CLogger.getCLogger(CInvoiceEvent.class);
 	private MInOut inout = null;
+	BigDecimal qtyIntransitReal;
 	
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
 		log.fine("Minout Event : "+event.getTopic());
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			checkQtySalesOrder();
 			checkAvailableQtyProduct();
 			checkCustomerReturn();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkReversal();
+			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
@@ -166,10 +172,10 @@ public class MInOutEvent extends CustomEvent {
 			}
 		}
 	}
+	
 	private void checkAvailableQtyProduct() {
 		if(!inout.isSOTrx() || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerShipment))
 			return;
-		
 		MInOutLine[] lines = inout.getLines(true);
 		for (MInOutLine line : lines) {
 			BigDecimal qtyonhand = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0)"
@@ -180,19 +186,68 @@ public class MInOutEvent extends CustomEvent {
 					+ "	FROM M_InOutLineConfirm s"
 					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
 					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
-					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
+					, line.getM_Product_ID(),line.getM_Locator_ID());
 			
-			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit);
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).setScale(0);
 			
-			if(qtyAvailable.compareTo(line.getMovementQty())<0)
+			if(inout.getDocStatus().equals(MInOut.DOCSTATUS_Drafted)) {
+				qtyIntransitReal = qtyIntransit;
+			}else {
+				qtyIntransitReal = qtyIntransit.subtract(line.getMovementQty());
+			}
+			
+			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0)
 				throw new AdempiereException("Gagal Complete!!"
 						+", Quantity Available : "+qtyAvailable
 						+", Quantity OnHand : "+qtyonhand
-						+", Quantity Intransit : "+qtyIntransit
+						+", Quantity Intransit : "+qtyIntransitReal
 						+", Quantity Movement : "+line.getMovementQty()
 						+", pada Shipment Line : "+line.getLine()
 						+", Product : "+line.getM_Product().toString()
-						+" locator "+line.getM_Locator().getValue());
+						+" Locator "+line.getM_Locator().getValue());
+		}
+	}
+	
+	private void checkQtySalesOrder() {
+		if(!inout.isSOTrx() || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerShipment))
+			return;
+		MInOutLine[] lines = inout.getLines(true);
+		for (MInOutLine line : lines) {
+			BigDecimal MovementQty = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(sum(mi.movementqty),0) "
+					+ "	from m_inoutline mi "
+					+ "	join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
+					+ "	left join m_inoutlineconfirm mi3 on mi3.m_inoutline_id = mi.m_inoutline_id "
+					+ "	join m_inoutconfirm mi4 on mi3.m_inoutconfirm_id = mi4.m_inoutconfirm_id "
+					+ "	join bpr_picklistline bp on bp.m_inout_id = mi2.m_inout_id "
+					+ "	left join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+					+ " where mi.c_orderline_id = ? and mi2.docstatus not in ('RE','VO')"
+					+ " and bp2.docstatus in ('CO') and mi4.docstatus not in ('RE','VO')"
+					+ " and mi.m_inoutline_id not in (?) ", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());			
+			
+			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
+			
+			BigDecimal qtyAvailable = oline.getQtyOrdered().subtract(MovementQty);
+			
+			if(qtyAvailable.compareTo(line.getMovementQty())<0) {
+				throw new AdempiereException("Gagal Complete!! Quantity Movement melebihi Quantity Ordered pada SO"
+						+ ", Quantity Ordered SO : "+ oline.getQtyOrdered()
+						+ ", Quantity Available : "+ qtyAvailable
+						+ ", Quantity Movement : "+ line.getMovementQty()
+						+ ", SUM Quantity Movement : "+ MovementQty
+						+ ", pada Shipment Line : "+line.getLine()
+						+ ", Product : "+line.getM_Product().toString()
+						+ ", Locator "+line.getM_Locator().getValue());
+			}
+		}
+	}
+	
+	private void setProcessedLine() {
+		if(!inout.isSOTrx())
+			return;
+		inout.setProcessed(true);
+		for(MInOutLine line : inout.getLines()) {
+			line.setProcessed(true);
 		}
 	}
 	
