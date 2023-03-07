@@ -171,7 +171,7 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_M_InOutLine.Table_Name, MInOutLineEvent.class);
 		
 		//BPR_Picklist
-		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_BPR_Picklist.Table_Name, MBPRPicklistEvent.class);
+		//registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_BPR_Picklist.Table_Name, MBPRPicklistEvent.class);
 		
 		
 	}
