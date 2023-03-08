@@ -189,7 +189,7 @@ public class MInOutEvent extends CustomEvent {
 					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
 					, line.getM_Product_ID(),line.getM_Locator_ID());
 			
-			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).setScale(0);
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit);
 			
 			if(inout.getDocStatus().equals(MInOut.DOCSTATUS_Drafted)) {
 				qtyIntransitReal = qtyIntransit;
@@ -197,7 +197,7 @@ public class MInOutEvent extends CustomEvent {
 				qtyIntransitReal = qtyIntransit.subtract(line.getMovementQty());
 			}
 			
-			if(qtyAvailable.compareTo(BigDecimal.ZERO)<0)
+			if(qtyAvailable.signum()<0)
 				throw new AdempiereException("Gagal Complete!!"
 						+", Quantity Available : "+qtyAvailable
 						+", Quantity OnHand : "+qtyonhand
