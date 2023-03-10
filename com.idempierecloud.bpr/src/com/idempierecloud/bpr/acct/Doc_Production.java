@@ -399,7 +399,7 @@ public class Doc_Production extends Doc
 					BigDecimal price = bomCost.divide(qtyEndProduct, stdPrecision, RoundingMode.HALF_UP);
 					BigDecimal qty = line.getQty();
 					bomCost = price.multiply(qty);
-					bomCost = bomCost.add(relatedCost).setScale(stdPrecision);
+					bomCost = bomCost.add(relatedCost).setScale(stdPrecision, RoundingMode.HALF_UP);
 				}else {
 					qtyProduced = manipulateQtyProduced (mQtyProduced, endProLine, prod.isUseProductionPlan(), null);
 					if (line.getQty().compareTo(qtyProduced) != 0) 

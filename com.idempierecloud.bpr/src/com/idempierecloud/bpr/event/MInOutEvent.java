@@ -40,9 +40,9 @@ public class MInOutEvent extends CustomEvent {
 			checkAvailableQtyProduct();
 			checkCustomerReturn();
 			checkReversalDocumentNo();
-			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkReversal();
+			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
