@@ -6,11 +6,13 @@ import org.adempiere.base.IDocFactory;
 import org.compiere.acct.Doc;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MInOut;
+import org.compiere.model.MMovement;
 import org.compiere.model.MPayment;
 import org.compiere.model.MTable;
 import org.compiere.util.Env;
 
 import com.idempierecloud.bpr.acct.Doc_InOut;
+import com.idempierecloud.bpr.acct.Doc_Movement;
 import com.idempierecloud.bpr.acct.Doc_Payment;
 import com.idempierecloud.bpr.acct.Doc_Production;
 import com.idempierecloud.bpr.model.MProductionExt;
@@ -27,6 +29,8 @@ public class DocFactory implements IDocFactory {
 			return new Doc_InOut(as, rs, trxName);
 		if(tableName.equals(MPayment.Table_Name))
 			return new Doc_Payment(as, rs, trxName);
+		if(tableName.equals(MMovement.Table_Name))
+			return new Doc_Movement(as, rs, trxName);
 		return null;
 	}
 
