@@ -28,21 +28,9 @@ public class MInventoryEvent extends CustomEvent {
 		inventory = (MInventory) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkLines();
-			inputInventory();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
 		}
-	}
-	
-	private void inputInventory() {
-		for(MInventoryLine line : inventory.getLines(false)){
-			BigDecimal QtyAdd = (BigDecimal)line.get_Value("QtyAdd");
-			if(QtyAdd.signum()>0) {
-				line.setQtyInternalUse(QtyAdd.negate());
-				line.save();
-			}
-		}
-		
 	}
 
 	private void checkLines() {
