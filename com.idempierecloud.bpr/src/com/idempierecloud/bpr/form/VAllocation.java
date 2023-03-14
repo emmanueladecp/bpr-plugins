@@ -709,8 +709,6 @@ public class VAllocation extends CustomForm {
 		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName));
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
-		MPayment py = new MPayment(alloc.getCtx(), C_Payment_ID, alloc.get_TrxName());
-		alloc.setDateAcct(py.getDateAcct());
 		//	End Jorge Colmenarez
 		alloc.saveEx();
 		//	For all invoices
