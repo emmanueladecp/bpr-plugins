@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MInventory;
@@ -24,9 +26,24 @@ public class MInventoryLineEvent extends CustomEvent {
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			checkNewCurrentPrice();
 			setQtyCount();
+			checkQtyAdd();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkNewCurrentPrice();
 			setQtyCount();
+			checkQtyAdd();
+		}
+	}
+	
+	/*Ticket #request-001268 [BPR] Tambahkan validasi pada QtyAdd*/
+	private void checkQtyAdd() {
+		BigDecimal QtyAdd = (BigDecimal)inventoryLine.get_Value("QtyAdd");
+		if(QtyAdd.signum()<0) {
+			throw new AdempiereException("Quantity Add tidak boleh minus");
+		}else if (QtyAdd.signum()>0) {
+			BigDecimal check =inventoryLine.getQtyInternalUse().subtract(QtyAdd);
+			if(check.signum()<0) {
+				inventoryLine.setQtyInternalUse(QtyAdd.negate());
+			}
 		}
 	}
 
