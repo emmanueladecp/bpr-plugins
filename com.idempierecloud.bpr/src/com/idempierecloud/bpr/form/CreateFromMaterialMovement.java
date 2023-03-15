@@ -158,6 +158,9 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 			.append(" and bm.movementqty -(select coalesce(sum(mm3.movementqty),0)from M_MovementLine mm3 ")
 			.append(" join m_movement mm4 on mm3.m_movement_id = mm4.m_movement_id where mm4.docstatus not in ('VO','RE') ")
 			.append(" and mm3.bpr_materialrequestline_id=bm.bpr_materialrequestline_id )>0")
+//			request-001255 start
+			.append("order by r.documentno")
+//			request-001255 end
 			;
 		
 		PreparedStatement pstmt = null;
