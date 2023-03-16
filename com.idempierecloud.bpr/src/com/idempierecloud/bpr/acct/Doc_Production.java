@@ -287,7 +287,7 @@ public class Doc_Production extends Doc
 
 			}
 			
-			int stdPrecision = as.getCostingPrecision();
+			int stdPrecision = as.getStdPrecision();
 			BigDecimal bomCost = Env.ZERO;	
 			BigDecimal relatedCost = Env.ZERO;	
 			BigDecimal qtyProduced = null;
@@ -396,7 +396,7 @@ public class Doc_Production extends Doc
 				}
 				
 				if(prodline.isEndProduct()) {
-					BigDecimal price = bomCost.divide(qtyEndProduct, stdPrecision, RoundingMode.HALF_UP);
+					BigDecimal price = bomCost.divide(qtyEndProduct, 8, RoundingMode.HALF_UP);
 					BigDecimal qty = line.getQty();
 					bomCost = price.multiply(qty);
 					bomCost = bomCost.add(relatedCost).setScale(stdPrecision, RoundingMode.HALF_UP);
