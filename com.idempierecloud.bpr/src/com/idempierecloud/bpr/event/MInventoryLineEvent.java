@@ -36,13 +36,15 @@ public class MInventoryLineEvent extends CustomEvent {
 	
 	/*Ticket #request-001268 [BPR] Tambahkan validasi pada QtyAdd*/
 	private void checkQtyAdd() {
-		BigDecimal QtyAdd = (BigDecimal)inventoryLine.get_Value("QtyAdd");
-		if(QtyAdd.signum()<0) {
-			throw new AdempiereException("Quantity Add tidak boleh minus");
-		}else if (QtyAdd.signum()>0) {
-			BigDecimal check =inventoryLine.getQtyInternalUse().subtract(QtyAdd);
-			if(check.signum()<0) {
-				inventoryLine.setQtyInternalUse(QtyAdd.negate());
+		if(inventoryLine.getM_Inventory().getC_DocType_ID()==1000105) {
+			BigDecimal QtyAdd = (BigDecimal)inventoryLine.get_Value("QtyAdd");
+			if(QtyAdd.signum()<0) {
+				throw new AdempiereException("Quantity Add tidak boleh minus");
+			}else if (QtyAdd.signum()>0) {
+				BigDecimal check =inventoryLine.getQtyInternalUse().subtract(QtyAdd);
+				if(check.signum()<0) {
+					inventoryLine.setQtyInternalUse(QtyAdd.negate());
+				}
 			}
 		}
 	}
