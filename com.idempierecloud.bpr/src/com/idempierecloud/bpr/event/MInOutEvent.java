@@ -185,30 +185,24 @@ public class MInOutEvent extends CustomEvent {
 			return;
 		MInOutLine[] lines = inout.getLines(true);
 		for (MInOutLine line : lines) {
-			BigDecimal qtyonhand = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0)"
-					+ "	FROM M_Storageonhand s"
+			BigDecimal qtyonhand = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
 					+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
 			
 			BigDecimal qtyIntransit = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(s.confirmedqty), 0)"
 					+ "	FROM M_InOutLineConfirm s"
 					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
 					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
-					+ "	WHERE c.docstatus in ('DR','IP') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
-					, line.getM_Product_ID(),line.getM_Locator_ID());
+					+ "	WHERE c.docstatus in ('DR','IP','IN') AND iol.M_Product_ID=? AND iol.m_locator_id=? "
+					+ " and iol.m_inoutline_id not in (?)"
+					, line.getM_Product_ID(),line.getM_Locator_ID(),line.getM_InOutLine_ID());
 			
-			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit);
-			
-			if(inout.getDocStatus().equals(MInOut.DOCSTATUS_Drafted)) {
-				qtyIntransitReal = qtyIntransit;
-			}else {
-				qtyIntransitReal = qtyIntransit.subtract(line.getMovementQty());
-			}
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).subtract(line.getMovementQty());
 			
 			if(qtyAvailable.signum()<0)
 				throw new AdempiereException("Gagal Complete!!"
-						+", Quantity Available : "+qtyAvailable
+						+", Quantity Available : "+qtyAvailable.add(line.getMovementQty())
 						+", Quantity OnHand : "+qtyonhand
-						+", Quantity Intransit : "+qtyIntransitReal
+						+", Quantity Intransit : "+qtyIntransit
 						+", Quantity Movement : "+line.getMovementQty()
 						+", pada Shipment Line : "+line.getLine()
 						+", Product : "+line.getM_Product().toString()
@@ -225,10 +219,9 @@ public class MInOutEvent extends CustomEvent {
 					+ "	from m_inoutline mi "
 					+ "	join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
 					+ "	left join m_inoutlineconfirm mi3 on mi3.m_inoutline_id = mi.m_inoutline_id"
-					+ "	join m_inoutconfirm mi4 on mi3.m_inoutconfirm_id = mi4.m_inoutconfirm_id"
+					+ "	left join m_inoutconfirm mi4 on mi3.m_inoutconfirm_id = mi4.m_inoutconfirm_id"
 					+ " where mi.c_orderline_id = ? and mi2.docstatus not in ('RE','VO')"
-					+ " and mi4.docstatus not in ('RE','VO')"
-					+ " and mi.m_inoutline_id not in (?)", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());			
+					+ " and mi4.docstatus not in ('RE','VO') and mi.m_inoutline_id not in (?)", line.getC_OrderLine_ID(),line.getM_InOutLine_ID());			
 			
 			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
 			
