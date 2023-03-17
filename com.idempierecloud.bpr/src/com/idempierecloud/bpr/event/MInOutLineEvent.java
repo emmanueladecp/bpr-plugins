@@ -78,6 +78,10 @@ public class MInOutLineEvent extends CustomEvent {
 		}else if(line.getM_InOut().getC_DocType_ID()== DocType_MM_Customer_Return) {
 			M_LocatorType_ID = 1000004;	// RETUR
 		}
+		if(line.getM_Locator().getM_LocatorType_ID()==1000006 || 
+				line.getM_Locator().getM_LocatorType_ID()==1000004) {
+			return;
+		}
 		
 		if(M_LocatorType_ID==0 || (line.getDescription()!=null && line.getDescription().equals("SUSUT")))
 			return;
