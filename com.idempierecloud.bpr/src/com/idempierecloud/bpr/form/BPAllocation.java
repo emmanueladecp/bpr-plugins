@@ -52,6 +52,7 @@ public class BPAllocation extends CustomForm {
 	public int         	m_C_BPartner2_ID = 0;
 	private int         m_noInvoices = 0;
 	private int         m_noPayments = 0;
+	public String 		Description = null;
 	public BigDecimal	totalInv = Env.ZERO;
 	public BigDecimal 	totalPay = Env.ZERO;
 	public BigDecimal	totalDiff = Env.ZERO;
@@ -649,7 +650,7 @@ public class BPAllocation extends CustomForm {
 	/**************************************************************************
 	 *  Save Data
 	 */
-	public MAllocationHdr saveData(int m_WindowNo, Object date, IMiniTable payment, IMiniTable invoice, String trxName)
+	public MAllocationHdr saveData(int m_WindowNo, Object date, IMiniTable payment, IMiniTable invoice, String Description,String trxName)
 	{
 		if (m_noInvoices + m_noPayments == 0)
 			return null;
@@ -706,7 +707,7 @@ public class BPAllocation extends CustomForm {
 			DateTrx, C_Currency_ID, Env.getContext(Env.getCtx(), "#AD_User_Name"), trxName);
 		alloc.setAD_Org_ID(AD_Org_ID);
 		alloc.setC_DocType_ID(m_C_DocType_ID);
-		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName));
+		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName)+"_"+Description);
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
         //alloc.setDateAcct(new Timestamp(System.currentTimeMillis()));
