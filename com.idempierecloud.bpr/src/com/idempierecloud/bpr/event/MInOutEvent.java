@@ -40,9 +40,9 @@ public class MInOutEvent extends CustomEvent {
 			checkAvailableQtyProduct();
 			checkCustomerReturn();
 			checkReversalDocumentNo();
+			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkReversal();
-			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
@@ -241,11 +241,11 @@ public class MInOutEvent extends CustomEvent {
 	}
 	
 	private void setProcessedLine() {
-		if(!inout.isSOTrx())
-			return;
-		inout.setProcessed(true);
-		for(MInOutLine line : inout.getLines()) {
-			line.setProcessed(true);
+		if(inout.isSOTrx()&&inout.getMovementType().equals("C-")) {
+			inout.setProcessed(true);
+			for(MInOutLine line : inout.getLines()) {
+				line.setProcessed(true);
+			}
 		}
 	}
 	
