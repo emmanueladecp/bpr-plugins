@@ -215,7 +215,7 @@ public class COrderLineEvent extends CustomEvent {
 	}
 
 	private void checkSOCreditLimit() {
-		if(orderLine.getC_Order().isSOTrx()) {
+		if(orderLine.getC_Order().isSOTrx()&&!orderLine.getC_Order().getDocStatus().equals("CO")) {
 			if(orderLine.getC_Order().getC_DocTypeTarget_ID()!=1000084) {//proposal retur
 				MOrder order = (MOrder) orderLine.getC_Order();
 				BigDecimal lineamt = orderLine.getLineNetAmt();
