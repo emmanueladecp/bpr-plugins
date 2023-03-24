@@ -4,19 +4,22 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MSysConfig;
 import org.compiere.util.CLogger;
-import org.zkoss.json.JSONArray;
-import org.zkoss.json.JSONObject;
-import org.zkoss.json.parser.JSONParser;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class RestService {
 	
-	private JSONObject payload = null;
+	private JsonObject payload = null;
 	private String endpoint = "";
 	private String message = "";
 	private boolean isError = false;
@@ -52,55 +55,33 @@ public class RestService {
 		return message;
 	}
 	
-	public void createData(String serviceType, String tableName, String[] columns, String[] values)
+	public JsonObject get(String endpoint, String query)
 	{
-		JSONArray fields = new JSONArray();
-		for(int i = 0;i<columns.length; i++) {
-			JSONObject field = new JSONObject();
-			field.put("@column", columns[i]);
-			field.put("val", values[i]);
-			fields.add(field);
-		}
-		
-		JSONObject field = new JSONObject();
-		field.put("field", fields);
-		
-		
-		JSONObject crud = new JSONObject();
-		crud.put("serviceType", serviceType);
-		crud.put("TableName", tableName);
-		crud.put("Action", "Create");
-		crud.put("DataRow", field);
-		
-		JSONObject request = new JSONObject();
-		request.put("ModelCRUD", crud);
-		
-		payload = new JSONObject();
-		payload.put("ModelCRUDRequest", request);
-		
-		endpoint = "model_adservice/create_data";
-	}
-	
-	public JSONObject get(String endpoint, JSONObject payload)
-	{
-		this.payload = payload;
-		this.endpoint += "/api/v1/"+endpoint;
+		this.endpoint = endpoint;
+//		try {
+//			query = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+//		} catch (UnsupportedEncodingException e) {
+//			e.printStackTrace();
+//		}
+		this.endpoint += "?"+query;
 		return run("GET");
 	}
 	
-	public JSONObject run()
+	public JsonObject run()
 	{
 		return run("POST");
 	}
 	
-	public JSONObject run(String method)
+	public JsonObject run(String method)
 	{
 		HttpURLConnection connection = null;
 		
-		log.info("Payload : "+payload.toJSONString());
+		if(payload!=null)
+			log.info("Payload : "+payload.toString());
 
 		try {
 		    //Create connection
+			
 			URL url = new URL(rest_host+"/api/v1/"+endpoint);
 			connection = (HttpURLConnection) url.openConnection();
 			connection.setRequestMethod(method);
@@ -114,10 +95,12 @@ public class RestService {
 			connection.setDoOutput(true);
 			
 			//Send request
-			DataOutputStream wr = new DataOutputStream (
-			    connection.getOutputStream());
-			wr.writeBytes(payload.toJSONString());
-			wr.close();
+			if(payload!=null) {
+				DataOutputStream wr = new DataOutputStream (
+				    connection.getOutputStream());
+				wr.writeBytes(payload.toString());
+				wr.close();
+			}
 			
 			//Get Response  
 			InputStream is = connection.getInputStream();
@@ -131,8 +114,7 @@ public class RestService {
 			    rd.close();
 			    
 			    log.info("Result "+response.toString());
-			    JSONParser parser = new JSONParser();
-			    return (JSONObject) parser.parse(response.toString());
+			    return  new Gson().fromJson(response.toString(), JsonObject.class);
 			  } catch (Exception e) {
 			    e.printStackTrace();
 			    isError = true;
@@ -141,6 +123,16 @@ public class RestService {
 			    if (connection != null) {
 			      connection.disconnect();
 			  }
+		}
+		return null;
+	}
+	
+	public static String encodeQuery(String query)
+	{
+		try {
+			return URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
 		}
 		return null;
 	}
