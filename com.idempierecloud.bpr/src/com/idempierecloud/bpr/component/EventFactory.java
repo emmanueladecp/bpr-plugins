@@ -130,6 +130,7 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MProduction
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Production.Table_Name, MProductionEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_PREPARE, I_M_Production.Table_Name, MProductionEvent.class);
 
 		//MProductionLine
 		registerEvent(IEventTopics.PO_AFTER_NEW, I_M_ProductionLine.Table_Name, MProductionLineEvent.class);
