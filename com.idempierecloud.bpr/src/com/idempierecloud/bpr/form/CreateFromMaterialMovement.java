@@ -20,13 +20,19 @@ import org.adempiere.webui.component.ListboxFactory;
 import org.adempiere.webui.component.Panel;
 import org.adempiere.webui.component.Row;
 import org.adempiere.webui.component.Rows;
+import org.adempiere.webui.editor.WSearchEditor;
+import org.adempiere.webui.event.ValueChangeEvent;
+import org.adempiere.webui.event.ValueChangeListener;
 import org.compiere.apps.IStatusBar;
 import org.compiere.grid.CreateFrom;
 import org.compiere.minigrid.IMiniTable;
 import org.compiere.model.GridTab;
+import org.compiere.model.Lookup;
+import org.compiere.model.MLookupFactory;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
 import org.compiere.util.DB;
+import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Msg;
@@ -36,17 +42,18 @@ import org.zkoss.zul.Vlayout;
 
 import com.idempierecloud.bpr.model.MBPRMaterialRequestLine;
 
-public class CreateFromMaterialMovement extends CreateFrom  implements EventListener<Event> {
+public class CreateFromMaterialMovement extends CreateFrom  implements EventListener<Event> ,ValueChangeListener{
 
 	private Integer AD_Client_ID;
 	private Integer AD_Org_ID;
 	private Integer M_Warehouse_ID;
 	private Integer M_WarehouseTo_ID;
-	private Integer BPR_MaterialRequest_ID;
+	private Integer BPR_MaterialRequestLine_ID;
 	private WCreateFromWindow window;
 	private boolean m_actionActive = false;
 	
-
+	protected Label reqLabel = new Label();
+    protected WSearchEditor reqField;
     protected Label orgLabel = new Label();
     protected Listbox orgField = ListboxFactory.newDropdownListbox();
     protected Label requestLabel = new Label();
@@ -80,10 +87,11 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	private void zkInit() throws Exception{
 		orgLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		requestLabel.setText(Msg.translate(Env.getCtx(), "BPR_MaterialRequest_ID"));
+		reqLabel.setText(Msg.translate(Env.getCtx(), "BPR_MaterialRequest_ID"));
 
 		Vlayout vlayout = new Vlayout();
 		vlayout.setVflex("1");
-		vlayout.setWidth("60%");
+		vlayout.setWidth("100%");
     	Panel parameterPanel = window.getParameterPanel();
 		parameterPanel.appendChild(vlayout);
 
@@ -101,6 +109,9 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		row.appendChild(requestLabel.rightAlign());
 		row.appendChild(requestField);
 		requestField.setHflex("1");
+		
+		row.appendChild(reqLabel.rightAlign());
+		row.appendChild(reqField.getComponent());
 	}
 	
 	private void initOrgData(){
@@ -142,6 +153,14 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		}
 		
 		requestField.addActionListener(this);
+	}
+	
+	private void initRequestDataSearch() {
+		int AD_Column_BPRMaterialRequestLine_BPRMaterialRequest_ID = 1001198;
+		Lookup lookup = MLookupFactory.get(Env.getCtx(),getGridTab().getWindowNo(),getGridTab().getTabNo(),AD_Column_BPRMaterialRequestLine_BPRMaterialRequest_ID,DisplayType.Search);
+		reqField = new WSearchEditor("BPR_MaterialRequestLine_ID", false, false, true, lookup);
+		reqField.addValueChangeListener(this);
+		reqField.setValue(new String());
 	}
 	
 	protected ArrayList<KeyNamePair> loadRequestData() {
@@ -220,8 +239,10 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		log.config("");
 		
 		window.setTitle(getTitle());
-		
+
+		initRequestDataSearch();
 		initOrgData();
+		
 		return true;
 	}
 	
@@ -280,9 +301,9 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		}else if (e.getTarget().equals(requestField)){
 			KeyNamePair pp = requestField.getSelectedItem().toKeyNamePair();
 			if (pp!=null)
-				BPR_MaterialRequest_ID = pp.getKey();
+				BPR_MaterialRequestLine_ID = pp.getKey();
 			else
-				BPR_MaterialRequest_ID = 0;
+				BPR_MaterialRequestLine_ID = 0;
 
 			loadRequest();
 		}
@@ -305,7 +326,7 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	    sqlStmt.append(" where r.m_warehouse_id=? and r.m_warehouseto_id=? ");
 	    sqlStmt.append(" and rl.movementqty -(select coalesce(sum(mm2.movementqty),0)from M_MovementLine mm2 ");
 	    sqlStmt.append(" join m_movement mm on mm2.m_movement_id = mm.m_movement_id where mm.docstatus not in ('VO','RE') and mm2.bpr_materialrequestline_id=rl.bpr_materialrequestline_id )>0 ");
-	    if(BPR_MaterialRequest_ID>0)
+	    if(BPR_MaterialRequestLine_ID>0)
 	    	sqlStmt.append(" and r.bpr_materialrequest_id=?");
 	    
 	    PreparedStatement pstmt = null;
@@ -314,8 +335,8 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
 	    	pstmt.setInt(1, M_Warehouse_ID);
 	    	pstmt.setInt(2, M_WarehouseTo_ID);
-	    	if(BPR_MaterialRequest_ID>0)
-		    	pstmt.setInt(3, BPR_MaterialRequest_ID);
+	    	if(BPR_MaterialRequestLine_ID>0)
+		    	pstmt.setInt(3, BPR_MaterialRequestLine_ID);
 	    		
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
@@ -401,6 +422,16 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		}
 				
 		return true;
+	}
+
+	@Override
+	public void valueChange(ValueChangeEvent evt) {
+		if (log.isLoggable(Level.CONFIG)) log.config(evt.getPropertyName() + "=" + evt.getNewValue());
+			if (evt.getPropertyName().equals("BPR_MaterialRequestLine_ID"))
+			{
+				BPR_MaterialRequestLine_ID = ((Integer)evt.getNewValue()).intValue();
+				getRequestLines();
+			}
 	}
 
 }
