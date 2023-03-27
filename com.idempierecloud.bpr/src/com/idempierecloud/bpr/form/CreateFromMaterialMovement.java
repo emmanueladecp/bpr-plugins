@@ -158,7 +158,7 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	private void initRequestDataSearch() {
 		int AD_Column_BPRMaterialRequestLine_BPRMaterialRequest_ID = 1001198;
 		Lookup lookup = MLookupFactory.get(Env.getCtx(),getGridTab().getWindowNo(),getGridTab().getTabNo(),AD_Column_BPRMaterialRequestLine_BPRMaterialRequest_ID,DisplayType.Search);
-		reqField = new WSearchEditor("BPR_MaterialRequestLine_ID", false, false, true, lookup);
+		reqField = new WSearchEditor("BPR_MaterialRequest_ID", false, false, true, lookup);
 		reqField.addValueChangeListener(this);
 		reqField.setValue(new String());
 	}
@@ -167,7 +167,7 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
 		StringBuffer sqlStmt = new StringBuffer();
-		sqlStmt.append(" select r.BPR_MaterialRequest_ID, r.documentNo ")
+		sqlStmt.append(" select distinct r.BPR_MaterialRequest_ID, r.documentNo ")
 			.append(" from BPR_MaterialRequest r")
 			.append(" join bpr_materialrequestline bm on r.bpr_materialrequest_id = bm.bpr_materialrequest_id")
 			.append(" where r.AD_Client_ID=? ")
@@ -427,10 +427,10 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	@Override
 	public void valueChange(ValueChangeEvent evt) {
 		if (log.isLoggable(Level.CONFIG)) log.config(evt.getPropertyName() + "=" + evt.getNewValue());
-			if (evt.getPropertyName().equals("BPR_MaterialRequestLine_ID"))
+			if (evt.getPropertyName().equals("BPR_MaterialRequest_ID"))
 			{
-				BPR_MaterialRequestLine_ID = ((Integer)evt.getNewValue()).intValue();
-				getRequestLines();
+				BPR_MaterialRequest_ID = ((Integer)evt.getNewValue()).intValue();
+				loadRequest();
 			}
 	}
 
