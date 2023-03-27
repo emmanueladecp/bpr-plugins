@@ -36,9 +36,38 @@ public class MProductionEvent extends CustomEvent{
 			checkQtyUsed();
 			checkRelatedProduct();
 			checkWIP();
+		}if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			checkAvailableQty();
 		}
 	}
 	
+	/*checkAvailableQty
+	 *Validasi jika component dan end product nya sama
+	 *Perlu cek stock component
+	 */
+	private void checkAvailableQty() {
+		for(MProductionLineExt line :production.getLines()) {
+			if(line.getM_Product_ID()==production.getM_Product_ID()
+					&&production.getReversal_ID()<0) {
+				if(!line.get_ValueAsBoolean("IsEndProduct")) {
+					BigDecimal qtyonhand = DB.getSQLValueBD(production.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
+							+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+					BigDecimal MovementQty = DB.getSQLValueBD(production.get_TrxName(), "SELECT coalesce (sum(mp.movementqty),0) FROM m_productionline mp WHERE mp.isendproduct ='N'"
+							+ " and mp.M_Product_ID=? AND mp.m_locator_id=? and mp.m_production_id=?", line.getM_Product_ID(),line.getM_Locator_ID(),line.getM_Production_ID());
+					BigDecimal qtyAvailable = qtyonhand.add(MovementQty);
+					if(qtyAvailable.signum()<0)
+						throw new AdempiereException("Gagal Complete!!"
+								+", Quantity Available : "+qtyAvailable
+								+", Quantity OnHand : "+qtyonhand
+								+", Quantity Movement : "+MovementQty
+								+", Product : "+line.getM_Product().toString()
+								+", Locator "+line.getM_Locator().getValue());
+				}
+			}
+		}
+		
+	}
+
 	private void checkWIP() {
 		if(!production.get_ValueAsBoolean("IsWIP"))
 			return;
