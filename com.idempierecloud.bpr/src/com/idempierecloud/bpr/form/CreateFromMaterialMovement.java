@@ -48,7 +48,7 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	private Integer AD_Org_ID;
 	private Integer M_Warehouse_ID;
 	private Integer M_WarehouseTo_ID;
-	private Integer BPR_MaterialRequestLine_ID;
+	private Integer BPR_MaterialRequest_ID;
 	private WCreateFromWindow window;
 	private boolean m_actionActive = false;
 	
@@ -301,9 +301,9 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 		}else if (e.getTarget().equals(requestField)){
 			KeyNamePair pp = requestField.getSelectedItem().toKeyNamePair();
 			if (pp!=null)
-				BPR_MaterialRequestLine_ID = pp.getKey();
+				BPR_MaterialRequest_ID = pp.getKey();
 			else
-				BPR_MaterialRequestLine_ID = 0;
+				BPR_MaterialRequest_ID = 0;
 
 			loadRequest();
 		}
@@ -326,7 +326,7 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	    sqlStmt.append(" where r.m_warehouse_id=? and r.m_warehouseto_id=? ");
 	    sqlStmt.append(" and rl.movementqty -(select coalesce(sum(mm2.movementqty),0)from M_MovementLine mm2 ");
 	    sqlStmt.append(" join m_movement mm on mm2.m_movement_id = mm.m_movement_id where mm.docstatus not in ('VO','RE') and mm2.bpr_materialrequestline_id=rl.bpr_materialrequestline_id )>0 ");
-	    if(BPR_MaterialRequestLine_ID>0)
+	    if(BPR_MaterialRequest_ID>0)
 	    	sqlStmt.append(" and r.bpr_materialrequest_id=?");
 	    
 	    PreparedStatement pstmt = null;
@@ -335,8 +335,8 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
 	    	pstmt.setInt(1, M_Warehouse_ID);
 	    	pstmt.setInt(2, M_WarehouseTo_ID);
-	    	if(BPR_MaterialRequestLine_ID>0)
-		    	pstmt.setInt(3, BPR_MaterialRequestLine_ID);
+	    	if(BPR_MaterialRequest_ID>0)
+		    	pstmt.setInt(3, BPR_MaterialRequest_ID);
 	    		
 		    rs = pstmt.executeQuery();
 		    while (rs.next()){
