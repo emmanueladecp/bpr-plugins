@@ -63,23 +63,22 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private void checkshipment() {
-        if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
-        	return;
-        }else {
-        	MOrderLine[] lines = order.getLines();
-    		for(MOrderLine line:lines) {
-    			int m_inout_id = DB.getSQLValue(line.get_TrxName(), "select mi2.m_inout_id from m_inoutline mi "
-    					+ " join m_inout mi2 on mi.m_inout_id = mi2.m_inout_id "
-    					+ " where mi2.docstatus not in ('RE','VO') and mi.c_orderline_id = ?", line.getC_OrderLine_ID());
-    			MInOut shipment = new MInOut(line.getCtx(), m_inout_id, line.get_TrxName());
-    			if(m_inout_id > 0) {
-					String msg = order.isSOTrx()?"Sales":"Purchase"+" Order Line "+line.getLine()+" sudah digunakan. Silahkan void/reverse correct "+
-								(order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo();
-					throw new AdempiereException(msg);
-				}
-    		}
-        }
-	}
+      	MOrderLine[] lines = order.getLines();
+   		for(MOrderLine line:lines) {
+   			List<MInOutLine> mlines = new Query(line.getCtx(), MInOutLine.Table_Name, " Exists (select M_Inout_ID from M_inout where M_inout.m_inout_id = m_inoutline.m_inout_id "
+   					+ " and m_inout.docstatus not in ('VO','RE')) and m_inoutline.c_orderline_id = ?", line.get_TrxName())
+					.setClient_ID().setOnlyActiveRecords(true)
+					.setParameters(line.getC_OrderLine_ID())
+					.list();
+   			for(MInOutLine mline : mlines){
+   				MInOut shipment = new MInOut(mline.getCtx(), mline.getM_InOut_ID(), mline.get_TrxName());
+   	   			String msg = (order.isSOTrx()?"Sales":"Purchase")+" Order Line "+line.getLine()+" sudah digunakan. Silahkan void/reverse correct "+
+   							(order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo()+" line : "+mline.getLine();
+   				throw new AdempiereException(msg);
+   			}
+   			
+   		}
+    }
 
 	private void resetCreditUsed() {
 		if(order.isSOTrx()) {
@@ -189,20 +188,33 @@ public class COrderEvent extends CustomEvent{
 					.setParameters(order.getC_Order_ID())
 					.list();
 			for(MInvoice invoice : invoices){
-				if(invoice.processIt(DocAction.ACTION_Reverse_Correct))
+				if(invoice.processIt(DocAction.ACTION_Reverse_Correct)) {
+					MInvoice reversal = (MInvoice) invoice.getReversal();
+					if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!invoice.getDocStatus().equalsIgnoreCase("RE")) {
+	                   String msg = (order.isSOTrx()?"Invoice (Customer)":"Invoice (Vendor)")+" : "+invoice.getDocumentNo()+" Gagal Reverse!!";
+	                   throw new AdempiereException(msg);
+					}
 					invoice.saveEx();
+				}
 				else
-					return "Failed cancel invoice "+invoice.toString();
+					throw new AdempiereException( "Failed cancel invoice "+invoice.toString());
 			}
 			
 			List<MInOut> shipments = new Query(order.getCtx(), MInOut.Table_Name, "C_Order_ID=?", order.get_TrxName())
 					.setParameters(order.getC_Order_ID())
 					.list();
 			for(MInOut shipment : shipments){
-				if(shipment.processIt(DocAction.ACTION_Reverse_Correct))
+				if(shipment.processIt(DocAction.ACTION_Reverse_Correct)) {
+					MInOut reversal = (MInOut) shipment.getReversal();
+					if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!shipment.getDocStatus().equalsIgnoreCase("RE")) {
+	                   String msg = (order.isSOTrx()?"Shipment":"Material Receipt")+" : "+shipment.getDocumentNo()+" Gagal Reverse!!";
+	                   throw new AdempiereException(msg);
+					}
 					shipment.saveEx();
-				else
-					return "Failed cancel shipment "+shipment.toString();
+				}
+				else {
+					throw new AdempiereException("Failed cancel shipment "+shipment.toString());
+				}
 			}
 		}
 		return null;
