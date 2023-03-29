@@ -9,7 +9,6 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MLocation;
-import org.compiere.model.MSysConfig;
 import org.compiere.model.Query;
 import org.compiere.process.ProcessInfoParameter;
 import org.compiere.util.Env;
@@ -86,6 +85,17 @@ public class SyncBP extends CustomProcess {
 			    
 			    bpartner.setValue(bp.get("Value").getAsString());
 			    bpartner.setName(bp.get("Name").getAsString());
+			    if(bp.has("Name2"))
+			    	bpartner.setName2(bp.get("Name2").getAsString());
+			    if(bp.has("TaxID"))
+			    	bpartner.setTaxID(bp.get("TaxID").getAsString());
+			    if(bp.has("KtpID"))
+			    	bpartner.set_ValueOfColumn("KtpID", bp.get("KtpID").getAsString());
+			    if(bp.has("IsNpwp"))
+			    	bpartner.set_ValueOfColumn("IsNpwp", bp.get("IsNpwp").getAsBoolean());
+			    if(bp.has("IsProspect"))
+			    	bpartner.setIsProspect(bp.get("IsProspect").getAsBoolean());
+			    bpartner.setSO_CreditLimit(bp.get("SO_CreditLimit").getAsBigDecimal());
 			    if(bp.has("C_BP_Group_ID"))
 			    	bpartner.setC_BP_Group_ID(findId(bp, "C_BP_Group_ID"));
 			    if(bp.has("C_Greeting_ID"))
@@ -109,9 +119,7 @@ public class SyncBP extends CustomProcess {
 					for (JsonElement location : bplocations) {
 						JsonObject bplocation = location.getAsJsonObject();
 						
-	
-						int location_id = findId(bplocation, "C_Location_ID");
-						JsonObject address = rest.get("models/C_Location/"+location_id, null);
+						JsonObject address = bplocation.getAsJsonObject("C_Location_ID");
 						MLocation mAddress = new Query(Env.getCtx(), MLocation.Table_Name, "C_Country_ID=? AND Address1=?", get_TrxName())
 					    		.setParameters(findId(address, "C_Country_ID"), address.get("Address1").getAsString())
 					    		.first();
@@ -156,8 +164,14 @@ public class SyncBP extends CustomProcess {
 	
 						if(bplocation.has("BPR_District_ID"))
 							bpartnerLocation.set_ValueOfColumn("BPR_District_ID", findId(bplocation, "BPR_District_ID"));
+
+						if(bplocation.has("BPR_Village_ID"))
+							bpartnerLocation.set_ValueOfColumn("BPR_Village_ID", findId(bplocation, "BPR_Village_ID"));
+
+						if(bplocation.has("Phone"))
+							bpartnerLocation.setPhone(bplocation.get("Phone").getAsString());
 						
-						bpartnerLocation.setIsBillTo(bplocation.get("IsBillTo").getAsBoolean());
+						bpartnerLocation.setIsPreserveCustomName(bplocation.get("IsPreserveCustomName").getAsBoolean());
 						bpartnerLocation.setIsShipTo(bplocation.get("IsShipTo").getAsBoolean());
 						bpartnerLocation.setIsActive(bplocation.get("IsActive").getAsBoolean());
 						bpartnerLocation.saveEx();
