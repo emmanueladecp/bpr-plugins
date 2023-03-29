@@ -118,35 +118,36 @@ public class SyncBP extends CustomProcess {
 					JsonArray bplocations = bp.getAsJsonArray("C_BPartner_Location");
 					for (JsonElement location : bplocations) {
 						JsonObject bplocation = location.getAsJsonObject();
-						
-						JsonObject address = bplocation.getAsJsonObject("C_Location_ID");
-						MLocation mAddress = new Query(Env.getCtx(), MLocation.Table_Name, "C_Country_ID=? AND Address1=?", get_TrxName())
-					    		.setParameters(findId(address, "C_Country_ID"), address.get("Address1").getAsString())
-					    		.first();
-						
-						if(mAddress==null) {
-							mAddress = new MLocation(Env.getCtx(), 0, get_TrxName());
-						}
-						mAddress.setC_Country_ID(findId(address, "C_Country_ID"));
-						mAddress.setAddress1(address.get("Address1").getAsString());
-						if(address.has("Address2"))
-						mAddress.setAddress2(address.get("Address2").getAsString());
-						if(address.has("Address3"))
-						mAddress.setAddress3(address.get("Address3").getAsString());
-						if(address.has("Address4"))
-						mAddress.setAddress4(address.get("Address4").getAsString());
-						if(address.has("Address5"))
-						mAddress.setAddress5(address.get("Address5").getAsString());
-						if(address.has("City"))
-						mAddress.setCity(address.get("City").getAsString());
-						if(address.has("C_City_ID"))
-						mAddress.setC_City_ID(findId(address, "C_City_ID"));
-						mAddress.saveEx();
-						
+
 						String bpLocationName = bplocation.get("Name").getAsString();
 						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
 					    		.setParameters(bpartner.getC_BPartner_ID(), bpLocationName)
 					    		.first();
+						
+						JsonObject address = bplocation.getAsJsonObject("C_Location_ID");
+						MLocation mAddress = null;
+						
+						if(bpartnerLocation!=null && bpartnerLocation.getC_Location_ID()>0) {
+							mAddress = (MLocation) bpartnerLocation.getC_Location();
+						}else {
+							mAddress = new MLocation(Env.getCtx(), 0, get_TrxName());
+						}
+						if(address.has("C_Country_ID"))
+							mAddress.setC_Country_ID(findId(address, "C_Country_ID"));
+						mAddress.setAddress1(address.get("Address1").getAsString());
+						if(address.has("Address2"))
+							mAddress.setAddress2(address.get("Address2").getAsString());
+						if(address.has("Address3"))
+							mAddress.setAddress3(address.get("Address3").getAsString());
+						if(address.has("Address4"))
+							mAddress.setAddress4(address.get("Address4").getAsString());
+						if(address.has("Address5"))
+							mAddress.setAddress5(address.get("Address5").getAsString());
+						if(address.has("City"))
+							mAddress.setCity(address.get("City").getAsString());
+						if(address.has("C_City_ID"))
+							mAddress.setC_City_ID(findId(address, "C_City_ID"));
+						mAddress.saveEx();
 						
 						if(bpartnerLocation==null) {
 					    	log.warning("No BP Location Found "+bpLocationName);
