@@ -51,7 +51,7 @@ public class SyncBP extends CustomProcess {
 		if(created!=null) {
 			params.add("created gt '"+sdf.format(created)+"'");
 		}
-		String filter = "$expand=C_BPartner_Location";
+		String filter = "$expand=C_BPartner_Location($expand=C_Location_ID)";
 		if(params.size()>0) {
 			String query = String.join(" and ", params);
 			query = RestService.encodeQuery(query);
