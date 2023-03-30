@@ -20,7 +20,8 @@ Require-Bundle: org.apache.commons.lang3,
  zweb,
  org.adempiere.ui,
  com.google.gson;bundle-version="2.8.6"
-Import-Package: org.compiere.model,
+Import-Package: org.apache.xmlbeans.impl.store;version="3.1.0",
+ org.compiere.model,
  org.globalqss.model,
  org.osgi.service.event
 Service-Component: OSGI-INF/ModelFactory.xml,OSGI-INF/EventFactory.xml,OSGI-INF/CalloutFactory.xml,OSGI-INF/ProcessFactory.xml,OSGI-INF/FormFactory.xml,OSGI-INF/CreateFormFactory.xml, OSGI-INF/DocFactory.xml
