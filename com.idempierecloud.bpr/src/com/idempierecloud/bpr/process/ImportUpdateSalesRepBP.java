@@ -104,7 +104,7 @@ public class ImportUpdateSalesRepBP extends CustomProcess {
 				while (rs.next())
 				{
 					X_I_BPR_Updatesales us = new X_I_BPR_Updatesales(getCtx(), rs, get_TrxName());
-					SalesRep_ID = DB.getSQLValue(get_TrxName(),"select coalesce(SalesRep_ID,0) from ad_user au where au.value like ?", us.getValue2());
+					SalesRep_ID = DB.getSQLValue(get_TrxName(),"select coalesce(ad_user_id,0) from ad_user au where au.value like ?", us.getValue2());
 					if(SalesRep_ID==0 || SalesRep_ID<0) {
 						us.setI_ErrorMsg("Tidak ditemukan User dengan Value = "+us.getValue()+" || "+us.getI_ErrorMsg());
 						us.setI_IsImported(false);
@@ -132,7 +132,7 @@ public class ImportUpdateSalesRepBP extends CustomProcess {
 						
 						X_BPR_Historysales hs = new X_BPR_Historysales(getCtx(), 0, get_TrxName());
 						hs.setSalesRep_ID(SalesRepOld_ID);
-						hs.setSalesRep_ID(SalesRep_ID);
+						hs.setSalesRepNew_ID(SalesRep_ID);
 						hs.setC_BPartner_ID(C_BPartner_ID);
 						hs.saveEx();
 					}
