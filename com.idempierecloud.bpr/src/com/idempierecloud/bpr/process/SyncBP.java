@@ -9,6 +9,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MLocation;
+import org.compiere.model.MUser;
 import org.compiere.model.Query;
 import org.compiere.process.ProcessInfoParameter;
 import org.compiere.util.Env;
@@ -23,6 +24,7 @@ public class SyncBP extends CustomProcess {
 
 	private String value = null;
 	private Timestamp created = null;
+	private boolean isSalesRep = false;
 	
 	@Override
 	protected void prepare() {
@@ -34,6 +36,8 @@ public class SyncBP extends CustomProcess {
 				value = para[i].getParameterAsString();
 			else if (name.equals("Created")) 
 				created = para[i].getParameterAsTimestamp();
+			else if (name.equals("IsSalesRep")) 
+				isSalesRep = para[i].getParameterAsBoolean();
 		}
 	}
 
@@ -51,7 +55,10 @@ public class SyncBP extends CustomProcess {
 		if(created!=null) {
 			params.add("created gt '"+sdf.format(created)+"'");
 		}
-		String filter = "$expand=C_BPartner_Location($expand=C_Location_ID)";
+		if(isSalesRep) {
+			params.add("issalesrep eq true");
+		}
+		String filter = "$expand=AD_User,C_BPartner_Location($expand=C_Location_ID)";
 		if(params.size()>0) {
 			String query = String.join(" and ", params);
 			query = RestService.encodeQuery(query);
@@ -102,8 +109,11 @@ public class SyncBP extends CustomProcess {
 			    	bpartner.setC_Greeting_ID(findId(bp, "C_Greeting_ID"));
 			    if(bp.has("C_PaymentTerm_ID"))
 			    	bpartner.setC_PaymentTerm_ID(findId(bp, "C_PaymentTerm_ID"));
-//			    if(bp.has("SalesRep_ID"))
-//			    	bpartner.setSalesRep_ID(findId(bp, "SalesRep_ID"));
+			    if(bp.has("SalesRep_ID")) {
+			    	int SalesRep_ID = findSalesRep(bp);
+			    	if(SalesRep_ID>0)
+			    		bpartner.setSalesRep_ID(SalesRep_ID);
+			    }
 			    if(bp.has("C_SalesRegion_ID"))
 			    	bpartner.set_ValueOfColumn("C_SalesRegion_ID", findId(bp, "C_SalesRegion_ID"));
 			    
@@ -113,6 +123,24 @@ public class SyncBP extends CustomProcess {
 			    bpartner.setIsCustomer(bp.get("IsCustomer").getAsBoolean());
 			    bpartner.setIsSalesRep(bp.get("IsSalesRep").getAsBoolean());
 			    bpartner.saveEx();
+			    
+
+			    if(bp.has("AD_User")) {
+			    	JsonArray users = bp.getAsJsonArray("AD_User");
+					for (JsonElement row : users) {
+						JsonObject user = row.getAsJsonObject();
+						
+						MUser mUser = new Query(Env.getCtx(), MUser.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
+					    		.setParameters(bpartner.getC_BPartner_ID(), user.get("Name").getAsString())
+					    		.first();
+						if(mUser==null) {
+							mUser = new MUser(bpartner);
+						}
+						if(user.has("Value"))
+							mUser.setValue(user.get("Value").getAsString());		
+						mUser.saveEx();
+					}
+			    }
 			    
 			    if(bp.has("C_BPartner_Location")) {
 					JsonArray bplocations = bp.getAsJsonArray("C_BPartner_Location");
@@ -134,7 +162,8 @@ public class SyncBP extends CustomProcess {
 						}
 						if(address.has("C_Country_ID"))
 							mAddress.setC_Country_ID(findId(address, "C_Country_ID"));
-						mAddress.setAddress1(address.get("Address1").getAsString());
+						if(address.has("Address1"))
+							mAddress.setAddress1(address.get("Address1").getAsString());
 						if(address.has("Address2"))
 							mAddress.setAddress2(address.get("Address2").getAsString());
 						if(address.has("Address3"))
@@ -191,6 +220,20 @@ public class SyncBP extends CustomProcess {
 		}
 		
 		return "Processed Insert: "+insert+", updated: "+update+", error: "+error;
+	}
+
+	private int findSalesRep(JsonObject bp) {
+		JsonObject data = bp.getAsJsonObject("SalesRep_ID");
+		String name = data.get("identifier").getAsString();
+		MUser sales = new Query(Env.getCtx(), MUser.Table_Name, "Name=?", get_TrxName())
+	    		.setParameters(name)
+	    		.first();
+		if(sales!=null)
+			return sales.getAD_User_ID();
+		
+
+		addLog("No Sales Rep Found "+name);
+		return 0;
 	}
 
 	private int findId(JsonObject bp, String column) {
