@@ -102,7 +102,6 @@ public class SyncBP extends CustomProcess {
 			    	bpartner.set_ValueOfColumn("IsNpwp", bp.get("IsNpwp").getAsBoolean());
 			    if(bp.has("IsProspect"))
 			    	bpartner.setIsProspect(bp.get("IsProspect").getAsBoolean());
-			    bpartner.setSO_CreditLimit(bp.get("SO_CreditLimit").getAsBigDecimal());
 			    if(bp.has("C_BP_Group_ID"))
 			    	bpartner.setC_BP_Group_ID(findId(bp, "C_BP_Group_ID"));
 			    if(bp.has("C_Greeting_ID"))
