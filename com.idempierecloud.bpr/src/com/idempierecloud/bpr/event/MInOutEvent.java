@@ -7,12 +7,10 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
 import org.compiere.model.MInOut;
-import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInOutLineMA;
 import org.compiere.model.MProduct;
 import org.compiere.model.MStorageOnHand;
-import org.compiere.model.MInOutLineConfirm;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrderLine;
@@ -54,7 +52,7 @@ public class MInOutEvent extends CustomEvent {
 	}
 	
 	private void checkReversal() {
-		if(inout.getReversal_ID()==0 || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns))
+		if(inout.getReversal_ID()==0)
 			return;
 		
 		for(MInOutLine line : inout.getLines(false)) {
@@ -108,7 +106,7 @@ public class MInOutEvent extends CustomEvent {
 				//	No AttributeSetInstance found for remainder
 				if (qtyToDeliver.signum() != 0)
 				{
-					MInOutLineMA ma = MInOutLineMA.addOrCreate(line, 0, qtyToDeliver, inout.getMovementDate(),true) ;
+					MInOutLineMA ma = MInOutLineMA.addOrCreate(line, 0, qtyToDeliver.negate(), inout.getMovementDate(),true) ;
 					ma.saveEx();
 					if (log.isLoggable(Level.FINE)) log.fine("##: " + ma);
 					
