@@ -140,7 +140,7 @@ public class PaymentAllocation extends CustomForm
 			+ "FROM C_Payment_v p"		//	Corrected for AP/AR
 			+ " INNER JOIN C_Currency c ON (p.C_Currency_ID=c.C_Currency_ID) "
 					+ " LEFT JOIN C_BankAccount ba ON (p.C_BankAccount_ID=ba.C_BankAccount_ID) "
-			+ "WHERE p.IsAllocated='N' AND p.Processed='Y'"
+			+ "WHERE p.IsAllocated='N' AND p.Processed='Y' and p.docstatus in ('CO','CL')"
 			+ " AND p.C_Charge_ID IS NULL"		//	Prepayments OK
 			+ " AND p.C_BPartner_ID=?");                   		//      #5
 		if (!isMultiCurrency)
