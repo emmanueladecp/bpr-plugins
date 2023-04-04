@@ -272,9 +272,13 @@ public class COrderLineEvent extends CustomEvent {
 			return;
 		if(orderLine.getM_Product_ID()==0)
 			return;
+		
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(docType.get_ValueAsBoolean("isTurus"))
 			return;
+		int C_DocType_ID_CustomerReturnBPR=1000084;
+        if(!(docType.get_ID()==C_DocType_ID_CustomerReturnBPR))
+        	return;
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
 		BigDecimal priceEntered = ongkosAngkut.add(orderLine.getPriceList());
 		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("SubsidiAmt");
@@ -284,9 +288,7 @@ public class COrderLineEvent extends CustomEvent {
 		priceEntered = priceEntered.add(subsidiAmt);
 		orderLine.setPriceActual(priceEntered);
 		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
-        int C_DocType_ID_CustomerReturnBPR=1000084;
-        if(!(docType.get_ID()==C_DocType_ID_CustomerReturnBPR))
-        	orderLine.setPriceEntered(priceEntered);
+        orderLine.setPriceEntered(priceEntered);
 	}
 	
 	private void calculateLinetNetAmt() {
