@@ -69,6 +69,7 @@ public class BPAllocation extends CustomForm {
 //	private int			i_multiplier = 10;
 	
 	public int         	m_AD_Org_ID = 0;
+	private int C_Payment_ID= 0;
 
 	private ArrayList<Integer>	m_bpartnerCheck = new ArrayList<Integer>(); 
 
@@ -683,7 +684,7 @@ public class BPAllocation extends CustomForm {
 			{
 				KeyNamePair pp = (KeyNamePair)payment.getValueAt(i, 2);   //  Value
 				//  Payment variables
-				int C_Payment_ID = pp.getKey();
+				C_Payment_ID = pp.getKey();
 				paymentList.add(C_Payment_ID);
 				//
 				BigDecimal PaymentAmt = (BigDecimal)payment.getValueAt(i, i_payment);  //  Applied Payment
@@ -708,7 +709,7 @@ public class BPAllocation extends CustomForm {
 		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName));
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
-		alloc.setDateAcct(new Timestamp(System.currentTimeMillis()));
+        //alloc.setDateAcct(new Timestamp(System.currentTimeMillis()));
 		//	End Jorge Colmenarez
 		alloc.saveEx();
 		//	For all invoices

@@ -964,12 +964,14 @@ public class PaymentAllocation extends CustomForm
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
 		//	Added By Jorge Colmenarez, 2022-01-05 17:25 Support for RQ #0000225
+		
+		/*Ticket #request-001267 [BPR] date acct allocation
 		boolean useSysDate = MSysConfig.getBooleanValue("ALLOCATION_USE_SYSDATE_FOR_DATEACCT", true, Env.getAD_Client_ID(Env.getCtx()));
 		if(useSysDate)
 			alloc.setDateAcct(new Timestamp(System.currentTimeMillis()));
 		else
 			alloc.setDateAcct(DateAcct);
-		//	End Jorge Colmenarez
+		//	End Jorge Colmenarez */
 		alloc.saveEx();
 		//	For all invoices
 		BigDecimal unmatchedApplied = Env.ZERO;
