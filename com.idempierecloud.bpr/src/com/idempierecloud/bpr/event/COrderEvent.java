@@ -2,7 +2,9 @@ package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Timestamp;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -11,14 +13,19 @@ import org.compiere.model.MDocType;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
+import org.compiere.model.MInvoiceLine;
+import org.compiere.model.MInvoicePaySchedule;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MOrderPaySchedule;
+import org.compiere.model.MSysConfig;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.process.DocAction;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.Msg;
 import org.osgi.service.event.Event;
 import org.compiere.model.MDocType;
 
@@ -27,7 +34,7 @@ import com.idempierecloud.bpr.base.CustomEvent;
 public class COrderEvent extends CustomEvent{
 
 	private static CLogger log = CLogger.getCLogger(COrderLineEvent.class);
-	
+	String m_processMsg = null;
 	private MOrder order = null;
 
 	@Override
@@ -59,7 +66,10 @@ public class COrderEvent extends CustomEvent{
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			resetQtyReserved();
 			updatePOReference();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+			checkWarehouseOrder();
 		}
+		
 	}
 	
 	private void checkshipment() {
@@ -183,11 +193,15 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private String checkCreditOrder() {
-		if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
+		if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)
+				||order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_WarehouseOrder)) {
 			List<MInvoice> invoices = new Query(order.getCtx(), MInvoice.Table_Name, "C_Order_ID=?", order.get_TrxName())
 					.setParameters(order.getC_Order_ID())
 					.list();
 			for(MInvoice invoice : invoices){
+				if(!invoice.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
+					throw new AdempiereException("Please Check Status Invoice");
+				}
 				if(invoice.processIt(DocAction.ACTION_Reverse_Correct)) {
 					MInvoice reversal = (MInvoice) invoice.getReversal();
 					if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!invoice.getDocStatus().equalsIgnoreCase("RE")) {
@@ -219,6 +233,111 @@ public class COrderEvent extends CustomEvent{
 		}
 		return null;
 	}
+	
+	private String checkWarehouseOrder() {
+		boolean realTimePOS = MSysConfig.getBooleanValue(MSysConfig.REAL_TIME_POS, false , order.getAD_Client_ID());
+		int M_InOut_ID = DB.getSQLValue(order.get_TrxName(), "select M_InOut_ID from M_InOut where C_Order_ID = ?", order.getC_Order_ID());
+		MInOut io = new MInOut(order.getCtx(), M_InOut_ID, order.get_TrxName());
+		if ( MDocType.DOCSUBTYPESO_WarehouseOrder.equals(order.getC_DocType().getDocSubTypeSO())){
+				MInvoice invoice = createInvoice ((MDocType) order.getC_DocType(), io, realTimePOS ? null : order.getDateOrdered());
+				if (invoice == null)
+					return DocAction.STATUS_Invalid;
+			}	//	Invoice
+		return m_processMsg;
+	}
+	
+	protected MInvoice createInvoice (MDocType dt, MInOut shipment, Timestamp invoiceDate)
+	{
+		if (log.isLoggable(Level.INFO)) log.info(dt.toString());
+		MInvoice invoice = new MInvoice (order, dt.getC_DocTypeInvoice_ID(), invoiceDate);
+		if (!invoice.save(order.get_TrxName()))
+		{
+			m_processMsg = "Could not create Invoice";
+			return null;
+		}
+		
+		//	If we have a Shipment - use that as a base
+		if (shipment != null)
+		{
+			if (!MOrder.INVOICERULE_AfterDelivery.equals(order.getInvoiceRule()))
+				order.setInvoiceRule(MOrder.INVOICERULE_AfterDelivery);
+			//
+			MInOutLine[] sLines = shipment.getLines(false);
+			for (int i = 0; i < sLines.length; i++)
+			{
+				MInOutLine sLine = sLines[i];
+				//
+				MInvoiceLine iLine = new MInvoiceLine(invoice);
+				iLine.setShipLine(sLine);
+				//	Qty = Delivered	
+				if (sLine.sameOrderLineUOM())
+					iLine.setQtyEntered(sLine.getQtyEntered());
+				else
+					iLine.setQtyEntered(sLine.getMovementQty());
+				iLine.setQtyInvoiced(sLine.getMovementQty());
+				if (!iLine.save(order.get_TrxName()))
+				{
+					m_processMsg = "Could not create Invoice Line from Shipment Line";
+					return null;
+				}
+				//
+				sLine.setIsInvoiced(true);
+				if (!sLine.save(order.get_TrxName()))
+				{
+					log.warning("Could not update Shipment line: " + sLine);
+				}
+			}
+		}
+		else	//	Create Invoice from Order
+		{
+			if (!MOrder.INVOICERULE_Immediate.equals(order.getInvoiceRule()))
+				order.setInvoiceRule(MOrder.INVOICERULE_Immediate);
+			//
+			MOrderLine[] oLines = order.getLines();
+			for (int i = 0; i < oLines.length; i++)
+			{
+				MOrderLine oLine = oLines[i];
+				//
+				MInvoiceLine iLine = new MInvoiceLine(invoice);
+				iLine.setOrderLine(oLine);
+				//	Qty = Ordered - Invoiced	
+				iLine.setQtyInvoiced(oLine.getQtyOrdered().subtract(oLine.getQtyInvoiced()));
+				if (oLine.getQtyOrdered().compareTo(oLine.getQtyEntered()) == 0)
+					iLine.setQtyEntered(iLine.getQtyInvoiced());
+				else
+					iLine.setQtyEntered(iLine.getQtyInvoiced().multiply(oLine.getQtyEntered())
+						.divide(oLine.getQtyOrdered(), 12, RoundingMode.HALF_UP));
+				if (!iLine.save(order.get_TrxName()))
+				{
+					m_processMsg = "Could not create Invoice Line from Order Line";
+					return null;
+				}
+			}
+		}
+		
+		// Copy payment schedule from order to invoice if any
+		for (MOrderPaySchedule ops : MOrderPaySchedule.getOrderPaySchedule(order.getCtx(), order.getC_Order_ID(), 0, order.get_TrxName())) {
+			MInvoicePaySchedule ips = new MInvoicePaySchedule(order.getCtx(), 0, order.get_TrxName());
+			PO.copyValues(ops, ips);
+			ips.setC_Invoice_ID(invoice.getC_Invoice_ID());
+			ips.setAD_Org_ID(ops.getAD_Org_ID());
+			ips.setProcessing(ops.isProcessing());
+			ips.setIsActive(ops.isActive());
+			if (!ips.save()) {
+				m_processMsg = "ERROR: creating pay schedule for invoice from : "+ ops.toString();
+				return null;
+			}
+		}
+		
+		invoice.saveEx(order.get_TrxName());
+		order.setC_CashLine_ID(invoice.getC_CashLine_ID());
+		if (!MOrder.DOCSTATUS_Completed.equals(invoice.getDocStatus()))
+		{
+			m_processMsg = "@C_Invoice_ID@: " + invoice.getProcessMsg();
+			return null;
+		}
+		return invoice;
+	}	//	createInvoice
 	
 	@Override
 	protected void doHandleEvent() {
