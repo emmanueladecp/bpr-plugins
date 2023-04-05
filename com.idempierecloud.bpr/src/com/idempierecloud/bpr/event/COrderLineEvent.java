@@ -277,8 +277,10 @@ public class COrderLineEvent extends CustomEvent {
 		if(docType.get_ValueAsBoolean("isTurus"))
 			return;
 		int C_DocType_ID_CustomerReturnBPR=1000084;
-        if(!(docType.get_ID()==C_DocType_ID_CustomerReturnBPR))
+        if((docType.get_ID()==C_DocType_ID_CustomerReturnBPR)) {
         	return;
+        }
+        	
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
 		BigDecimal priceEntered = ongkosAngkut.add(orderLine.getPriceList());
 		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("SubsidiAmt");
