@@ -1,6 +1,12 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
@@ -38,6 +44,7 @@ public class MInOutEvent extends CustomEvent {
 		log.fine("Minout Event : "+event.getTopic());
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			checkMovementDate();
 			checkQtySalesOrder();
 			checkAvailableQtyProduct();
 			checkCustomerReturn();
@@ -53,6 +60,33 @@ public class MInOutEvent extends CustomEvent {
 		}
 	}
 	
+	private void checkMovementDate() {
+		if(inout.getMovementType().equals("C-")&&inout.isSOTrx()) {
+			Date MovementDate = inout.getMovementDate();
+			Date Created = inout.getCreated();
+		    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+		    try {
+				Created = sdf.parse(sdf.format(Created));
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+	        
+			Date date = new Date(Created.getTime());         
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(date); 
+			cal.add(Calendar.DATE, 2); 
+
+			Date modifiedDate = cal.getTime();
+			
+			if(MovementDate.compareTo(Created)<0)
+				throw new AdempiereException("Movement Date tidak boleh kurang dari tanggal pembuatan Shipment. created : "+inout.getCreated());
+			else if(MovementDate.compareTo(modifiedDate)>0)
+				throw new AdempiereException("Movement Date tidak boleh lebih 2 hari dari tanggal pembuatan Shipment. created : "+inout.getCreated());
+		}
+	}
+
 	private void checkReversal() {
 		if(inout.getReversal_ID()==0 || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns))
 			return;
