@@ -24,7 +24,8 @@ public class ImportUpdateSalesRepBP extends CustomProcess {
 	private int SalesRep_ID = 0;
 	private int C_BPartner_ID = 0;
 	private int SalesRepOld_ID = 0;
-	private String Value = "";
+	private int Table = 0;
+	private String Value = null;
 	
 
 	@Override
@@ -33,6 +34,7 @@ public class ImportUpdateSalesRepBP extends CustomProcess {
 		for (int i = 0; i < para.length; i++)
 		{
 			C_BPartner_ID = getRecord_ID();
+			Table = getTable_ID();
 			String name = para[i].getParameterName();
 			if (name.equals("AD_Client_ID"))
 				m_AD_Client_ID = para[i].getParameterAsInt();
@@ -52,7 +54,7 @@ public class ImportUpdateSalesRepBP extends CustomProcess {
 		String clientCheck = getWhereClause();
 		
 		/*JIKA IMPORT dari Toolbar Button Window BP*/
-		if(C_BPartner_ID>0) {
+		if(C_BPartner_ID>0 && Table==291) {//table BP
 			if(Value.equals(null))
 				throw new AdempiereException("Search Key SalesRep tidak boleh Kosong");
 			SalesRep_ID = DB.getSQLValue(get_TrxName(),"select coalesce(ad_user_id,0) from ad_user au where au.value like ?", Value);
