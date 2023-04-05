@@ -1,5 +1,7 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MCost;
@@ -30,7 +32,7 @@ public class MInventoryEvent extends CustomEvent {
 			createCostAdjustment();
 		}
 	}
-	
+
 	private void checkLines() {
 		if(!inventory.get_ValueAsBoolean("isUpdateCosting"))
 			return;
