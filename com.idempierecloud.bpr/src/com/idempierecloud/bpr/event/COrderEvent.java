@@ -198,21 +198,51 @@ public class COrderEvent extends CustomEvent{
 			List<MInvoice> invoices = new Query(order.getCtx(), MInvoice.Table_Name, "C_Order_ID=?", order.get_TrxName())
 					.setParameters(order.getC_Order_ID())
 					.list();
-			for(MInvoice invoice : invoices){
-				if(!invoice.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
-					throw new AdempiereException("Please Check Status Invoice");
-				}
-				if(invoice.processIt(DocAction.ACTION_Reverse_Correct)) {
-					MInvoice reversal = (MInvoice) invoice.getReversal();
-					if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!invoice.getDocStatus().equalsIgnoreCase("RE")) {
-	                   String msg = (order.isSOTrx()?"Invoice (Customer)":"Invoice (Vendor)")+" : "+invoice.getDocumentNo()+" Gagal Reverse!!";
-	                   throw new AdempiereException(msg);
+			if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
+				for(MInvoice invoice : invoices){
+					if(!invoice.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
+						throw new AdempiereException("Please Check Status Invoice");
 					}
-					invoice.saveEx();
+					if(invoice.processIt(DocAction.ACTION_Reverse_Correct)) {
+						MInvoice reversal = (MInvoice) invoice.getReversal();
+						if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!invoice.getDocStatus().equalsIgnoreCase("RE")) {
+		                   String msg = (order.isSOTrx()?"Invoice (Customer)":"Invoice (Vendor)")+" : "+invoice.getDocumentNo()+" Gagal Reverse!!";
+		                   throw new AdempiereException(msg);
+						}
+						invoice.saveEx();
+					}
+					else
+						throw new AdempiereException( "Failed cancel invoice "+invoice.toString());
 				}
-				else
-					throw new AdempiereException( "Failed cancel invoice "+invoice.toString());
+			}else if (order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_WarehouseOrder)) {
+				for(MInvoice invoice : invoices){
+					if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Voided)) {
+						continue;
+					}else if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Drafted)) {
+						if(invoice.processIt(DocAction.ACTION_Void)) {
+							if(!invoice.getDocStatus().equals(MInvoice.DOCSTATUS_Voided)) {
+			                   String msg = (order.isSOTrx()?"Invoice (Customer)":"Invoice (Vendor)")+" : "+invoice.getDocumentNo()+" Gagal Void!!";
+			                   throw new AdempiereException(msg);
+							}
+							invoice.saveEx();
+						}else
+							throw new AdempiereException( "Failed cancel invoice "+invoice.toString());
+					}else if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
+						if(invoice.processIt(DocAction.ACTION_Reverse_Correct)) {
+							MInvoice reversal = (MInvoice) invoice.getReversal();
+							if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!invoice.getDocStatus().equalsIgnoreCase("RE")) {
+			                   String msg = (order.isSOTrx()?"Invoice (Customer)":"Invoice (Vendor)")+" : "+invoice.getDocumentNo()+" Gagal Reverse!!";
+			                   throw new AdempiereException(msg);
+							}
+							invoice.saveEx();
+						}else
+							throw new AdempiereException( "Failed cancel invoice "+invoice.toString());
+					}else {
+						throw new AdempiereException("Please Check Invoice :"+invoice.getDocumentNo()+", status invoice : "+invoice.getDocStatus());
+					}
+				}
 			}
+			
 			
 			List<MInOut> shipments = new Query(order.getCtx(), MInOut.Table_Name, "C_Order_ID=?", order.get_TrxName())
 					.setParameters(order.getC_Order_ID())
