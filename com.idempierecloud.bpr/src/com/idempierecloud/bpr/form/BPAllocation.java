@@ -52,6 +52,7 @@ public class BPAllocation extends CustomForm {
 	public int         	m_C_BPartner2_ID = 0;
 	private int         m_noInvoices = 0;
 	private int         m_noPayments = 0;
+	public String 		Description = null;
 	public BigDecimal	totalInv = Env.ZERO;
 	public BigDecimal 	totalPay = Env.ZERO;
 	public BigDecimal	totalDiff = Env.ZERO;
@@ -147,14 +148,16 @@ public class BPAllocation extends CustomForm {
 		 *      5-ConvAmt, 6-ConvOpen, 7-Allocated
 		 */
 		Vector<Vector<Object>> data = new Vector<Vector<Object>>();
-		StringBuilder sql = new StringBuilder("SELECT p.DateTrx,p.DocumentNo,p.C_Payment_ID,"  //  1..3
-			+ "c.ISO_Code,p.PayAmt,"                            //  4..5
-			+ "currencyConvert(p.PayAmt,p.C_Currency_ID,?,p.DateTrx,p.C_ConversionType_ID,p.AD_Client_ID,p.AD_Org_ID),"//  6   #1, #2
-			+ "currencyConvert(paymentAvailable(C_Payment_ID),p.C_Currency_ID,?,p.DateTrx,p.C_ConversionType_ID,p.AD_Client_ID,p.AD_Org_ID),"  //  7   #3, #4
+		StringBuilder sql = new StringBuilder("SELECT ao.name, ao.ad_org_id, "//1-2
+			+ "p.DateTrx,p.DocumentNo,p.C_Payment_ID,"  //  3-5
+			+ "c.ISO_Code,p.PayAmt,"                            //  6..7
+			+ "currencyConvert(p.PayAmt,p.C_Currency_ID,?,p.DateTrx,p.C_ConversionType_ID,p.AD_Client_ID,p.AD_Org_ID),"//  8   #1, #2
+			+ "currencyConvert(paymentAvailable(C_Payment_ID),p.C_Currency_ID,?,p.DateTrx,p.C_ConversionType_ID,p.AD_Client_ID,p.AD_Org_ID),"  //  9   #3, #4
 			+ "p.MultiplierAP "
-			+ ",bp.Name, ba.name as bankaccount " // 9
+			+ ",bp.Name, ba.name as bankaccount " // 10
 			+ ", p.description "
 			+ "FROM C_Payment_v p"		//	Corrected for AP/AR 
+			+ " JOIN AD_Org ao on ao.ad_org_id = p.ad_org_id"
 			+ " INNER JOIN C_BPartner bp ON (p.C_BPartner_ID = bp.C_BPartner_ID) "
 			+ " INNER JOIN C_Currency c ON (p.C_Currency_ID=c.C_Currency_ID) "
 			+ " LEFT JOIN C_BankAccount ba ON (p.C_BankAccount_ID=ba.C_BankAccount_ID) "
@@ -189,17 +192,19 @@ public class BPAllocation extends CustomForm {
 			{
 				Vector<Object> line = new Vector<Object>();
 				line.add(false);       //  0-Selection
-				line.add(rs.getTimestamp(1));       //  1-TrxDate
-				KeyNamePair pp = new KeyNamePair(rs.getInt(3), rs.getString(2));
-				line.add(pp);                       //  2-DocumentNo
-				line.add(rs.getString(9));			//	3-BPartner
+				KeyNamePair pp = new KeyNamePair(rs.getInt(2), rs.getString(1));
+				line.add(pp);                       //  1-DocumentNo
+				line.add(rs.getTimestamp(3));       //  2-TrxDate
+				pp = new KeyNamePair(rs.getInt(5), rs.getString(4));
+				line.add(pp);                       //  3-DocumentNo
+				line.add(rs.getString(11));			//	4-BPartner
 				if (isMultiCurrency)
 				{
-					line.add(rs.getString(4));      //  4-Currency
-					line.add(rs.getBigDecimal(5));  //  5-PayAmt
+					line.add(rs.getString(6));      //  5-Currency
+					line.add(rs.getBigDecimal(7));  //  6-PayAmt
 				}
-				line.add(rs.getBigDecimal(6));      //  4/6-ConvAmt
-				BigDecimal available = rs.getBigDecimal(7);
+				line.add(rs.getBigDecimal(8));      //  4/6-ConvAmt
+				BigDecimal available = rs.getBigDecimal(9);
 				if (available == null || available.signum() == 0)	//	nothing available
 					continue;
 				line.add(available);				//  5/7-ConvOpen/Available
@@ -228,6 +233,7 @@ public class BPAllocation extends CustomForm {
 		//  Header Info
 		Vector<String> columnNames = new Vector<String>();
 		columnNames.add(Msg.getMsg(Env.getCtx(), "Select"));
+		columnNames.add(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		columnNames.add(Msg.translate(Env.getCtx(), "Date"));
 		columnNames.add(Util.cleanAmp(Msg.translate(Env.getCtx(), "DocumentNo")));
 		columnNames.add(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
@@ -250,23 +256,24 @@ public class BPAllocation extends CustomForm {
 	{
 		int i = 0;
 		paymentTable.setColumnClass(i++, Boolean.class, false);         //  0-Selection
-		paymentTable.setColumnClass(i++, Timestamp.class, true);        //  1-TrxDate
-		paymentTable.setColumnClass(i++, String.class, true);           //  2-Value
-		paymentTable.setColumnClass(i++, String.class, true);       	//  3-BPartner
+		paymentTable.setColumnClass(i++, String.class, true);           //  1-Value
+		paymentTable.setColumnClass(i++, Timestamp.class, true);        //  2-TrxDate
+		paymentTable.setColumnClass(i++, String.class, true);           //  3-Value
+		paymentTable.setColumnClass(i++, String.class, true);       	//  4-BPartner
 		if (isMultiCurrency)
 		{
-			paymentTable.setColumnClass(i++, String.class, true);       //  4-Currency
-			paymentTable.setColumnClass(i++, BigDecimal.class, true);   //  5-PayAmt
+			paymentTable.setColumnClass(i++, String.class, true);       //  5-Currency
+			paymentTable.setColumnClass(i++, BigDecimal.class, true);   //  6-PayAmt
 		}
-		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  6-ConvAmt
-		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  7-ConvOpen
-		paymentTable.setColumnClass(i++, BigDecimal.class, false);      //  8-Allocated
-		paymentTable.setColumnClass(i++, String.class, false);    	    //  9-BankAccount
-		paymentTable.setColumnClass(i++, String.class, false);    	    //  10-Description
-//		paymentTable.setColumnClass(i++, BigDecimal.class, true);      	//  9-Multiplier
+		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  7-ConvAmt
+		paymentTable.setColumnClass(i++, BigDecimal.class, true);       //  8-ConvOpen
+		paymentTable.setColumnClass(i++, BigDecimal.class, false);      //  9-Allocated
+		paymentTable.setColumnClass(i++, String.class, false);    	    //  10-BankAccount
+		paymentTable.setColumnClass(i++, String.class, false);    	    //  11-Description
+//		paymentTable.setColumnClass(i++, BigDecimal.class, true);      	//  10-Multiplier
 
 		//
-		i_payment = isMultiCurrency ? 8 : 6;
+		i_payment = isMultiCurrency ? 9 : 7;
 		
 
 		//  Table UI
@@ -292,7 +299,7 @@ public class BPAllocation extends CustomForm {
 		 WHERE -- i.IsPaid='N' AND i.Processed='Y' AND i.C_BPartner_ID=1000001
 		 */
 		Vector<Vector<Object>> data = new Vector<Vector<Object>>();
-		StringBuilder sql = new StringBuilder("SELECT i.DateInvoiced,i.DocumentNo,i.C_Invoice_ID," //  1..3
+		StringBuilder sql = new StringBuilder("SELECT ao.name, ao.ad_org_id, i.DateInvoiced,i.DocumentNo,i.C_Invoice_ID," //  1..3
 			+ "c.ISO_Code,i.GrandTotal*i.MultiplierAP, "                            //  4..5    Orig Currency
 			+ "currencyConvert(i.GrandTotal*i.MultiplierAP,i.C_Currency_ID,?,i.DateInvoiced,i.C_ConversionType_ID,i.AD_Client_ID,i.AD_Org_ID), " //  6   #1  Converted, #2 Date
 			+ "invoiceOpenConverted(C_Invoice_ID,?::numeric)*i.MultiplierAP, "  //  7   #3, #4  Converted Open
@@ -301,7 +308,8 @@ public class BPAllocation extends CustomForm {
 			+ "i.MultiplierAP "
 			+ ",bp.Name " //	10
 			+ ",i.description " //	10
-			+ "FROM C_Invoice_v i"		//  corrected for CM/Split 
+			+ "FROM C_Invoice_v i"		//  corrected for CM/Split
+			+ " JOIN AD_Org ao on ao.ad_org_id = i.ad_org_id"
 			+ " INNER JOIN C_BPartner bp ON (i.C_BPartner_ID = bp.C_BPartner_ID) "
 			+ " INNER JOIN C_Currency c ON (i.C_Currency_ID=c.C_Currency_ID) "
 			+ "WHERE i.IsPaid='N' AND i.Processed='Y'"
@@ -336,28 +344,30 @@ public class BPAllocation extends CustomForm {
 			{
 				Vector<Object> line = new Vector<Object>();
 				line.add(false);       //  0-Selection
-				line.add(rs.getTimestamp(1));       //  1-TrxDate
-				KeyNamePair pp = new KeyNamePair(rs.getInt(3), rs.getString(2));
-				line.add(pp);                       //  2-Value
-				line.add(rs.getString(10));      	//  3-BPartner
+				KeyNamePair pp = new KeyNamePair(rs.getInt(2), rs.getString(1));
+				line.add(pp);                       //  1-Organization
+				line.add(rs.getTimestamp(3));       //  2-TrxDate
+				pp = new KeyNamePair(rs.getInt(5), rs.getString(4));
+				line.add(pp);                       //  3-Value
+				line.add(rs.getString(12));      	//  4-BPartner
 				if (isMultiCurrency)
 				{
-					line.add(rs.getString(4));      //  4-Currency
-					line.add(rs.getBigDecimal(5));  //  5-Orig Amount
+					line.add(rs.getString(6));      //  5-Currency
+					line.add(rs.getBigDecimal(7));  //  6-Orig Amount
 				}
-				line.add(rs.getBigDecimal(6));      //  4/6-ConvAmt
-				BigDecimal open = rs.getBigDecimal(7);
+				line.add(rs.getBigDecimal(8));      //  6/7-ConvAmt
+				BigDecimal open = rs.getBigDecimal(9);
 				if (open == null)		//	no conversion rate
 					open = Env.ZERO;
 				line.add(open);      				//  5/7-ConvOpen
-				BigDecimal discount = rs.getBigDecimal(8);
+				BigDecimal discount = rs.getBigDecimal(10);
 				if (discount == null)	//	no concersion rate
 					discount = Env.ZERO;
 				line.add(discount);					//  6/8-ConvAllowedDisc
 				line.add(Env.ZERO);      			//  7/9-WriteOff
 				line.add(Env.ZERO);					// 8/10-Applied
 				line.add(open);				    //  9/11-OverUnder
-				line.add(rs.getString(11)); //Description
+				line.add(rs.getString(13)); //Description
 //				line.add(rs.getBigDecimal(9));		//	8/10-Multiplier
 				//	Add when open <> 0 (i.e. not if no conversion rate)
 				if (Env.ZERO.compareTo(open) != 0)
@@ -381,6 +391,7 @@ public class BPAllocation extends CustomForm {
 		//  Header Info
 		Vector<String> columnNames = new Vector<String>();
 		columnNames.add(Msg.getMsg(Env.getCtx(), "Select"));
+		columnNames.add(Util.cleanAmp(Msg.translate(Env.getCtx(), "AD_Org_ID")));
 		columnNames.add(Msg.translate(Env.getCtx(), "Date"));
 		columnNames.add(Util.cleanAmp(Msg.translate(Env.getCtx(), "DocumentNo")));
 		columnNames.add(Msg.translate(Env.getCtx(), "C_BPartner_ID"));
@@ -405,33 +416,34 @@ public class BPAllocation extends CustomForm {
 	{
 		int i = 0;
 		invoiceTable.setColumnClass(i++, Boolean.class, false);         //  0-Selection
-		invoiceTable.setColumnClass(i++, Timestamp.class, true);        //  1-TrxDate
-		invoiceTable.setColumnClass(i++, String.class, true);           //  2-Value
-		invoiceTable.setColumnClass(i++, String.class, true);       	//  3-BPartner
+		invoiceTable.setColumnClass(i++, String.class, true);           //  1-Organization
+		invoiceTable.setColumnClass(i++, Timestamp.class, true);        //  2-TrxDate
+		invoiceTable.setColumnClass(i++, String.class, true);           //  3-Value
+		invoiceTable.setColumnClass(i++, String.class, true);       	//  4-BPartner
 		if (isMultiCurrency)
 		{
-			invoiceTable.setColumnClass(i++, String.class, true);       //  4-Currency
-			invoiceTable.setColumnClass(i++, BigDecimal.class, true);   //  5-Amt
+			invoiceTable.setColumnClass(i++, String.class, true);       //  5-Currency
+			invoiceTable.setColumnClass(i++, BigDecimal.class, true);   //  6-Amt
 		}
-		invoiceTable.setColumnClass(i++, BigDecimal.class, true);       //  6-ConvAmt
-		invoiceTable.setColumnClass(i++, BigDecimal.class, true);       //  7-ConvAmt Open
-		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  8-Conv Discount
-		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  9-Conv WriteOff
-		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  10-Conv OverUnder
-		invoiceTable.setColumnClass(i++, BigDecimal.class, true);		//	11-Conv Applied
-		invoiceTable.setColumnClass(i++, String.class, true);			//	12-Description
-//		invoiceTable.setColumnClass(i++, BigDecimal.class, true);      	//  10-Multiplier
+		invoiceTable.setColumnClass(i++, BigDecimal.class, true);       //  7-ConvAmt
+		invoiceTable.setColumnClass(i++, BigDecimal.class, true);       //  8-ConvAmt Open
+		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  9-Conv Discount
+		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  10-Conv WriteOff
+		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  11-Conv OverUnder
+		invoiceTable.setColumnClass(i++, BigDecimal.class, true);		//	12-Conv Applied
+		invoiceTable.setColumnClass(i++, String.class, true);			//	13-Description
+//		invoiceTable.setColumnClass(i++, BigDecimal.class, true);      	//  11-Multiplier
 		//  Table UI
 		invoiceTable.autoSize();
 	}
 	
 	public void calculate(boolean isMultiCurrency)
 	{
-		i_open = isMultiCurrency ? 7 : 5;
-		i_discount = isMultiCurrency ? 8 : 6;
-		i_writeOff = isMultiCurrency ? 9 : 7;
-		i_applied = isMultiCurrency ? 10 : 8;
-		i_overUnder = isMultiCurrency ? 11 : 9;
+		i_open = isMultiCurrency ? 8 : 6;
+		i_discount = isMultiCurrency ? 9 : 7;
+		i_writeOff = isMultiCurrency ? 10 : 8;
+		i_applied = isMultiCurrency ? 11 : 9;
+		i_overUnder = isMultiCurrency ? 12 : 10;
 //		i_multiplier = isMultiCurrency ? 10 : 8;
 	}   //  loadBPartner
 	
@@ -609,7 +621,7 @@ public class BPAllocation extends CustomForm {
 		{
 			if (((Boolean)payment.getValueAt(i, 0)).booleanValue())
 			{
-				Timestamp ts = (Timestamp)payment.getValueAt(i, 1);
+				Timestamp ts = (Timestamp)payment.getValueAt(i, 2);
 				if ( !isMultiCurrency )  // the converted amounts are only valid for the selected date
 					allocDate = TimeUtil.max(allocDate, ts);
 				BigDecimal bd = (BigDecimal)payment.getValueAt(i, i_payment);
@@ -633,7 +645,7 @@ public class BPAllocation extends CustomForm {
 		{
 			if (((Boolean)invoice.getValueAt(i, 0)).booleanValue())
 			{
-				Timestamp ts = (Timestamp)invoice.getValueAt(i, 1);
+				Timestamp ts = (Timestamp)invoice.getValueAt(i, 2);
 				if ( !isMultiCurrency )  // converted amounts only valid for selected date
 					allocDate = TimeUtil.max(allocDate, ts);
 				BigDecimal bd = (BigDecimal)invoice.getValueAt(i, i_applied);
@@ -649,7 +661,7 @@ public class BPAllocation extends CustomForm {
 	/**************************************************************************
 	 *  Save Data
 	 */
-	public MAllocationHdr saveData(int m_WindowNo, Object date, IMiniTable payment, IMiniTable invoice, String trxName)
+	public MAllocationHdr saveData(int m_WindowNo, Object date, IMiniTable payment, IMiniTable invoice, String Description,String trxName)
 	{
 		if (m_noInvoices + m_noPayments == 0)
 			return null;
@@ -682,7 +694,7 @@ public class BPAllocation extends CustomForm {
 			//  Payment line is selected
 			if (((Boolean)payment.getValueAt(i, 0)).booleanValue())
 			{
-				KeyNamePair pp = (KeyNamePair)payment.getValueAt(i, 2);   //  Value
+				KeyNamePair pp = (KeyNamePair)payment.getValueAt(i, 3);   //  Value
 				//  Payment variables
 				C_Payment_ID = pp.getKey();
 				paymentList.add(C_Payment_ID);
@@ -706,7 +718,7 @@ public class BPAllocation extends CustomForm {
 			DateTrx, C_Currency_ID, Env.getContext(Env.getCtx(), "#AD_User_Name"), trxName);
 		alloc.setAD_Org_ID(AD_Org_ID);
 		alloc.setC_DocType_ID(m_C_DocType_ID);
-		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName));
+		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName)+"_"+Description);
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
         //alloc.setDateAcct(new Timestamp(System.currentTimeMillis()));
@@ -719,7 +731,7 @@ public class BPAllocation extends CustomForm {
 			//  Invoice line is selected
 			if (((Boolean)invoice.getValueAt(i, 0)).booleanValue())
 			{
-				KeyNamePair pp = (KeyNamePair)invoice.getValueAt(i, 2);    //  Value
+				KeyNamePair pp = (KeyNamePair)invoice.getValueAt(i, 3);    //  Value
 				//  Invoice variables
 				int C_Invoice_ID = pp.getKey();
 				MInvoice inv = new MInvoice(Env.getCtx(), C_Invoice_ID, trxName);
@@ -840,7 +852,7 @@ public class BPAllocation extends CustomForm {
 			//  Invoice line is selected
 			if (((Boolean)invoice.getValueAt(i, 0)).booleanValue())
 			{
-				KeyNamePair pp = (KeyNamePair)invoice.getValueAt(i, 2);    //  Value
+				KeyNamePair pp = (KeyNamePair)invoice.getValueAt(i, 3);    //  Value
 				//  Invoice variables
 				int C_Invoice_ID = pp.getKey();
 				String sql = "SELECT invoiceOpen(C_Invoice_ID, 0) "

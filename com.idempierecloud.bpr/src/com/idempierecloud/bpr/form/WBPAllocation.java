@@ -24,6 +24,7 @@ import org.adempiere.webui.component.Textbox;
 import org.adempiere.webui.component.WListbox;
 import org.adempiere.webui.editor.WDateEditor;
 import org.adempiere.webui.editor.WSearchEditor;
+import org.adempiere.webui.editor.WStringEditor;
 import org.adempiere.webui.editor.WTableDirEditor;
 import org.adempiere.webui.event.ValueChangeEvent;
 import org.adempiere.webui.event.ValueChangeListener;
@@ -132,6 +133,8 @@ public class WBPAllocation extends BPAllocation implements ValueChangeListener, 
 	private Checkbox autoWriteOff = new Checkbox();
 	private Label organizationLabel = new Label();
 	private WTableDirEditor organizationPick;
+	protected WStringEditor descriptionField = new WStringEditor();
+	private Label descriptionLabel = new Label();
 	
 	private Panel southPanel = new Panel();
 
@@ -175,6 +178,7 @@ public class WBPAllocation extends BPAllocation implements ValueChangeListener, 
 		multiCurrency.setText(Msg.getMsg(Env.getCtx(), "MultiCurrency"));
 		multiCurrency.addActionListener(this);
 		allocCurrencyLabel.setText(".");
+		descriptionLabel.setText(Msg.getMsg(Env.getCtx(), "Description"));
 		
 		organizationLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		
@@ -241,6 +245,11 @@ public class WBPAllocation extends BPAllocation implements ValueChangeListener, 
 		ZKUpdateUtil.setHflex(allocateButton, "true");
 		row.appendCellChild(allocateButton);
 		row.appendCellChild(refreshButton);
+		row = rows.newRow();
+		row.appendCellChild(descriptionLabel.rightAlign());
+		descriptionField.getComponent().setHflex("1");
+		row.appendCellChild(descriptionField.getComponent(),10);
+		
 		
 		paymentPanel.appendChild(paymentLayout);
 		ZKUpdateUtil.setWidth(paymentPanel, "100%");
@@ -659,7 +668,7 @@ public class WBPAllocation extends BPAllocation implements ValueChangeListener, 
 				public void run(String trxName)
 				{
 					statusBar.getChildren().clear();
-					allocation[0] = saveData(form.getWindowNo(), dateField.getValue(), paymentTable, invoiceTable, trxName);
+					allocation[0] = saveData(form.getWindowNo(), dateField.getValue(), paymentTable, invoiceTable, (String)descriptionField.getValue(), trxName);
 					
 				}
 			});
