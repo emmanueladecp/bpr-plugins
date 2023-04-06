@@ -288,6 +288,9 @@ public class COrderLineEvent extends CustomEvent {
 			subsidiAmt = Env.ZERO;
 		
 		priceEntered = priceEntered.add(subsidiAmt);
+		if(orderLine.getM_Product_ID()==1003383) {
+			priceEntered = priceEntered.add(new BigDecimal (100));
+		}
 		orderLine.setPriceActual(priceEntered);
 		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
         orderLine.setPriceEntered(priceEntered);

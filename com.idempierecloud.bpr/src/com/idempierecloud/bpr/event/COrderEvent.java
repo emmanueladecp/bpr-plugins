@@ -50,6 +50,7 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setInsentif();
 			setPriceCost();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
@@ -72,6 +73,18 @@ public class COrderEvent extends CustomEvent{
 		
 	}
 	
+	private void setInsentif() {
+		MDocType docType = (MDocType) order.getC_DocTypeTarget();
+		if(docType.get_ValueAsBoolean("isTurus"))
+			return;
+		for(MOrderLine line:order.getLines()) {
+			if(line.getM_Product_ID()==1003383) {
+				line.set_ValueOfColumn("IsInsentif", true);
+			}
+		}
+		
+	}
+
 	private void checkshipment() {
       	MOrderLine[] lines = order.getLines();
    		for(MOrderLine line:lines) {
