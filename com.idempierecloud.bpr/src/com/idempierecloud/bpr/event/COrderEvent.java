@@ -216,7 +216,7 @@ public class COrderEvent extends CustomEvent{
 				}
 			}else if (order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_WarehouseOrder)) {
 				for(MInvoice invoice : invoices){
-					if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Voided)) {
+					if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Voided)||invoice.getDocStatus().equals(MOrder.DOCSTATUS_Reversed)) {
 						continue;
 					}else if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Drafted)) {
 						if(invoice.processIt(DocAction.ACTION_Void)) {
