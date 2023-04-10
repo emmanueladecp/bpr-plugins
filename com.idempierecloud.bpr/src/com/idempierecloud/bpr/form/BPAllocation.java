@@ -621,8 +621,8 @@ public class BPAllocation extends CustomForm {
 			if (((Boolean)payment.getValueAt(i, 0)).booleanValue())
 			{
 				Timestamp ts = (Timestamp)payment.getValueAt(i, 2);
-				if ( !isMultiCurrency )  // the converted amounts are only valid for the selected date
-					allocDate = TimeUtil.max(allocDate, ts);
+				//if ( !isMultiCurrency )  // the converted amounts are only valid for the selected date
+					//allocDate = TimeUtil.max(allocDate, ts);
 				BigDecimal bd = (BigDecimal)payment.getValueAt(i, i_payment);
 				totalPay = totalPay.add(bd);  //  Applied Pay
 				m_noPayments++;

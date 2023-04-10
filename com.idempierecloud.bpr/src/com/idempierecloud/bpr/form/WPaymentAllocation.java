@@ -28,6 +28,7 @@ import org.adempiere.webui.component.Textbox;
 import org.adempiere.webui.component.WListbox;
 import org.adempiere.webui.editor.WDateEditor;
 import org.adempiere.webui.editor.WSearchEditor;
+import org.adempiere.webui.editor.WStringEditor;
 import org.adempiere.webui.editor.WTableDirEditor;
 import org.adempiere.webui.event.ValueChangeEvent;
 import org.adempiere.webui.event.ValueChangeListener;
@@ -144,6 +145,8 @@ public class WPaymentAllocation extends PaymentAllocation
 	private Checkbox autoWriteOff = new Checkbox();
 	private Label organizationLabel = new Label();
 	private WTableDirEditor organizationPick;
+    protected WStringEditor descriptionField = new WStringEditor();
+    private Label descriptionLabel = new Label();
 	private int noOfColumn;
 	
 	/**
@@ -193,6 +196,7 @@ public class WPaymentAllocation extends PaymentAllocation
 		multiCurrency.setText(Msg.getMsg(Env.getCtx(), "MultiCurrency"));
 		multiCurrency.addActionListener(this);
 		allocCurrencyLabel.setText(".");
+        descriptionLabel.setText(Msg.getMsg(Env.getCtx(), "Description"));
 		
 		organizationLabel.setText(Msg.translate(Env.getCtx(), "AD_Org_ID"));
 		
@@ -401,6 +405,10 @@ public class WPaymentAllocation extends PaymentAllocation
 			ZKUpdateUtil.setHflex(box, "1");
 			row.appendCellChild(box, 2);
 		}
+        row = rows.newRow();
+        row.appendCellChild(descriptionLabel.rightAlign());
+        descriptionField.getComponent().setHflex("1");
+        row.appendCellChild(descriptionField.getComponent(),10);
 	}
 
 	protected void setupParameterColumns() {
