@@ -61,6 +61,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
+			calculatePriceInsentif();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
@@ -69,6 +70,18 @@ public class COrderLineEvent extends CustomEvent {
 			checkRequisitionLine();
 		}
 	}	
+	private void calculatePriceInsentif() {
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		if(!docType.get_ValueAsBoolean("isTurus"))
+			return;
+		if(orderLine.get_ValueAsBoolean("IsInsentif")) {
+			orderLine.setPriceActual(orderLine.getPriceActual().add(new BigDecimal (100)));
+			orderLine.setPriceEntered(orderLine.getPriceEntered().add(new BigDecimal (100)));
+		}
+	}
+		
+		
+	
 	
 	private void setIfOrderlineFOC() {
 		final int Doctype_ManualOrder = 1000060; 
@@ -288,9 +301,6 @@ public class COrderLineEvent extends CustomEvent {
 			subsidiAmt = Env.ZERO;
 		
 		priceEntered = priceEntered.add(subsidiAmt);
-		if(orderLine.getM_Product_ID()==1003383) {
-			priceEntered = priceEntered.add(new BigDecimal (100));
-		}
 		orderLine.setPriceActual(priceEntered);
 		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
         orderLine.setPriceEntered(priceEntered);
