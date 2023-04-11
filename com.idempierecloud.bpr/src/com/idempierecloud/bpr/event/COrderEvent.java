@@ -52,6 +52,7 @@ public class COrderEvent extends CustomEvent{
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
 			setPotongKarung();
+			setInsentif();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
@@ -101,7 +102,18 @@ public class COrderEvent extends CustomEvent{
 			line.setC_Tax_ID(1000000);//Bebas PPN
 			line.set_ValueOfColumn("LCO_WithholdingType_ID", 1000005);//Non Pph
 			line.setC_UOM_ID(100);//Each
-			line.save();			
+			line.save();
+		}
+	}
+	private void setInsentif() {		
+		MDocType docType = (MDocType) order.getC_DocTypeTarget();
+		if(!docType.get_ValueAsBoolean("isTurus"))
+			return;
+		for(MOrderLine line:order.getLines()) {
+			if(line.getM_Product_ID()==1003383) {
+				line.set_ValueOfColumn("IsInsentif", true);
+				line.saveEx();
+			}
 		}
 		
 	}
