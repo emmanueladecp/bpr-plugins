@@ -97,6 +97,8 @@ public class MPaymentExt extends MPayment {
 				aLine.setC_BPartner_ID(payment.getC_BPartner_ID());
 				aLine.setC_Charge_ID(pa.get_ValueAsInt("C_Charge_ID"));
 				
+				aLine.set_ValueOfColumn("AD_Org_ID", pa.getAD_Org_ID());
+				
 				allocationAmtToCharge = allocationAmtToCharge.add(pa.getAmount());
 			}
 			if (!aLine.save(get_TrxName()))
