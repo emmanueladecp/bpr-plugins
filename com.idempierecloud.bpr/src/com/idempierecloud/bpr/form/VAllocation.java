@@ -644,8 +644,8 @@ public class VAllocation extends CustomForm {
 			if (((Boolean)invoice.getValueAt(i, 0)).booleanValue())
 			{
 				Timestamp ts = (Timestamp)invoice.getValueAt(i, 2);
-				if ( !isMultiCurrency )  // converted amounts only valid for selected date
-					allocDate = TimeUtil.max(allocDate, ts);
+//				if ( !isMultiCurrency )  // converted amounts only valid for selected date
+//					allocDate = TimeUtil.max(allocDate, ts);
 				BigDecimal bd = (BigDecimal)invoice.getValueAt(i, i_applied);
 				totalInv = totalInv.add(bd);  //  Applied Inv
 				m_noInvoices++;
