@@ -746,7 +746,7 @@ public class WPaymentAllocation extends PaymentAllocation
 				public void run(String trxName)
 				{
 					statusBar.getChildren().clear();
-					allocation[0] = saveData(form.getWindowNo(), dateField.getValue(), dateAcctField.getValue(), paymentTable, invoiceTable, trxName);
+					allocation[0] = saveData(form.getWindowNo(), dateField.getValue(), dateAcctField.getValue(), paymentTable, invoiceTable, (String)descriptionField.getValue(),trxName);
 					
 				}
 			});
