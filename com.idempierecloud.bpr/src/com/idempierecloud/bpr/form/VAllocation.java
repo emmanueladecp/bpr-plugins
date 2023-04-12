@@ -716,7 +716,7 @@ public class VAllocation extends CustomForm {
 			DateTrx, C_Currency_ID, Env.getContext(Env.getCtx(), "#AD_User_Name"), trxName);
 		alloc.setAD_Org_ID(AD_Org_ID);
 		alloc.setC_DocType_ID(m_C_DocType_ID);
-        alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName)+"_"+Description);
+		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName)+"_"+Description);
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
 		alloc.setDateAcct(new Timestamp(System.currentTimeMillis()));

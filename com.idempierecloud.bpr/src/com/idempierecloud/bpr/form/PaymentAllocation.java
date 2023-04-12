@@ -913,7 +913,7 @@ public class PaymentAllocation extends CustomForm
 	/**************************************************************************
 	 *  Save Data
 	 */
-	public MAllocationHdr saveData(int m_WindowNo, Object date, Object dateAcct, IMiniTable payment, IMiniTable invoice, String trxName)
+	public MAllocationHdr saveData(int m_WindowNo, Object date, Object dateAcct, IMiniTable payment, IMiniTable invoice,String Description,String trxName)
 	{
 		if (m_noInvoices + m_noPayments == 0)
 			return null;
@@ -971,7 +971,7 @@ public class PaymentAllocation extends CustomForm
 			DateTrx, C_Currency_ID, Env.getContext(Env.getCtx(), "#AD_User_Name"), trxName);
 		alloc.setAD_Org_ID(AD_Org_ID);
 		alloc.setC_DocType_ID(m_C_DocType_ID);
-		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName));
+		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName)+"_"+Description);
 		//	Added by Jorge Colmenarez, 2021-07-22 17:04 
 		//	Support for set DateAcct for CurrentDate, and prevent WrongAllocationDate
 		//	Added By Jorge Colmenarez, 2022-01-05 17:25 Support for RQ #0000225
