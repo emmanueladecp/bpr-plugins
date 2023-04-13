@@ -61,7 +61,7 @@ public class MInOutEvent extends CustomEvent {
 	}
 	
 	private void checkMovementDate() {
-		if(inout.getMovementType().equals("C-")&&inout.isSOTrx()) {
+		if(inout.getMovementType().equals("C-")&&inout.isSOTrx()&&inout.getReversal_ID()<0){
 			Date MovementDate = inout.getMovementDate();
 			Date Created = inout.getCreated();
 		    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
