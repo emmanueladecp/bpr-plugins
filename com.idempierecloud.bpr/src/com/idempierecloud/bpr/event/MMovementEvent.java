@@ -218,10 +218,21 @@ public class MMovementEvent extends CustomEvent {
 		for(MMovementLine line : movement.getLines(true)) {
 			if(line.getTargetQty().compareTo(line.getMovementQty())==0)
 				continue;
+			BigDecimal qtySusut = line.getTargetQty().subtract(line.getMovementQty());
+			BigDecimal penentu = line.getTargetQty().multiply(BigDecimal.valueOf(0.5)).divide(BigDecimal.valueOf(100));
 			
-			if(locatorSusut==null) {
-				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y')"
+			if(qtySusut.compareTo(penentu)>0) {
+				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name like '%BA')"
 								  + " AND M_Warehouse_ID=?";
+				locatorSusut = new Query(movement.getCtx(), MLocator.Table_Name, sqlWhere, movement.get_TrxName())
+						.setParameters(movement.getM_Warehouse_ID())
+						.first();
+				
+				if(locatorSusut==null)
+					throw new AdempiereException("No Locator Susut BA for Warehouse "+movement.getM_Warehouse().getName());
+			}else if(qtySusut.compareTo(penentu)<=0) {
+				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name not like '%BA')"
+						  + " AND M_Warehouse_ID=?";
 				locatorSusut = new Query(movement.getCtx(), MLocator.Table_Name, sqlWhere, movement.get_TrxName())
 						.setParameters(movement.getM_Warehouse_ID())
 						.first();
@@ -229,6 +240,8 @@ public class MMovementEvent extends CustomEvent {
 				if(locatorSusut==null)
 					throw new AdempiereException("No Locator Susut for Warehouse "+movement.getM_Warehouse().getName());
 			}
+			if(locatorSusut==null)
+				throw new AdempiereException("No Locator Susut for Warehouse "+movement.getM_Warehouse().getName());
 			
 			if(line.getM_LocatorTo_ID()==locatorSusut.getM_Locator_ID())
 				continue;
@@ -252,6 +265,7 @@ public class MMovementEvent extends CustomEvent {
 		lineSusut.setMovementQty(line.getTargetQty().subtract(line.getMovementQty()));
 		lineSusut.setTargetQty(line.getTargetQty());
 		lineSusut.setM_Product_ID(line.getM_Product_ID());
+		lineSusut.set_ValueOfColumn("M_LocatorAlias_ID", lineSusut.get_Value("M_LocatorAlias_ID"));
 		lineSusut.saveEx();
 	}
 	
