@@ -218,9 +218,10 @@ public class MMovementEvent extends CustomEvent {
 		for(MMovementLine line : movement.getLines(true)) {
 			if(line.getTargetQty().compareTo(line.getMovementQty())==0)
 				continue;
-			BigDecimal percentage = (BigDecimal) movement.get_Value("Percentage");
+			String percentage = (String) movement.get_Value("Percentage");
+			BigDecimal num = new BigDecimal(percentage);
 			BigDecimal qtySusut = line.getTargetQty().subtract(line.getMovementQty());
-			BigDecimal penentu = line.getTargetQty().multiply(percentage).divide(BigDecimal.valueOf(100));
+			BigDecimal penentu = (line.getTargetQty().multiply(num)).divide(BigDecimal.valueOf(100));
 			
 			if(qtySusut.compareTo(penentu)>0) {
 				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name like '%BA')"
