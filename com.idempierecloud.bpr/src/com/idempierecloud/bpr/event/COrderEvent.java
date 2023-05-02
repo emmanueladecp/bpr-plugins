@@ -134,8 +134,7 @@ public class COrderEvent extends CustomEvent{
             line.setC_Charge_ID(c_charge_id_potongKarung);
             line.setQtyEntered(BigDecimal.ONE);
             line.setQtyOrdered(BigDecimal.ONE);
-            line.setPriceEntered(biayaPotongKarung.negate());
-            line.setPriceActual(biayaPotongKarung.negate());
+            line.set_ValueOfColumn("PriceNet", biayaPotongKarung.negate());
             line.setC_Tax_ID(1000000);//Bebas PPN
             line.set_ValueOfColumn("LCO_WithholdingType_ID", 1000005);//Non Pph
             line.setC_UOM_ID(100);//Each
