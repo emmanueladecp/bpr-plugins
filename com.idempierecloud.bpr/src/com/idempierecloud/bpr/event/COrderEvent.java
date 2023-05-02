@@ -54,6 +54,7 @@ public class COrderEvent extends CustomEvent{
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
 			setInsentif();
+			setPotongKarung();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
@@ -110,8 +111,37 @@ public class COrderEvent extends CustomEvent{
 			    }
 			}
 		}
-		
 	}
+	
+    private void setPotongKarung() {
+        MDocType dt = (MDocType) order.getC_DocType();
+        if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003) {//BPR1
+            int c_charge_id_potongKarung = 1000139;
+            int lineNO = DB.getSQLValue(order.get_TrxName(),"select max(line) from c_orderline co where C_Order_ID=?", order.getC_Order_ID());
+            BigDecimal biayaPotongKarung = DB.getSQLValueBD(order.get_TrxName(), "select coalesce(sum(co.QtyPack),0)*coalesce (max(co.priceentered),0) *0.12 "
+                    + " from c_orderline co "
+                    + " join c_order co2 on co.c_order_id =co2.c_order_id "
+                    + " join c_doctype cd on co2.c_doctypetarget_id = cd.c_doctype_id"
+                    + " where co2.issotrx = 'N' and cd.isturus = 'Y' and co.c_order_id = ?", order.getC_Order_ID());
+            MOrderLine line = new MOrderLine(order.getCtx(), 0, order.get_TrxName());
+            line.setAD_Org_ID(order.getAD_Org_ID());
+            line.setC_Order_ID(order.getC_Order_ID());
+            line.setLine(lineNO);
+            line.setC_BPartner_ID(order.getC_BPartner_ID());
+            line.setC_BPartner_Location_ID(order.getC_BPartner_Location_ID());
+            line.setDatePromised(order.getDatePromised());
+            line.setDateOrdered(order.getDateOrdered());
+            line.setC_Charge_ID(c_charge_id_potongKarung);
+            line.setQtyEntered(BigDecimal.ONE);
+            line.setQtyOrdered(BigDecimal.ONE);
+            line.setPriceEntered(biayaPotongKarung.negate());
+            line.setPriceActual(biayaPotongKarung.negate());
+            line.setC_Tax_ID(1000000);//Bebas PPN
+            line.set_ValueOfColumn("LCO_WithholdingType_ID", 1000005);//Non Pph
+            line.setC_UOM_ID(100);//Each
+            line.save();            
+        } 
+    }
 
 	private void checkshipment() {
       	MOrderLine[] lines = order.getLines();
