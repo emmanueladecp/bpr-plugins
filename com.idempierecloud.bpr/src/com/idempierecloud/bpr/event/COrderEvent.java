@@ -2,6 +2,8 @@ package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.logging.Level;
@@ -78,9 +80,32 @@ public class COrderEvent extends CustomEvent{
 		if(!docType.get_ValueAsBoolean("isTurus"))
 			return;
 		for(MOrderLine line:order.getLines()) {
-			if(line.getM_Product_ID()==1003383) {
-				line.set_ValueOfColumn("IsInsentif", true);
-				line.saveEx();
+			if(line.getM_Product_ID()==1003383||line.get_ValueAsInt("relatedproduct_ID")==1003383) {//GABAH 64 BELITANG KERING SUPPLIER
+				StringBuffer sqlStmt = new StringBuffer();
+			    sqlStmt.append(" select c_order_id,m_product_id,percetase from adempiere.bpr_insentif_v where c_order_id=?");
+		 
+			    PreparedStatement pstmt = null;
+			    ResultSet rs = null;	    
+			    try{
+			    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			    	int index = 1;
+			    	pstmt.setInt(index++, order.getC_Order_ID());
+			    	
+				    rs = pstmt.executeQuery();
+				    while (rs.next()){
+				    	BigDecimal percentage = rs.getBigDecimal("percetase");
+				    	if(percentage.compareTo(BigDecimal.valueOf(0.6))>0) {
+				    		line.set_ValueOfColumn("IsInsentif", true);
+							line.saveEx();
+				    	}
+				    }		    
+			    }catch(Exception e){
+			    	log.log(Level.SEVERE, sqlStmt.toString());
+			    }finally{
+			    	DB.close(rs, pstmt);
+			    	pstmt = null;
+			    	rs = null;
+			    }
 			}
 		}
 		

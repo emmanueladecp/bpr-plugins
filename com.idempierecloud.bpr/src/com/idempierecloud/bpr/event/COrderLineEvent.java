@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -56,12 +57,12 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
+			calculatePriceInsentif();
 			setWitholdingType();
 			calculateGrossUp();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePrice();
-			calculatePriceInsentif();
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
@@ -74,9 +75,32 @@ public class COrderLineEvent extends CustomEvent {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
 			return;
-		if(orderLine.get_ValueAsBoolean("IsInsentif")) {
-			orderLine.setPriceActual(orderLine.getPriceActual().add(new BigDecimal (100)));
-			orderLine.setPriceEntered(orderLine.getPriceEntered().add(new BigDecimal (100)));
+		if(orderLine.get_ValueAsBoolean("IsInsentif")&&!orderLine.isProcessed()) {
+			 StringBuffer sqlStmt = new StringBuffer();
+			    sqlStmt.append(" select c_order_id,m_product_id,percetase from adempiere.bpr_insentif_v where c_order_id=?");
+		 
+			    PreparedStatement pstmt = null;
+			    ResultSet rs = null;	    
+			    try{
+			    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			    	int index = 1;
+			    	pstmt.setInt(index++, orderLine.getC_Order_ID());
+			    	
+				    rs = pstmt.executeQuery();
+				    while (rs.next()){
+				    	BigDecimal percentage = rs.getBigDecimal("percetase");
+				    	if(percentage.compareTo(BigDecimal.valueOf(0.6))>0) {
+				    		BigDecimal insentif =((BigDecimal) orderLine.get_Value("PriceNet")).add(new BigDecimal (100));
+					    	orderLine.set_ValueOfColumn("PriceNet", insentif);
+				    	}
+				    }		    
+			    }catch(Exception e){
+			    	log.log(Level.SEVERE, sqlStmt.toString());
+			    }finally{
+			    	DB.close(rs, pstmt);
+			    	pstmt = null;
+			    	rs = null;
+			    }
 		}
 	}
 		

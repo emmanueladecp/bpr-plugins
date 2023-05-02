@@ -183,7 +183,7 @@ public class CreateFromOrder extends CreateFrom {
 	    StringBuffer sqlStmt = new StringBuffer();
 	    sqlStmt.append(" select rl.m_requisitionline_id, rl.line || ' - ' || r.documentno as documentno, rl.qty,");
 	    sqlStmt.append(" p.m_product_id, p.value as productvalue, p.name as productname,");
-	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName");
+	    sqlStmt.append(" uom.c_uom_id, uom.name as UOMName, coalesce(r.zaktolakan,0) as zaktolakan");
 	    sqlStmt.append(" from m_requisitionline rl");
 	    sqlStmt.append(" join m_product p on rl.m_product_id=p.m_product_id");
 	    sqlStmt.append(" join c_uom uom on rl.c_uom_id=uom.c_uom_id");
@@ -234,6 +234,7 @@ public class CreateFromOrder extends CreateFrom {
 	    		pp = new KeyNamePair(rs.getInt("M_RequisitionLine_ID"), rs.getString("ProductName")); //4-RequisitionLine
 	    		line.add(pp);
 	    		line.add(rs.getString("DocumentNo")); //5-Requisition
+	    		line.add(rs.getBigDecimal("zaktolakan"));
 	    		
 	    		data.add(line);
 		    }		    
@@ -256,6 +257,7 @@ public class CreateFromOrder extends CreateFrom {
 		miniTable.setColumnClass(3, String.class, true);   	   //  Product Value
 		miniTable.setColumnClass(4, String.class, true);       //  Product Name
 		miniTable.setColumnClass(5, String.class, true);       //  Requisition
+		miniTable.setColumnClass(6, BigDecimal.class, true);       //  Requisition
 		
 		//  Table UI
 		miniTable.autoSize();		
@@ -271,6 +273,7 @@ public class CreateFromOrder extends CreateFrom {
 	    columnNames.add("Product Key");
 	    columnNames.add("Product Name");
 	    columnNames.add(Msg.translate(Env.getCtx(), "M_Requisition_ID"));
+	    columnNames.add(Msg.translate(Env.getCtx(), "zaktolakan"));
 	    
 	    return columnNames;
 	}
@@ -318,6 +321,11 @@ public class CreateFromOrder extends CreateFrom {
 				if(M_Locator_ID>0)
 					line.set_ValueOfColumn("M_Locator_ID", M_Locator_ID);
 				line.saveEx();
+				MOrder order = (MOrder)line.getC_Order();
+				BigDecimal ZakTolakan =(BigDecimal)miniTable.getValueAt(i, 6);
+				order.set_ValueOfColumn("zaktolakan", ZakTolakan);
+				order.saveEx();
+				BigDecimal Zak = (BigDecimal) order.get_Value("zaktolakan");
 				
 				reqLine.setC_OrderLine_ID(line.getC_OrderLine_ID());
 				reqLine.saveEx();
