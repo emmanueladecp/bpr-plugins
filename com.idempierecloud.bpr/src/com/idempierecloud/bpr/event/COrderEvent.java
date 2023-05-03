@@ -118,7 +118,7 @@ public class COrderEvent extends CustomEvent{
         if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003) {//BPR1
             int c_charge_id_potongKarung = 1000139;
             int lineNO = DB.getSQLValue(order.get_TrxName(),"select max(line) from c_orderline co where C_Order_ID=?", order.getC_Order_ID());
-            BigDecimal biayaPotongKarung = DB.getSQLValueBD(order.get_TrxName(), "select coalesce(sum(co.QtyPack),0)*coalesce (max(co.priceentered),0) *0.12 "
+            BigDecimal biayaPotongKarung = DB.getSQLValueBD(order.get_TrxName(), "select coalesce(sum(co.QtyPack),0)*coalesce (max(co.pricenet),0) *0.12 "
                     + " from c_orderline co "
                     + " join c_order co2 on co.c_order_id =co2.c_order_id "
                     + " join c_doctype cd on co2.c_doctypetarget_id = cd.c_doctype_id"
