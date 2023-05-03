@@ -53,7 +53,7 @@ public class SyncBP extends CustomProcess {
 		if(value!=null)
 			params.add("value eq '"+value+"'");
 		if(created!=null) {
-			params.add("created gt '"+sdf.format(created)+"'");
+			params.add("updated gt '"+sdf.format(created)+"'");
 		}
 		if(isSalesRep) {
 			params.add("issalesrep eq true");
