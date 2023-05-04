@@ -75,10 +75,11 @@ public class COrderLineEvent extends CustomEvent {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
 			return;
-		if(orderLine.get_ValueAsBoolean("IsInsentif")&&!orderLine.isProcessed()) {
+		int m_inout_id = DB.getSQLValue(orderLine.get_TrxName(), "select coalesce(m_inout_id) from m_inoutline where c_orderline_id = ?", orderLine.getC_OrderLine_ID());
+		if(orderLine.get_ValueAsBoolean("IsInsentif")&&m_inout_id<=0) {
+			
 			 StringBuffer sqlStmt = new StringBuffer();
 			    sqlStmt.append(" select c_order_id,m_product_id,percetase from adempiere.bpr_insentif_v where c_order_id=?");
-		 
 			    PreparedStatement pstmt = null;
 			    ResultSet rs = null;	    
 			    try{
@@ -89,9 +90,10 @@ public class COrderLineEvent extends CustomEvent {
 				    rs = pstmt.executeQuery();
 				    while (rs.next()){
 				    	BigDecimal percentage = rs.getBigDecimal("percetase");
-				    	if(percentage.compareTo(BigDecimal.valueOf(0.6))>0) {
+				    	if(percentage.compareTo(BigDecimal.valueOf(60))>0) {
 				    		BigDecimal insentif =((BigDecimal) orderLine.get_Value("PriceNet")).add(new BigDecimal (100));
 					    	orderLine.set_ValueOfColumn("PriceNet", insentif);
+					    	orderLine.setPrice(insentif);
 				    	}
 				    }		    
 			    }catch(Exception e){
