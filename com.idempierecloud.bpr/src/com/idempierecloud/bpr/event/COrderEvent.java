@@ -44,7 +44,7 @@ public class COrderEvent extends CustomEvent{
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
-			setPotongKarung();
+//			setPotongKarung();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
