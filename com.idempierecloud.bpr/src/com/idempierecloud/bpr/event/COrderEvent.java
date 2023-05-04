@@ -97,7 +97,7 @@ public class COrderEvent extends CustomEvent{
 				    rs = pstmt.executeQuery();
 				    while (rs.next()){
 				    	BigDecimal percentage = rs.getBigDecimal("percetase");
-				    	if(percentage.compareTo(BigDecimal.valueOf(0.6))>0) {
+				    	if(percentage.compareTo(BigDecimal.valueOf(60))>=0) {
 				    		line.set_ValueOfColumn("IsInsentif", true);
 							line.saveEx();
 				    	}
@@ -117,7 +117,7 @@ public class COrderEvent extends CustomEvent{
         MDocType dt = (MDocType) order.getC_DocType();
         if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003) {//BPR1
             int c_charge_id_potongKarung = 1000139;
-            int lineNO = DB.getSQLValue(order.get_TrxName(),"select max(line) from c_orderline co where C_Order_ID=?", order.getC_Order_ID());
+            int lineNO = DB.getSQLValue(order.get_TrxName(),"select max(line)+10 from c_orderline co where C_Order_ID=?", order.getC_Order_ID());
             BigDecimal biayaPotongKarung = DB.getSQLValueBD(order.get_TrxName(), "select coalesce(sum(co.QtyPack),0)*coalesce (max(co.pricenet),0) *0.12 "
                     + " from c_orderline co "
                     + " join c_order co2 on co.c_order_id =co2.c_order_id "
