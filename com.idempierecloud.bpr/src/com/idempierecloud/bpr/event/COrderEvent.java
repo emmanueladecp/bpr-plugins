@@ -94,7 +94,7 @@ public class COrderEvent extends CustomEvent{
 				    rs = pstmt.executeQuery();
 				    while (rs.next()){
 				    	BigDecimal percentage = rs.getBigDecimal("percetase");
-				    	if(percentage.compareTo(BigDecimal.valueOf(60))>0) {
+				    	if(percentage.compareTo(BigDecimal.valueOf(60))>=0) {
 				    		line.set_ValueOfColumn("IsInsentif", true);
 							line.saveEx();
 				    	}

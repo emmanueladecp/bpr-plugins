@@ -90,7 +90,7 @@ public class COrderLineEvent extends CustomEvent {
 				    rs = pstmt.executeQuery();
 				    while (rs.next()){
 				    	BigDecimal percentage = rs.getBigDecimal("percetase");
-				    	if(percentage.compareTo(BigDecimal.valueOf(60))>0) {
+				    	if(percentage.compareTo(BigDecimal.valueOf(60))>=0) {
 				    		BigDecimal insentif =((BigDecimal) orderLine.get_Value("PriceNet")).add(new BigDecimal (100));
 					    	orderLine.set_ValueOfColumn("PriceNet", insentif);
 					    	orderLine.setPrice(insentif);
