@@ -9,14 +9,17 @@ import java.util.ArrayList;
 import java.util.Vector;
 import java.util.logging.Level;
 
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.apps.IStatusBar;
 import org.compiere.grid.CreateFrom;
 import org.compiere.minigrid.IMiniTable;
 import org.compiere.model.GridTab;
 import org.compiere.model.MInOut;
+import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MLocator;
 import org.compiere.model.MOrder;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
 import org.compiere.model.MRMA;
 import org.compiere.model.MWarehouse;
@@ -674,7 +677,7 @@ public abstract class CreateFromShipment extends CreateFrom
 				//	Credit Memo - negative Qty
 				if (m_invoice != null && m_invoice.isCreditMemo() )
 					QtyEntered = QtyEntered.negate();
-
+				checkQtySalesOrder(inout,C_OrderLine_ID,QtyEntered,M_Product_ID);
 				//	Create new InOut Line
 				inout.createLineFrom(C_OrderLine_ID, C_InvoiceLine_ID, M_RMALine_ID, M_Product_ID, C_UOM_ID, QtyEntered, M_Locator_ID);
 			}   //   if selected
@@ -689,7 +692,28 @@ public abstract class CreateFromShipment extends CreateFrom
 		return true;		
 
 	}   //  saveInvoice
-
+	
+	private void checkQtySalesOrder(MInOut inout, int C_OrderLine_ID, BigDecimal qtyEntered, int M_Product_ID) {
+		if(!inout.isSOTrx() || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerShipment))
+			return;
+		BigDecimal QtyEntered = DB.getSQLValueBD(inout.get_TrxName(), "Select coalesce(sum(mi.qtyEntered),0) "
+					+ "	from m_inoutline mi "
+					+ "	join m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
+					+ " where mi.c_orderline_id = ? and mi2.docstatus not in ('RE','VO')", C_OrderLine_ID);			
+			
+			MOrderLine oline = new MOrderLine(inout.getCtx(), C_OrderLine_ID, inout.get_TrxName());
+			
+			BigDecimal qtyAvailable = oline.getQtyEntered().subtract(QtyEntered);
+			MProduct product = new MProduct(oline.getCtx(), M_Product_ID, oline.get_TrxName());
+			if(qtyAvailable.compareTo(qtyEntered)<0) {
+				throw new AdempiereException("Quantity Shipment melebihi Quantity pada SO "
+						+ ", Quantity SO : "+ oline.getQtyEntered()
+						+ ", Quantity Available : "+ qtyAvailable
+						+ ", Qty Entered : "+qtyEntered
+						+ " pada product : "+product.getName());
+			}
+	}
+	
 	protected Vector<String> getOISColumnNames()
 	{
 		//  Header Info
