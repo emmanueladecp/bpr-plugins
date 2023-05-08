@@ -31,10 +31,22 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyInvoice();
 			setIfOrderlineFOC();
+			recalculatePriceActual();
 		}
 			
 	}
 	
+	private void recalculatePriceActual() {
+		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
+			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceActual = invoiceLine.getPriceList().add(OngkosAngkut).add(SubsidiAmt);
+			invoiceLine.setPriceActual(priceActual);
+			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
+			invoiceLine.setLineNetAmt(LineNetAmt);
+		}
+	}
+
 	private void setIfOrderlineFOC() {
 		if(invoiceLine.getC_OrderLine_ID()>0 && invoiceLine.getC_Invoice().isSOTrx()) {
 			MOrderLine oline = (MOrderLine) invoiceLine.getC_OrderLine();
