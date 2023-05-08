@@ -35,6 +35,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyInvoice();
 			setIfOrderlineFOC();
+			recalculatePriceActual();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 			setPaymentTermHeader();
 		}
@@ -57,6 +58,16 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				invoice.setC_PaymentTerm_ID(oline.getC_Order().getC_PaymentTerm_ID());
 				invoice.saveEx();
 			}
+		}
+	}
+	private void recalculatePriceActual() {
+		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
+			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceActual = invoiceLine.getPriceList().add(OngkosAngkut).add(SubsidiAmt);
+			invoiceLine.setPriceActual(priceActual);
+			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
+			invoiceLine.setLineNetAmt(LineNetAmt);
 		}
 	}
 
