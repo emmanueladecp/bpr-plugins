@@ -1,6 +1,15 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -9,8 +18,10 @@ import org.compiere.model.MInOut;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -35,12 +46,55 @@ public class CInvoiceEvent extends CustomEvent {
 			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkMovementDate();
 			setFaktur();
 			checkDocStatusShipment();
 			setCreditUseBP();
 		}
 	}
 	
+	private void checkMovementDate() {
+		if(invoice.isSOTrx()){
+			if(invoice.getReversal_ID()>0)
+				return;
+			Date DateAcc = invoice.getDateAcct();
+		    int monthInv = DateAcc.getMonth();
+		    StringBuilder sql = new StringBuilder ("select distinct mi.m_inout_id from c_invoiceline ci "
+		    		+ "	join c_invoice ci2 on ci.c_invoice_id = ci2.c_invoice_id  "
+		    		+ "	left join m_inoutline mi on ci.m_inoutline_id = mi.m_inoutline_id "
+		    		+ "	where ci2.issotrx = 'Y' and ci2.c_invoice_id = ?");
+			PreparedStatement pstmnt = null;
+			ResultSet rsl = null;
+			try
+			{
+				pstmnt = DB.prepareStatement (sql.toString(), invoice.get_TrxName());
+				int index = 1; 
+	            pstmnt.setInt(index++, invoice.getC_Invoice_ID());
+				rsl = pstmnt.executeQuery ();
+				while (rsl.next ()){
+					MInOut shipment = new MInOut(invoice.getCtx(), rsl.getInt(1), invoice.get_TrxName());
+					Date DateAcc2 = shipment.getDateAcct();
+					int mountShp = DateAcc2.getMonth();
+					if(mountShp!=monthInv) {
+						throw new AdempiereException("Periode Invoice berbeda dengan Periode Shipment!");
+					}
+				}
+			}
+			catch (SQLException e)
+			{
+				log.log(Level.SEVERE, " i_bankstatement - " + sql.toString(), e);
+			}
+			finally
+			{
+				DB.close(rsl, pstmnt);
+				rsl = null;
+				pstmnt = null;
+			}
+		    
+		    
+			
+		}
+	}
 
 	private void setCreditUseBP() {
 		/* Request Set Credit Availabel ketika SO inprogress,
