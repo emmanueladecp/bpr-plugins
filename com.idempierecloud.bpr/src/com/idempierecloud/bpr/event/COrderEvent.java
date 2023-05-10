@@ -51,7 +51,7 @@ public class COrderEvent extends CustomEvent{
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
-//			setPotongKarung();
+			setPotongKarung();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
@@ -96,6 +96,7 @@ public class COrderEvent extends CustomEvent{
             line.setQtyEntered(BigDecimal.ONE);
             line.setQtyOrdered(BigDecimal.ONE);
             line.set_ValueOfColumn("PriceNet", biayaPotongKarung.negate());
+            line.setPrice(biayaPotongKarung.negate());
             line.setC_Tax_ID(1000000);//Bebas PPN
             line.set_ValueOfColumn("LCO_WithholdingType_ID", 1000005);//Non Pph
             line.setC_UOM_ID(100);//Each
