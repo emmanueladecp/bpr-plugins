@@ -2,6 +2,8 @@ package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.logging.Level;
@@ -52,6 +54,7 @@ public class COrderEvent extends CustomEvent{
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
 			setPotongKarung();
+			setInsentif();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
@@ -73,12 +76,47 @@ public class COrderEvent extends CustomEvent{
 		
 	}
 	
+	private void setInsentif() {		
+		MDocType docType = (MDocType) order.getC_DocTypeTarget();
+		if(!docType.get_ValueAsBoolean("isTurus"))
+			return;
+		for(MOrderLine line:order.getLines()) {
+			if(line.getM_Product_ID()==1003383||line.get_ValueAsInt("relatedproduct_ID")==1003383) {//GABAH 64 BELITANG KERING SUPPLIER
+				StringBuffer sqlStmt = new StringBuffer();
+			    sqlStmt.append(" select c_order_id,m_product_id,percetase from adempiere.bpr_insentif_v where c_order_id=?");
+		 
+			    PreparedStatement pstmt = null;
+			    ResultSet rs = null;	    
+			    try{
+			    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			    	int index = 1;
+			    	pstmt.setInt(index++, order.getC_Order_ID());
+			    	
+				    rs = pstmt.executeQuery();
+				    while (rs.next()){
+				    	BigDecimal percentage = rs.getBigDecimal("percetase");
+				    	if(percentage.compareTo(BigDecimal.valueOf(60))>=0) {
+				    		line.set_ValueOfColumn("IsInsentif", true);
+							line.saveEx();
+				    	}
+				    }		    
+			    }catch(Exception e){
+			    	log.log(Level.SEVERE, sqlStmt.toString());
+			    }finally{
+			    	DB.close(rs, pstmt);
+			    	pstmt = null;
+			    	rs = null;
+			    }
+			}
+		}
+		
+	}
 	
     private void setPotongKarung() {
         MDocType dt = (MDocType) order.getC_DocType();
         if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003) {//BPR1
             int c_charge_id_potongKarung = 1000139;
-            int lineNO = DB.getSQLValue(order.get_TrxName(),"select max(line) from c_orderline co where C_Order_ID=?", order.getC_Order_ID());
+            int lineNO = DB.getSQLValue(order.get_TrxName(),"select max(line)+10 from c_orderline co where C_Order_ID=?", order.getC_Order_ID());
             BigDecimal biayaPotongKarung = DB.getSQLValueBD(order.get_TrxName(), "select coalesce(sum(co.QtyPack),0)*coalesce (max(co.pricenet),0) *0.12 "
                     + " from c_orderline co "
                     + " join c_order co2 on co.c_order_id =co2.c_order_id "

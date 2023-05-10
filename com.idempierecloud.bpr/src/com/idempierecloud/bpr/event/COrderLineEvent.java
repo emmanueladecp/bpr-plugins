@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -56,6 +57,7 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
+			calculatePriceInsentif();
 			setWitholdingType();
 			calculateGrossUp();
 			calculateOngkosAngkut();
@@ -69,6 +71,43 @@ public class COrderLineEvent extends CustomEvent {
 			checkRequisitionLine();
 		}
 	}	
+	private void calculatePriceInsentif() {
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		if(!docType.get_ValueAsBoolean("isTurus"))
+			return;
+		int m_inout_id = DB.getSQLValue(orderLine.get_TrxName(), "select coalesce(m_inout_id) from m_inoutline where c_orderline_id = ?", orderLine.getC_OrderLine_ID());
+		if(orderLine.get_ValueAsBoolean("IsInsentif")&&m_inout_id<=0) {
+			
+			 StringBuffer sqlStmt = new StringBuffer();
+			    sqlStmt.append(" select c_order_id,m_product_id,percetase from adempiere.bpr_insentif_v where c_order_id=?");
+			    PreparedStatement pstmt = null;
+			    ResultSet rs = null;	    
+			    try{
+			    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
+			    	int index = 1;
+			    	pstmt.setInt(index++, orderLine.getC_Order_ID());
+			    	
+				    rs = pstmt.executeQuery();
+				    while (rs.next()){
+				    	BigDecimal percentage = rs.getBigDecimal("percetase");
+				    	if(percentage.compareTo(BigDecimal.valueOf(60))>=0) {
+				    		BigDecimal insentif =((BigDecimal) orderLine.get_Value("PriceNet")).add(new BigDecimal (100));
+					    	orderLine.set_ValueOfColumn("PriceNet", insentif);
+					    	orderLine.setPrice(insentif);
+				    	}
+				    }		    
+			    }catch(Exception e){
+			    	log.log(Level.SEVERE, sqlStmt.toString());
+			    }finally{
+			    	DB.close(rs, pstmt);
+			    	pstmt = null;
+			    	rs = null;
+			    }
+		}
+	}
+		
+		
+	
 	
 	private void setIfOrderlineFOC() {
 		final int Doctype_ManualOrder = 1000060; 
