@@ -1,13 +1,18 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MCost;
 import org.compiere.model.MInventory;
 import org.compiere.model.MInventoryLine;
+import org.compiere.model.MProduct;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.process.DocAction;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -28,9 +33,26 @@ public class MInventoryEvent extends CustomEvent {
 		inventory = (MInventory) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkLines();
+			checkProductCost();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
 		}
+	}
+
+	private void checkProductCost() {
+		int M_CostElement_ID_AveragePO=1000004;
+		for(MInventoryLine line : inventory.getLines(true)) {
+			MProduct product = (MProduct) line.getM_Product();
+			int MCost_M_Product_ID = DB.getSQLValue(line.get_TrxName(), "SELECT Coalesce(M_Product_ID,0) FROM M_Cost WHERE AD_Org_ID = ? and M_Product_ID = ? and M_CostElement_ID=?",inventory.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
+			if(MCost_M_Product_ID>0) {
+				log.fine("Found Product Cost");
+			}else {
+				throw new AdempiereException("Tidak ditemukan Cost untuk Product : "+line.getM_Product().getName()
+											+", Organization :  "+line.getAD_Org_ID()
+											+", Cost Elemet : Average PO");
+			}
+		}
+		
 	}
 
 	private void checkLines() {
