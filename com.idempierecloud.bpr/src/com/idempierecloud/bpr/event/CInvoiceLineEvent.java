@@ -48,10 +48,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			int count_corder = DB.getSQLValue(invoiceLine.get_TrxName(),"select count(distinct co.c_order_id) from c_invoiceline ci join c_orderline co on ci.c_orderline_id = co.c_orderline_id "
 					+ "where ci.c_invoice_id = ?", invoiceLine.getC_Invoice_ID());
 			if(count_corder>1) {
-				if(bp.getPaymentRule().equals("")||bp.getPaymentRule().equals(null)) {
-					throw new AdempiereException("Invoice Terdiri lebih dari 1 SO, Tidak ditemukan Payment Rule pada Business Partner");
-				}
-				invoice.setPaymentRule(bp.getPaymentRule());
+				invoice.setPaymentRule(MInvoice.PAYMENTRULE_OnCredit);
 				if(bp.getC_PaymentTerm_ID()<=0) {
 					throw new AdempiereException("Invoice Terdiri lebih dari 1 SO, Tidak ditemukan Payment Term pada Business Partner");
 				}
