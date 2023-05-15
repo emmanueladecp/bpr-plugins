@@ -162,7 +162,7 @@ public class VAllocation extends CustomForm {
 			+ " JOIN AD_Org ao on ao.ad_org_id = p.ad_org_id"
 			+ " INNER JOIN C_BPartner bp ON (p.C_BPartner_ID = bp.C_BPartner_ID) "
 			+ " INNER JOIN C_Currency c ON (p.C_Currency_ID=c.C_Currency_ID) "
-			+ "WHERE p.IsAllocated='N' AND p.Processed='Y'"
+			+ "WHERE p.IsAllocated='N' AND p.Processed='Y' and p.docstatus='CO' "
 			+ " AND p.C_Charge_ID IS NULL"		//	Prepayments OK
 			+ " AND p.C_BPartner_ID IN (?,?)");                   		//      #5,#6
 		if (!isMultiCurrency)
