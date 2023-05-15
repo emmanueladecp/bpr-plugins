@@ -161,7 +161,7 @@ public class BPAllocation extends CustomForm {
 			+ " INNER JOIN C_BPartner bp ON (p.C_BPartner_ID = bp.C_BPartner_ID) "
 			+ " INNER JOIN C_Currency c ON (p.C_Currency_ID=c.C_Currency_ID) "
 			+ " LEFT JOIN C_BankAccount ba ON (p.C_BankAccount_ID=ba.C_BankAccount_ID) "
-			+ "WHERE p.IsAllocated='N' AND p.Processed='Y'"
+			+ "WHERE p.IsAllocated='N' AND p.Processed='Y' and p.docstatus='CO' "
 			+ " AND p.C_Charge_ID IS NULL"		//	Prepayments OK
 			+ " AND p.C_BPartner_ID IN (?,?)");                   		//      #5,#6
 		if (!isMultiCurrency)
