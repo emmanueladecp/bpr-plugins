@@ -42,6 +42,17 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			
 	}
 	
+	private void recalculatePriceActual() {
+		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
+			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceActual = invoiceLine.getPriceList().add(OngkosAngkut).add(SubsidiAmt);
+			invoiceLine.setPriceActual(priceActual);
+			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
+			invoiceLine.setLineNetAmt(LineNetAmt);
+		}
+	}
+
 	private void setPaymentTermHeader() {
 		if(invoiceLine.getC_Invoice().isSOTrx()) {
 			MInvoice invoice = (MInvoice) invoiceLine.getC_Invoice();
