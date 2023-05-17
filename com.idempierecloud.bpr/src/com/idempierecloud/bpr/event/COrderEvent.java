@@ -72,10 +72,33 @@ public class COrderEvent extends CustomEvent{
 			updatePOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			checkWarehouseOrder();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_CLOSE)) {
+			checkCreditUsedSOClose();
 		}
 		
 	}
 	
+	private void checkCreditUsedSOClose() {
+		if(order.isSOTrx()) {
+			 BigDecimal outstandingCreditUsed = DB.getSQLValueBD(order.get_TrxName(), "with ship as (select co2.c_orderline_id, sum(ci.qtyinvoiced) as qtyinvoiced "
+			 		+ " from c_orderline co2 "
+			 		+ " left join m_inoutline mi on mi.c_orderline_id = co2.c_orderline_id "
+			 		+ " join m_inout mi2 on mi.m_inout_id =mi2.m_inout_id "
+			 		+ " left join c_invoiceline ci ON ci.m_inoutline_id = mi.m_inoutline_id  "
+			 		+ " join c_invoice ci2 on ci.c_invoice_id =ci2.c_invoice_id "
+			 		+ " where ci2.docstatus = 'CO' and mi2.docstatus = 'CO' "
+			 		+ " group by co2.c_orderline_id ) "
+			 		+ " SELECT sum((co.qtyordered - coalesce(ship.qtyinvoiced,0))*co.priceentered )as creditUseBack "
+			 		+ " FROM c_orderline co "
+			 		+ " left join ship on ship.c_orderline_id = co.c_orderline_id "
+			 		+ " where co.c_order_id = ?", order.getC_Order_ID());
+			 	MBPartner bp = (MBPartner) order.getC_BPartner();
+				BigDecimal creditUsed = bp.getSO_CreditUsed().add(outstandingCreditUsed);
+				bp.setSO_CreditUsed(creditUsed);
+				bp.saveEx();
+		}
+	}
+
 	private void setInsentif() {		
 		MDocType docType = (MDocType) order.getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
