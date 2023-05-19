@@ -40,6 +40,7 @@ import org.compiere.model.MProduct;
 import static org.compiere.model.SystemIDs.*;
 
 import org.compiere.util.CLogger;
+import org.compiere.util.DB;
 import org.compiere.util.DisplayType;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
@@ -133,6 +134,9 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 		initBPartner(false);
 		bPartnerField.addValueChangeListener(this);
 		locatorLabel.setMandatory(true);
+		int M_Warehouse_ID = Env.getContextAsInt(Env.getCtx(), p_WindowNo, "M_Warehouse_ID");
+		int M_Locator_ID = DB.getSQLValue(null, "select m_locator_id from m_locator ml where M_LocatorType_ID=1000002 and m_warehouse_id = ? order by created", M_Warehouse_ID);
+		locatorField.setValue(Integer.valueOf(M_Locator_ID));
 
 		upcField = new WStringEditor ("UPC", false, false, true, 10, 30, null, null);
 		upcField.getComponent().addEventListener(Events.ON_CHANGE, this);
@@ -145,7 +149,8 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
     	boolean isRMAWindow = ((getGridTab().getAD_Window_ID() == WINDOW_RETURNTOVENDOR) || (getGridTab().getAD_Window_ID() == WINDOW_CUSTOMERRETURN)); 
 
     	bPartnerLabel.setText(Msg.getElement(Env.getCtx(), "C_BPartner_ID"));
-		orderLabel.setText(Msg.getElement(Env.getCtx(), "C_Order_ID", false));
+    	boolean isSOTrx = getGridTab().getAD_Window_ID() == 169||getGridTab().getAD_Window_ID() == 320?true:false;
+		orderLabel.setText(Msg.getElement(Env.getCtx(), "C_Order_ID", isSOTrx));
 		invoiceLabel.setText(Msg.getElement(Env.getCtx(), "C_Invoice_ID", false));
         rmaLabel.setText(Msg.translate(Env.getCtx(), "M_RMA_ID"));
 		locatorLabel.setText(Msg.translate(Env.getCtx(), "M_Locator_ID"));
