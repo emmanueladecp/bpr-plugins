@@ -166,10 +166,10 @@ public abstract class CreateFromShipment extends CreateFrom
 
 		String isSOTrxParam = isSOTrx ? "Y":"N";
 		//	Display
-		StringBuilder display = new StringBuilder("o.DocumentNo||' - ' ||")
-			.append(DB.TO_CHAR("o.DateOrdered", DisplayType.Date, Env.getAD_Language(Env.getCtx())))
+		StringBuilder display = new StringBuilder("ao.name||' - ' ||o.DocumentNo||' - ' ||"
+				+ " case when o.description is not null then o.description else '-' end")
 			.append("||' - '||")
-			.append(DB.TO_CHAR("o.GrandTotal", DisplayType.Amount, Env.getAD_Language(Env.getCtx())));
+			.append(DB.TO_CHAR("o.DateOrdered", DisplayType.Date, Env.getAD_Language(Env.getCtx())));
 		//
 		String column = "ol.QtyDelivered";
 		String colBP = "o.C_BPartner_ID";
@@ -180,7 +180,8 @@ public abstract class CreateFromShipment extends CreateFrom
 		}
 		StringBuilder sql = new StringBuilder("SELECT o.C_Order_ID,")
 			.append(display)
-			.append(" FROM C_Order o WHERE ")
+			.append(" FROM C_Order o "
+					+ " join ad_org ao on ao.ad_org_id = o.ad_org_id WHERE ")
 			.append(colBP)
 			.append("=? AND o.IsSOTrx=? AND o.DocStatus IN ('CO') ");
 		if (forCreditMemo)
