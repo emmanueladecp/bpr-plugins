@@ -169,10 +169,11 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
 		StringBuffer sqlStmt = new StringBuffer();
-		sqlStmt.append(" select r.M_InOut_ID, r.documentNo ")
+		sqlStmt.append(" select r.M_InOut_ID, r.documentNo||' - ' || cb.name")
 			.append(" from M_InOut r")
 			.append(" join c_order o on r.c_order_id=o.c_order_id")
 			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
+			.append(" join c_bpartner cb on cb.c_bpartner_id = r.c_bpartner_id")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
 			.append(" and R.c_doctype_id <> 1000011 ")
@@ -213,11 +214,12 @@ public class CreateFromPicklist extends CreateFrom  implements EventListener<Eve
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
 		StringBuffer sqlStmt = new StringBuffer();
-		sqlStmt.append(" select distinct cb.c_bpartner_id, cb.name ")
+		sqlStmt.append(" select distinct cb.c_bpartner_id, cb.name||' - ' ||cbl.name")
 			.append(" from M_InOut r")
 			.append(" join c_order o on r.c_order_id=o.c_order_id")
 			.append(" join c_doctype dts on r.c_doctype_id=dts.c_doctype_id")
 			.append(" join c_bpartner cb on r.c_bpartner_id = cb.c_bpartner_id")
+			.append(" join C_BPartner_Location cbl on r.C_BPartner_Location_ID  = cbl.C_BPartner_Location_ID ")
 			.append(" where r.AD_Client_ID=? ")
 			.append(" and r.AD_Org_ID=? ")
 			.append(" and R.c_doctype_id <> 1000011 ")
