@@ -22,6 +22,7 @@ public class CInvoiceLineEvent extends CustomEvent {
 private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	
 	private MInvoiceLine invoiceLine = null;
+	private final static int M_LocatorType_CustomerShipment = 1000002;
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -49,10 +50,12 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			if(invoiceLine.getM_InOutLine_ID()>0) {
 				MInOutLine shipLine = (MInOutLine) invoiceLine.getM_InOutLine();
 				if(shipLine.getMovementQty().compareTo(invoiceLine.getQtyInvoiced())!=0) {
-					throw new AdempiereException("Qty Shipment tidak sama dengan Qty Invoice,"
-							+ " Qty Shipment : "+shipLine.getQtyEntered()
-							+ " Qty Invoice  : "+invoiceLine.getQtyEntered()
-							+ " Product : "+invoiceLine.getM_Product().getName());
+					if(shipLine.getM_Locator().getM_LocatorType_ID()==M_LocatorType_CustomerShipment) {
+						throw new AdempiereException("Qty Shipment tidak sama dengan Qty Invoice,"
+								+ " Qty Shipment : "+shipLine.getQtyEntered()
+								+ " Qty Invoice  : "+invoiceLine.getQtyEntered()
+								+ " Product : "+invoiceLine.getM_Product().getName());
+					}
 				}	
 			}else {
 				throw new AdempiereException("Invoice Line tidak memiliki ID ShipmentLine");
