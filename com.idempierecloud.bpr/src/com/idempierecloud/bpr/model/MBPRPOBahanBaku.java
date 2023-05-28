@@ -9,6 +9,7 @@ import java.util.Properties;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MCost;
+import org.compiere.model.MOrg;
 import org.compiere.model.MProduct;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
@@ -74,14 +75,6 @@ public class MBPRPOBahanBaku extends X_BPR_POBahanBaku {
 		int deletedLines = DB.executeUpdate("DELETE FROM "+MBPRPOBahanBakuLine.Table_Name+" WHERE "+COLUMNNAME_BPR_POBahanBaku_ID+"=?", getBPR_POBahanBaku_ID(), get_TrxName());
 		log.info("Deleted Lines "+deletedLines);
 		
-		StringBuffer whereSql = new StringBuffer("AD_Org_ID=?")
-				.append(" AND M_AttributeSetInstance_ID=0")
-				.append(" AND C_AcctSchema_ID=1000003")
-				.append(" AND M_CostType_ID=1000003")
-				.append(" AND M_CostElement_ID=1000003")
-				.append(" AND M_Product_ID=?")
-				;
-		
 		List<MBPRPOBahanBakuHeader> masters = new Query(getCtx(), MBPRPOBahanBakuHeader.Table_Name, "AD_Client_ID=?", get_TrxName())
 				.setParameters(getAD_Client_ID())
 				.setOnlyActiveRecords(true)
@@ -90,28 +83,51 @@ public class MBPRPOBahanBaku extends X_BPR_POBahanBaku {
 		MAcctSchema as = MAcctSchema.get(1000003);
 		
 		for(MBPRPOBahanBakuHeader master : masters) {
-			MCost cost = new Query(getCtx(), MCost.Table_Name, whereSql.toString(), get_TrxName())
-					.setParameters(getAD_Org_ID(), master.getM_Product_ID())
-					.first();
+			createLine(as, master, getAD_Org_ID());
 			
-			BigDecimal newCostPrice = Env.ZERO;
-			if(cost==null) {
-				cost = new MCost((MProduct) master.getM_Product(), 0, as, getAD_Org_ID(), 1000003);
-				cost.saveEx();
-				newCostPrice = getAmount();
-			}else {
-				newCostPrice = master.getAmount().multiply(this.getAmount()).setScale(2, RoundingMode.HALF_UP);
+			List<MOrg> orgs = new Query(getCtx(), MOrg.Table_Name, null, get_TrxName())
+					.setClient_ID()
+					.list();
+			
+			for(MOrg org : orgs) {
+				createLine(as, master, org.getAD_Org_ID());
 			}
-			
-			MBPRPOBahanBakuLine line = new MBPRPOBahanBakuLine(this);
-			line.setName(cost.getM_Product().getName());
-			line.setM_Cost_UU(cost.getM_Cost_UU());
-			line.setM_Product_ID(cost.getM_Product_ID());
-			line.setCurrentCostPrice(cost.getCurrentCostPrice());
-			line.setNewCostPrice(newCostPrice);
-			line.saveEx();
 		}
 		return success;
+	}
+
+	private void createLine(MAcctSchema as, MBPRPOBahanBakuHeader master, int ad_Org_ID) {
+
+		
+		StringBuffer whereSql = new StringBuffer("AD_Org_ID=?")
+				.append(" AND M_AttributeSetInstance_ID=0")
+				.append(" AND C_AcctSchema_ID=1000003")
+				.append(" AND M_CostType_ID=1000003")
+				.append(" AND M_CostElement_ID=1000003")
+				.append(" AND M_Product_ID=?")
+				;
+		
+		MCost cost = new Query(getCtx(), MCost.Table_Name, whereSql.toString(), get_TrxName())
+				.setParameters(ad_Org_ID, master.getM_Product_ID())
+				.first();
+		
+		BigDecimal newCostPrice = Env.ZERO;
+		if(cost==null) {
+			cost = new MCost((MProduct)master.getM_Product(), 0, as, ad_Org_ID, 1000003);
+			cost.saveEx();
+			newCostPrice = getAmount();
+		}else {
+			newCostPrice = master.getAmount().multiply(this.getAmount()).setScale(2, RoundingMode.HALF_UP);
+		}
+		
+		MBPRPOBahanBakuLine line = new MBPRPOBahanBakuLine(this);
+		line.setAD_Org_ID(ad_Org_ID);
+		line.setName(cost.getM_Product().getName());
+		line.setM_Cost_UU(cost.getM_Cost_UU());
+		line.setM_Product_ID(cost.getM_Product_ID());
+		line.setCurrentCostPrice(cost.getCurrentCostPrice());
+		line.setNewCostPrice(newCostPrice);
+		line.saveEx();
 	}
 
 
