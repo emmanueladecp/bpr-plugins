@@ -218,7 +218,7 @@ public class MMovementEvent extends CustomEvent {
 		for(MMovementLine line : movement.getLines(true)) {
 			if(line.getTargetQty().compareTo(line.getMovementQty())==0)
 				continue;
-			String percentage = (String) movement.get_Value("Percentage");
+			String percentage = DB.getSQLValueString(line.get_TrxName(), "SELECT Value FROM AD_SysConfig WHERE name like 'SusutMovement'");
 			BigDecimal num = new BigDecimal(percentage);
 			BigDecimal qtySusut = line.getTargetQty().subtract(line.getMovementQty());
 			BigDecimal penentu = (line.getTargetQty().multiply(num)).divide(BigDecimal.valueOf(100));
