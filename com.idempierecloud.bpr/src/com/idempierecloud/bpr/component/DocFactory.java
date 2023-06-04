@@ -6,12 +6,14 @@ import org.adempiere.base.IDocFactory;
 import org.compiere.acct.Doc;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MInOut;
+import org.compiere.model.MMatchPO;
 import org.compiere.model.MMovement;
 import org.compiere.model.MPayment;
 import org.compiere.model.MTable;
 import org.compiere.util.Env;
 
 import com.idempierecloud.bpr.acct.Doc_InOut;
+import com.idempierecloud.bpr.acct.Doc_MatchPO;
 import com.idempierecloud.bpr.acct.Doc_Movement;
 import com.idempierecloud.bpr.acct.Doc_Payment;
 import com.idempierecloud.bpr.acct.Doc_Production;
@@ -23,6 +25,8 @@ public class DocFactory implements IDocFactory {
 	public Doc getDocument(MAcctSchema as, int AD_Table_ID, ResultSet rs, String trxName) {
 
 		String tableName = MTable.getTableName(Env.getCtx(), AD_Table_ID);
+		if(tableName.equals(MMatchPO.Table_Name))
+			return new Doc_MatchPO(as, rs, trxName);
 		if(tableName.equals(MProductionExt.Table_Name))
 			return new Doc_Production(as, rs, trxName);
 		if(tableName.equals(MInOut.Table_Name))
