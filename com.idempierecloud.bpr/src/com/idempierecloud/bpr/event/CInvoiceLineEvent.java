@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
+import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrderLine;
@@ -21,6 +22,7 @@ public class CInvoiceLineEvent extends CustomEvent {
 private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	
 	private MInvoiceLine invoiceLine = null;
+	private final static int M_LocatorType_CustomerShipment = 1000002;
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -29,6 +31,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		invoiceLine = (MInvoiceLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setWitholdingType();
+			checkqtyShipment();
 			setOngkosAngkut_SubsidiAmt();
 			setQtyInvoice();
 			setIfOrderlineFOC();
@@ -42,6 +45,26 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			
 	}
 	
+	private void checkqtyShipment() {
+		if(invoiceLine.getC_Invoice().isSOTrx()) {
+			if(invoiceLine.getM_InOutLine_ID()>0) {
+				MInOutLine shipLine = (MInOutLine) invoiceLine.getM_InOutLine();
+				if(shipLine.getMovementQty().compareTo(invoiceLine.getQtyInvoiced())!=0) {
+					if(shipLine.getM_Locator().getM_LocatorType_ID()==M_LocatorType_CustomerShipment) {
+						throw new AdempiereException("Qty Shipment tidak sama dengan Qty Invoice,"
+								+ " Qty Shipment : "+shipLine.getQtyEntered()
+								+ " Qty Invoice  : "+invoiceLine.getQtyEntered()
+								+ " Product : "+invoiceLine.getM_Product().getName());
+					}
+				}	
+			}else {
+				throw new AdempiereException("Invoice Line tidak memiliki ID ShipmentLine");
+			}
+			
+		}
+		
+	}
+
 	private void recalculatePriceActual() {
 		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
 			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
