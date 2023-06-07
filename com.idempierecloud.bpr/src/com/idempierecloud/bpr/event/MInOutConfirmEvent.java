@@ -1,6 +1,12 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
@@ -10,7 +16,10 @@ import org.compiere.model.MInOutLine;
 import org.compiere.model.MInOutLineConfirm;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
+import org.compiere.model.MOrder;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.osgi.service.event.Event;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -32,8 +41,55 @@ public class MInOutConfirmEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			completeShipment();	
 			createMovementReject();
+			autoSOClose();
 		}
 	
+	}
+
+	private void autoSOClose() {
+		for(MInOutLineConfirm cLine : confirm.getLines(true)) {
+			if(cLine.getConfirmedQty().signum()==0) {
+				StringBuilder sql = new StringBuilder (" with SO as (select co2.c_order_id from m_inoutlineconfirm mi6"
+						+ "	join m_inoutline mi5 on mi6.m_inoutline_id = mi5.m_inoutline_id"
+						+ "	join c_orderline co2 on mi5.c_orderline_id= co2.c_orderline_id"
+						+ "	where mi6.confirmedqty != 0 or mi5.movementqty!=co2.qtyordered)"
+						+ ", notpartial as (select mi3.m_inout_id, co3.c_order_id 	from c_orderline co3"
+						+ "	join m_inoutline mi3 on mi3.c_orderline_id=co3.c_orderline_id)"
+						+ " select co.c_order_id from m_inoutlineconfirm mi2 "
+						+ " join m_inoutconfirm mi on mi2.m_inoutconfirm_id = mi.m_inoutconfirm_id"
+						+ " join m_inoutline mi4 on mi4.m_inoutline_id = mi2.m_inoutline_id"
+						+ " join c_orderline co on co.c_orderline_id = mi4.c_orderline_id "
+						+ " where mi2.targetqty = co.qtyordered and mi2.confirmedqty = 0 and mi.m_inoutconfirm_id = ? " 
+						+ " and not exists (select so.c_order_id  from so where so.c_order_id = co.c_order_id ) "
+						+ " and not exists (select notpartial.m_inout_id from notpartial "
+						+ " where notpartial.m_inout_id not in (mi4.m_inout_id) and notpartial.c_order_id = co.c_order_id)");
+				PreparedStatement pstmt = null;
+				ResultSet rs = null;
+				try{
+					pstmt = DB.prepareStatement (sql.toString(), confirm.get_TrxName());
+			        pstmt.setInt(1,confirm.get_ID());
+					rs = pstmt.executeQuery ();
+					while (rs.next ()){
+						MOrder order = new MOrder(cLine.getCtx(), rs.getInt(1), cLine.get_TrxName());
+						if(order.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
+							if(!order.processIt(MOrder.DOCACTION_Close)) {
+								log.warning("Cannot Automaticly Close PO. Shipment : "+confirm.getM_InOut().getDocumentNo());
+							}else {
+								order.setDescription(order.getDescription()+" |Auto Close SO from Shipment");
+								order.saveEx();
+							}
+						}
+					}
+				}catch (SQLException e)					{
+					log.log(Level.SEVERE, " i_invoiceForwarder - " + sql.toString(), e);
+				}finally{
+					DB.close(rs, pstmt);
+					rs = null;
+					pstmt = null;
+				}
+					
+			}
+		}
 	}
 
 	private void setProcessed() {
