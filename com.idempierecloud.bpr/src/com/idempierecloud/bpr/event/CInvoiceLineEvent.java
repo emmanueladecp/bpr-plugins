@@ -57,10 +57,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 								+ " Product : "+invoiceLine.getM_Product().getName());
 					}
 				}	
-			}else {
-				throw new AdempiereException("Invoice Line tidak memiliki ID ShipmentLine");
 			}
-			
 		}
 		
 	}
