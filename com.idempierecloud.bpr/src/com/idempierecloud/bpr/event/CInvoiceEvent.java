@@ -69,8 +69,6 @@ public class CInvoiceEvent extends CustomEvent {
 									+ " Product : "+invoiceLine.getM_Product().getName());
 						}
 					}	
-				}else {
-					throw new AdempiereException("Invoice Line tidak memiliki ID ShipmentLine");
 				}
 			}
 		}
