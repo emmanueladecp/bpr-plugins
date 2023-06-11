@@ -212,46 +212,46 @@ public class MMovementEvent extends CustomEvent {
 	private void checkMovementLineSusut() {
 		if(!movement.getC_DocType().getDescription().equals("CONFIRM"))
 			return;
-		
-		MLocator locatorSusut = null;
-		
-		for(MMovementLine line : movement.getLines(true)) {
-			if(line.getTargetQty().compareTo(line.getMovementQty())==0)
-				continue;
-			String percentage = DB.getSQLValueString(line.get_TrxName(), "SELECT Value FROM AD_SysConfig WHERE name like 'SusutMovement'");
-			BigDecimal num = new BigDecimal(percentage);
-			BigDecimal qtySusut = line.getTargetQty().subtract(line.getMovementQty());
-			BigDecimal penentu = (line.getTargetQty().multiply(num)).divide(BigDecimal.valueOf(100));
+		MClient client = new MClient(movement.getCtx(), movement.getAD_Client_ID(), movement.get_TrxName());
+		if(client.getName().equals("Belitang")) {
+			MLocator locatorSusut = null;
 			
-			if(qtySusut.compareTo(penentu)>0) {
-				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name like '%BA')"
-								  + " AND M_Warehouse_ID=?";
-				locatorSusut = new Query(movement.getCtx(), MLocator.Table_Name, sqlWhere, movement.get_TrxName())
-						.setParameters(movement.getM_Warehouse_ID())
-						.first();
+			for(MMovementLine line : movement.getLines(true)) {
+				if(line.getTargetQty().compareTo(line.getMovementQty())==0)
+					continue;
+				String percentage = DB.getSQLValueString(line.get_TrxName(), "SELECT Value FROM AD_SysConfig WHERE name like 'SusutMovement'");
+				BigDecimal num = new BigDecimal(percentage);
+				BigDecimal qtySusut = line.getTargetQty().subtract(line.getMovementQty());
+				BigDecimal penentu = (line.getTargetQty().multiply(num)).divide(BigDecimal.valueOf(100));
 				
-				if(locatorSusut==null)
-					throw new AdempiereException("No Locator Susut BA for Warehouse "+movement.getM_Warehouse().getName());
-			}else if(qtySusut.compareTo(penentu)<=0) {
-				String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name not like '%BA')"
-						  + " AND M_Warehouse_ID=?";
-				locatorSusut = new Query(movement.getCtx(), MLocator.Table_Name, sqlWhere, movement.get_TrxName())
-						.setParameters(movement.getM_Warehouse_ID())
-						.first();
-				
+				if(qtySusut.compareTo(penentu)>0) {
+					String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name like '%BA')"
+									  + " AND M_Warehouse_ID=?";
+					locatorSusut = new Query(movement.getCtx(), MLocator.Table_Name, sqlWhere, movement.get_TrxName())
+							.setParameters(movement.getM_Warehouse_ID())
+							.first();
+					
+					if(locatorSusut==null)
+						throw new AdempiereException("No Locator Susut BA for Warehouse "+movement.getM_Warehouse().getName());
+				}else if(qtySusut.compareTo(penentu)<=0) {
+					String sqlWhere = "M_LocatorType_ID IN (SELECT M_LocatorType_ID FROM M_LocatorType lt WHERE lt.isSusut='Y' and lt.name not like '%BA')"
+							  + " AND M_Warehouse_ID=?";
+					locatorSusut = new Query(movement.getCtx(), MLocator.Table_Name, sqlWhere, movement.get_TrxName())
+							.setParameters(movement.getM_Warehouse_ID())
+							.first();
+					
+					if(locatorSusut==null)
+						throw new AdempiereException("No Locator Susut for Warehouse "+movement.getM_Warehouse().getName());
+				}
 				if(locatorSusut==null)
 					throw new AdempiereException("No Locator Susut for Warehouse "+movement.getM_Warehouse().getName());
+				
+				if(line.getM_LocatorTo_ID()==locatorSusut.getM_Locator_ID())
+					continue;
+				
+				createMovementLineSusut(line, locatorSusut);
 			}
-			if(locatorSusut==null)
-				throw new AdempiereException("No Locator Susut for Warehouse "+movement.getM_Warehouse().getName());
-			
-			if(line.getM_LocatorTo_ID()==locatorSusut.getM_Locator_ID())
-				continue;
-			
-			createMovementLineSusut(line, locatorSusut);
 		}
-		
-		
 	}
 
 	private void createMovementLineSusut(MMovementLine line, MLocator locatorSusut) {
