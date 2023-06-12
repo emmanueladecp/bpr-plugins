@@ -37,6 +37,8 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 			setPaymentTermHeader();
+		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
+			setPaymentTermHeader();
 		}
 			
 	}
