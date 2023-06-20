@@ -84,7 +84,7 @@ public class CInvoiceEvent extends CustomEvent {
 		    StringBuilder sql = new StringBuilder ("select distinct mi.m_inout_id from c_invoiceline ci "
 		    		+ "	join c_invoice ci2 on ci.c_invoice_id = ci2.c_invoice_id  "
 		    		+ "	left join m_inoutline mi on ci.m_inoutline_id = mi.m_inoutline_id "
-		    		+ "	where ci2.issotrx = 'Y' and ci2.c_invoice_id = ?");
+		    		+ "	where ci2.issotrx = 'Y' and ci2.c_invoice_id = ? and mi.m_inout_id>0");
 			PreparedStatement pstmnt = null;
 			ResultSet rsl = null;
 			try
@@ -94,11 +94,14 @@ public class CInvoiceEvent extends CustomEvent {
 	            pstmnt.setInt(index++, invoice.getC_Invoice_ID());
 				rsl = pstmnt.executeQuery ();
 				while (rsl.next ()){
-					MInOut shipment = new MInOut(invoice.getCtx(), rsl.getInt(1), invoice.get_TrxName());
-					Date DateAcc2 = shipment.getDateAcct();
-					int mountShp = DateAcc2.getMonth();
-					if(mountShp!=monthInv) {
-						throw new AdempiereException("Periode Invoice berbeda dengan Periode Shipment!");
+					int inout =  rsl.getInt(1);
+					if(inout>0) {
+						MInOut shipment = new MInOut(invoice.getCtx(), rsl.getInt(1), invoice.get_TrxName());
+						Date DateAcc2 = shipment.getDateAcct();
+						int mountShp = DateAcc2.getMonth();
+						if(mountShp!=monthInv) {
+							throw new AdempiereException("Periode Invoice berbeda dengan Periode Shipment!");
+						}
 					}
 				}
 			}

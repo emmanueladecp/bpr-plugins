@@ -51,11 +51,13 @@ public class MInOutEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkReversal();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
-			checkShipment();
+			checkShipment(event.getTopic());
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_VOID)) {
+			voidShipment();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSEACCRUAL)) {
-			checkShipment();
+			checkShipment(event.getTopic());
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
-			checkShipment();
+			checkShipment(event.getTopic());
 		}
 	}
 	
@@ -67,6 +69,35 @@ public class MInOutEvent extends CustomEvent {
 		inout.saveEx();				
 	}
 	
+	private void voidShipment() {
+		if(inout.getC_DocType().getDocBaseType().equals("MMS")){
+			int confirm_id = DB.getSQLValue(inout.get_TrxName(),  "SELECT "+MInOutConfirm.COLUMNNAME_M_InOutConfirm_ID+" FROM "+MInOutConfirm.Table_Name+" WHERE M_InOut_ID=?", inout.getM_InOut_ID());
+			if(confirm_id>0) {//Ticket #request-001323 [BPR] Void Shipment (CR 150)
+				MInOutConfirm confirm = new MInOutConfirm(inout.getCtx(),confirm_id,inout.get_TrxName());
+				if(confirm.getDocStatus().equals(MInOutConfirm.DOCSTATUS_Drafted)) {
+					confirm.setDocAction(MInOut.DOCACTION_Void);
+					confirm.saveEx();
+					if(!confirm.processIt(MInOut.DOCACTION_Void))
+						throw new AdempiereException("Shipment gagal void : "+confirm.getProcessMsg());
+					confirm.saveEx();
+				}else if(confirm.getDocStatus().equals(MInOutConfirm.DOCSTATUS_InProgress)||
+						confirm.getDocStatus().equals(MInOutConfirm.DOCSTATUS_Invalid)){
+					int MInOut_ID = DB.getSQLValue(confirm.get_TrxName(), " select distinct (mi2.m_inout_id) from m_inoutlineconfirm mi "
+							+ "  join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
+							+ "  where mi.m_inoutconfirm_id = ? and mi2.m_inout_id not in (?)", confirm.getM_InOutConfirm_ID(),inout.getM_InOut_ID());
+					if(MInOut_ID>0) {
+						throw new AdempiereException("Gagal Void Shipment, Shipment confrim terdiri lebih dari 1 shipment");					
+					}else {
+						throw new AdempiereException("Shipment gagal Void, Shipment Confirm sudah tidak berstatus draft");
+					}
+				}else if(confirm.getDocStatus().equals(MInOutConfirm.DOCSTATUS_Completed)){	
+					throw new AdempiereException("Shipment gagal Void, Shipment Confirm sudah berstatus Complete");
+				}
+			}			
+		}
+		
+	}
+
 	private void checkMovementDate() {
 		if(inout.getMovementType().equals("C-")&&inout.isSOTrx()){
 			if(inout.getReversal_ID()>0)
@@ -191,15 +222,38 @@ public class MInOutEvent extends CustomEvent {
 		}
 		
 	}
-	private void checkShipment() {
-		int BPR_PiclistLine_ID = DB.getSQLValue(inout.get_TrxName(), "select bpr_picklistline_id from bpr_picklistline bp "
-				+ " join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
-				+ " where bp2.docstatus not in ('VO','RE') and bp.m_inout_id = ?", inout.getM_InOut_ID());
-		if (BPR_PiclistLine_ID>0) {
-			MBPRPicklistLine picklistLine= new MBPRPicklistLine(inout.getCtx(), BPR_PiclistLine_ID, inout.get_TrxName());
-			MBPRPicklist picklist = (MBPRPicklist) picklistLine.getBPR_Picklist();
-			throw new AdempiereException("GAGAL!! Shipment : "+inout.getDocumentNo()+" Sudah digunakan oleh Picklist : "+picklist.getDocumentNo());
+	private void checkShipment(String topic) {
+		if(inout.getC_DocType().getDocBaseType().equals("MMS")&&inout.isSOTrx()&&topic.equals(IEventTopics.DOC_BEFORE_VOID)){
+			int confirm_id = DB.getSQLValue(inout.get_TrxName(),  "SELECT "+MInOutConfirm.COLUMNNAME_M_InOutConfirm_ID+" FROM "+MInOutConfirm.Table_Name+" WHERE docstatus not in ('VO','RE') and M_InOut_ID=?", inout.getM_InOut_ID());
+			if(confirm_id>0) {//Ticket #request-001323 [BPR] Void Shipment (CR 150)
+				MInOutConfirm confirm = new MInOutConfirm(inout.getCtx(),confirm_id,inout.get_TrxName());
+				if(confirm.getDocStatus().equals(MInOutConfirm.DOCSTATUS_Drafted)) {
+					//cek picklist
+					int BPR_Picklist_ID = DB.getSQLValue(inout.get_TrxName(), "select bpr_picklist_id from bpr_picklistline bp "
+							+ " join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+							+ " where bp2.docstatus not in ('VO','RE') and bp.m_inout_id = ?", inout.getM_InOut_ID());
+					if (BPR_Picklist_ID>0) {
+						MBPRPicklist picklist= new MBPRPicklist(inout.getCtx(), BPR_Picklist_ID, inout.get_TrxName());
+						for(MBPRPicklistLine picklistLine:picklist.getLines()) {
+							picklistLine.setMovementQty(BigDecimal.ZERO);
+							picklistLine.set_ValueOfColumn("QtyEntered", BigDecimal.ZERO);
+							picklistLine.saveEx();
+						}
+						
+					}
+				}
+			}			
+		}else {
+			int BPR_PiclistLine_ID = DB.getSQLValue(inout.get_TrxName(), "select bpr_picklistline_id from bpr_picklistline bp "
+					+ " join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+					+ " where bp2.docstatus not in ('VO','RE') and bp.m_inout_id = ?", inout.getM_InOut_ID());
+			if (BPR_PiclistLine_ID>0) {
+				MBPRPicklistLine picklistLine= new MBPRPicklistLine(inout.getCtx(), BPR_PiclistLine_ID, inout.get_TrxName());
+				MBPRPicklist picklist = (MBPRPicklist) picklistLine.getBPR_Picklist();
+				throw new AdempiereException("GAGAL!! Shipment : "+inout.getDocumentNo()+" Sudah digunakan oleh Picklist : "+picklist.getDocumentNo());
+			}
 		}
+		
 		for(MInOutLine line: inout.getLines(false)) {
 			int C_InvoiceLine_ID = DB.getSQLValue(inout.get_TrxName(), "select c_invoiceline_id from c_invoiceline ci "
 					+ " join c_invoice ci2 on ci2.c_invoice_id = ci.c_invoice_id where ci2.docstatus not in ('VO','RE')"
