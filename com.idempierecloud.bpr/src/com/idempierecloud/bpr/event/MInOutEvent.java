@@ -13,6 +13,7 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
 import org.compiere.model.MInOut;
+import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
