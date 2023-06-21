@@ -13,7 +13,6 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
 import org.compiere.model.MInOut;
-import org.compiere.model.MInOutConfirm;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInOutLineMA;
 import org.compiere.model.MProduct;
@@ -222,7 +221,7 @@ public class MInOutEvent extends CustomEvent {
 				MInOutConfirm confirm = new MInOutConfirm(inout.getCtx(),confirm_id,inout.get_TrxName());
 				if(confirm.getDocStatus().equals(MInOutConfirm.DOCSTATUS_Drafted)) {
 					//cek picklist
-					int BPR_Picklist_ID = DB.getSQLValue(inout.get_TrxName(), "select bpr_picklist_id from bpr_picklistline bp "
+					int BPR_Picklist_ID = DB.getSQLValue(inout.get_TrxName(), "select bp2.bpr_picklist_id from bpr_picklistline bp "
 							+ " join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
 							+ " where bp2.docstatus not in ('VO','RE') and bp.m_inout_id = ?", inout.getM_InOut_ID());
 					if (BPR_Picklist_ID>0) {
