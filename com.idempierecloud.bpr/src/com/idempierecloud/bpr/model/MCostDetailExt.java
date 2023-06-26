@@ -92,7 +92,7 @@ public class MCostDetailExt extends MCostDetail
 		BigDecimal Amt, BigDecimal Qty,
 		String Description, String trxName)
 	{
-		MCostDetailExt cd = get (as.getCtx(), "C_OrderLine_ID=? AND Coalesce(M_CostElement_ID,0)="+M_CostElement_ID, 
+		MCostDetail cd = get (as.getCtx(), "AD_Org_ID = "+AD_Org_ID+" and C_OrderLine_ID=? AND Coalesce(M_CostElement_ID,0)="+M_CostElement_ID, 
 			C_OrderLine_ID, M_AttributeSetInstance_ID, as.getC_AcctSchema_ID(), trxName);
 		//
 		if (cd == null)		//	createNew
