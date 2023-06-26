@@ -34,7 +34,6 @@ import org.compiere.model.MAccount;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MAcctSchemaElement;
 import org.compiere.model.MConversionRate;
-import org.compiere.model.MCostDetail;
 import org.compiere.model.MCurrency;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
@@ -51,6 +50,8 @@ import org.compiere.process.DocAction;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
+
+import com.idempierecloud.bpr.model.MCostDetailExt;
 
 /**
  *  Post MatchPO Documents.
@@ -591,7 +592,7 @@ public class Doc_MatchPO extends Doc
 			if (tAmt.scale() > as.getCostingPrecision())
 				tAmt = tAmt.setScale(as.getCostingPrecision(), RoundingMode.HALF_UP);
 			// Set Total Amount and Total Quantity from Matched PO 
-			if (!MCostDetail.createOrder(as, mMatchPO.getAD_Org_ID(), 
+			if (!MCostDetailExt.createOrder(as, mMatchPO.getAD_Org_ID(), 
 					getM_Product_ID(), mMatchPO.getM_AttributeSetInstance_ID(),
 					m_oLine.getC_OrderLine_ID(), 0,		//	no cost element
 					tAmt, tQty,			//	Delivered
@@ -621,7 +622,7 @@ public class Doc_MatchPO extends Doc
 			amt = amt.multiply(tQty);
 			if (amt.scale() > as.getCostingPrecision())
 				amt = amt.setScale(as.getCostingPrecision(), RoundingMode.HALF_UP);
-			if (!MCostDetail.createOrder(as, m_oLine.getAD_Org_ID(), 
+			if (!MCostDetailExt.createOrder(as, m_oLine.getAD_Org_ID(), 
 					getM_Product_ID(), mMatchPO.getM_AttributeSetInstance_ID(),
 					m_oLine.getC_OrderLine_ID(), elementId,
 					amt, tQty,			//	Delivered
