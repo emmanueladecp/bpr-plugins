@@ -107,6 +107,7 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 	protected WStringEditor upcField = new WStringEditor();
 
 	private Grid parameterStdLayout;
+	private boolean isCustomerReturn;
 
 	private int noOfParameterColumn;
     
@@ -131,6 +132,7 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 		MLocatorLookup locator = new MLocatorLookup(Env.getCtx(), p_WindowNo, (String)null);
 		locatorField = new WLocatorEditor ("M_Locator_ID", true, false, true, locator, p_WindowNo);
 
+		isCustomerReturn = getGridTab().getAD_Window_ID() == WINDOW_CUSTOMERRETURN?true:false;
 		initBPartner(false);
 		bPartnerField.addValueChangeListener(this);
 		locatorLabel.setMandatory(true);
@@ -145,11 +147,11 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 	}   //  dynInit
 	
 	protected void zkInit() throws Exception
-	{
+	{	
     	boolean isRMAWindow = ((getGridTab().getAD_Window_ID() == WINDOW_RETURNTOVENDOR) || (getGridTab().getAD_Window_ID() == WINDOW_CUSTOMERRETURN)); 
 
     	bPartnerLabel.setText(Msg.getElement(Env.getCtx(), "C_BPartner_ID"));
-    	boolean isSOTrx = getGridTab().getAD_Window_ID() == 169||getGridTab().getAD_Window_ID() == 320?true:false;
+    	boolean isSOTrx = getGridTab().getAD_Window_ID() == 169||getGridTab().getAD_Window_ID() == 53097?true:false;
 		orderLabel.setText(Msg.getElement(Env.getCtx(), "C_Order_ID", isSOTrx));
 		invoiceLabel.setText(Msg.getElement(Env.getCtx(), "C_Invoice_ID", false));
         rmaLabel.setText(Msg.translate(Env.getCtx(), "M_RMA_ID"));
@@ -177,11 +179,11 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 			row.appendChild(bPartnerField.getComponent());
 			bPartnerField.fillHorizontal();
 		}
-    	if (! isRMAWindow) {
+    	//if (! isRMAWindow) {
     		row.appendChild(orderLabel.rightAlign());
     		row.appendChild(orderField);
     		ZKUpdateUtil.setHflex(orderField, "1");
-    	}
+    	//}
 		
 		row = rows.newRow();
 		row.appendChild(locatorLabel.rightAlign());
@@ -200,12 +202,12 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 		row.appendChild(upcLabel.rightAlign());
 		row.appendChild(upcField.getComponent());
 		ZKUpdateUtil.setHflex(upcField.getComponent(), "1");
-    	if (isRMAWindow) {
-            // Add RMA document selection to panel
-            row.appendChild(rmaLabel.rightAlign());
-            row.appendChild(rmaField);
-            ZKUpdateUtil.setHflex(rmaField, "1");
-    	}
+//    	if (isRMAWindow) {
+//            // Add RMA document selection to panel
+//            row.appendChild(rmaLabel.rightAlign());
+//            row.appendChild(rmaField);
+//            ZKUpdateUtil.setHflex(rmaField, "1");
+//    	}
     	
     	if (ClientInfo.isMobile()) {    		
     		if (noOfParameterColumn == 2)
@@ -405,7 +407,7 @@ public class WCreateFromShipmentUI extends CreateFromShipment implements EventLi
 		orderField.removeAllItems();
 		orderField.addItem(pp);
 		
-		ArrayList<KeyNamePair> list = loadOrderData(C_BPartner_ID, forInvoice, sameWarehouseCb.isSelected());
+		ArrayList<KeyNamePair> list = loadOrderData(C_BPartner_ID, forInvoice, sameWarehouseCb.isSelected(),isCustomerReturn);
 		for(KeyNamePair knp : list)
 			orderField.addItem(knp);
 		

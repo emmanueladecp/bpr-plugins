@@ -181,12 +181,18 @@ public abstract class CreateFromShipment extends CreateFrom
 		StringBuilder sql = new StringBuilder("SELECT o.C_Order_ID,")
 			.append(display)
 			.append(" FROM C_Order o "
-					+ " join ad_org ao on ao.ad_org_id = o.ad_org_id WHERE ")
-			.append(colBP)
+					+ " join ad_org ao on ao.ad_org_id = o.ad_org_id "
+					+ " join c_doctype cd on cd.c_doctype_id = o.c_doctypetarget_id where");
+			if(forCreditMemo&&isSOTrx) {
+				sql.append(" cd.isretur = 'Y' AND ");
+			}else if(!forCreditMemo&&isSOTrx) {
+				sql.append(" cd.isretur = 'N' AND ");
+			}
+			sql.append(colBP)
 			.append("=? AND o.IsSOTrx=? AND o.DocStatus IN ('CO') ");
-		if (forCreditMemo)
-			sql.append(column).append(">0 AND (CASE WHEN ol.QtyDelivered>=ol.QtyOrdered THEN ol.QtyDelivered-ol.QtyInvoiced!=0 ELSE 1=1 END)) ");
-		else
+//		if (forCreditMemo)
+//			sql.append(column).append(">0 AND (CASE WHEN ol.QtyDelivered>=ol.QtyOrdered THEN ol.QtyDelivered-ol.QtyInvoiced!=0 ELSE 1=1 END)) ");
+//		else
 			sql.append(" AND C_Order_ID IN ( SELECT distinct (c_orderline.c_order_id) FROM c_orderline "
 					+ " left join m_inoutline on c_orderline.c_orderline_id = m_inoutline.c_orderline_id "
 					+ " join c_order on c_order.c_order_id = c_orderline.c_order_id "
@@ -197,9 +203,9 @@ public abstract class CreateFromShipment extends CreateFrom
 		{
 			sql = sql.append(" AND o.M_Warehouse_ID=? ");
 		}
-		if (forCreditMemo)
-			sql = sql.append("ORDER BY o.DateOrdered DESC,o.DocumentNo DESC");
-		else
+//		if (forCreditMemo)
+//			sql = sql.append("ORDER BY o.DateOrdered DESC,o.DocumentNo DESC");
+//		else
 			sql = sql.append("ORDER BY o.DateOrdered,o.DocumentNo");
 		//
 		PreparedStatement pstmt = null;
@@ -209,7 +215,7 @@ public abstract class CreateFromShipment extends CreateFrom
 			pstmt = DB.prepareStatement(sql.toString(), null);
 			pstmt.setInt(1, C_BPartner_ID);
 			pstmt.setString(2, isSOTrxParam);
-			if(!forCreditMemo) {
+			//if(!forCreditMemo) {
 				pstmt.setInt(3, C_BPartner_ID);
 				pstmt.setString(4, isSOTrxParam);
 				if(sameWarehouseOnly)
@@ -217,13 +223,13 @@ public abstract class CreateFromShipment extends CreateFrom
 					//only active for material receipts
 					pstmt.setInt(5, getM_Warehouse_ID());
 				}
-			}else{
-				if(sameWarehouseOnly)
-				{
-					//only active for material receipts
-					pstmt.setInt(5, getM_Warehouse_ID());
-				}
-			}
+//			}else{
+//				if(sameWarehouseOnly)
+//				{
+//					//only active for material receipts
+//					pstmt.setInt(5, getM_Warehouse_ID());
+//				}
+//			}
 			
 			rs = pstmt.executeQuery();
 			while (rs.next())
