@@ -107,7 +107,7 @@ public class CInvoiceEvent extends CustomEvent {
 			}
 			catch (SQLException e)
 			{
-				log.log(Level.SEVERE, " i_bankstatement - " + sql.toString(), e);
+				log.log(Level.SEVERE, " CInvoiceEvent - " + sql.toString(), e);
 			}
 			finally
 			{
