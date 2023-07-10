@@ -174,7 +174,6 @@ public class RestUtils {
 		Query query = new Query(Env.getCtx(), table, whereClause, null);
 
 		query.setApplyAccessFilter(true, false)
-			.setOnlyActiveRecords(true)
 			.setParameters(params);
 
 		return query;
