@@ -8,6 +8,7 @@ import java.util.List;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
+import org.compiere.model.MInOutLine;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
@@ -38,6 +39,7 @@ public class MMovementEvent extends CustomEvent {
 		String desc = movement.getC_DocType().getDescription();
 		
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkCostProduct();
 			if(desc!=null && desc.equals("CONFIRM")) {
 				if(movement.getReversal_ID()==0) {
 					checkMovementLine();
@@ -65,6 +67,17 @@ public class MMovementEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			if(desc!=null && desc.equals("INTRANSIT")) {
 				checkConfirmMovement();
+			}
+		}
+	}
+	
+	private void checkCostProduct() {
+		for(MMovementLine line :movement.getLines(false)) {
+			String M_Cost_UU = DB.getSQLValueString(movement.get_TrxName(), "Select M_Cost_UU from M_Cost mc "
+					+ " where mc.M_Product_ID = ? and mc.AD_Org_ID = ? and mc.M_AttributeSetInstance_ID=?", line.getM_Product_ID(),movement.getAD_Org_ID(),line.getM_AttributeSetInstance_ID());
+			if(M_Cost_UU.isEmpty()) {
+				MProduct product = (MProduct) line.getM_Product();
+				throw new AdempiereException("Tidak dapat Complete. Product : "+product.getName()+" tidak memiliki cost");
 			}
 		}
 	}
