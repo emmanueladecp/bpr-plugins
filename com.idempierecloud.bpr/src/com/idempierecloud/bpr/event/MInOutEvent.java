@@ -44,7 +44,7 @@ public class MInOutEvent extends CustomEvent {
 		log.fine("Minout Event : "+event.getTopic());
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
-			checkCostProduct();
+			checkProductCost();
 			checkMovementDate();
 			checkQtySalesOrder();
 			checkAvailableQtyProduct();
@@ -63,14 +63,22 @@ public class MInOutEvent extends CustomEvent {
 		}
 	}
 	
-	private void checkCostProduct() {
+	private void checkProductCost() {
 		if(inout.isSOTrx()) {
-			for(MInOutLine line :inout.getLines()) {
-				String M_Cost_UU = DB.getSQLValueString(inout.get_TrxName(), "Select M_Cost_UU from M_Cost mc "
-						+ " where mc.M_Product_ID = ? and mc.AD_Org_ID = ? and mc.M_AttributeSetInstance_ID=?", line.getM_Product_ID(),inout.getAD_Org_ID(),line.getM_AttributeSetInstance_ID());
-				if(M_Cost_UU.isEmpty()) {
-					MProduct product = (MProduct) line.getM_Product();
-					throw new AdempiereException("Tidak dapat Complete. Product : "+product.getName()+" tidak memiliki cost");
+			int M_CostElement_ID_AveragePO=1000004;
+			for(MInOutLine line : inout.getLines(true)) {
+				BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
+				 " and M_Product_ID = ? and M_CostElement_ID=?",inout.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
+				if(MCost_CurrentCostPrice.compareTo(BigDecimal.ZERO)>0) {
+					if(MCost_CurrentCostPrice.compareTo(BigDecimal.valueOf(0.001))<=0) {
+						throw new AdempiereException("Cost untuk Product : "+line.getM_Product().getName()
+								+", Organization :  "+line.getAD_Org_ID()
+								+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0.001");
+					}
+				}else {
+					throw new AdempiereException("Tidak ditemukan Cost untuk Product : "+line.getM_Product().getName()
+												+", Organization :  "+line.getAD_Org_ID()
+												+", Cost Elemet : Average PO");
 				}
 			}
 		}

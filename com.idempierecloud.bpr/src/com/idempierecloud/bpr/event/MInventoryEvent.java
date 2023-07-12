@@ -29,20 +29,9 @@ public class MInventoryEvent extends CustomEvent {
 		
 		inventory = (MInventory) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			checkCostProduct();
 			checkLines();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
-		}
-	}
-	private void checkCostProduct() {
-		for(MInventoryLine line :inventory.getLines(false)) {
-			String M_Cost_UU = DB.getSQLValueString(inventory.get_TrxName(), "Select M_Cost_UU from M_Cost mc "
-					+ " where mc.M_Product_ID = ? and mc.AD_Org_ID = ? and mc.M_AttributeSetInstance_ID=?", line.getM_Product_ID(),inventory.getAD_Org_ID(),line.getM_AttributeSetInstance_ID());
-			if(M_Cost_UU.isEmpty()) {
-				MProduct product = (MProduct) line.getM_Product();
-				throw new AdempiereException("Tidak dapat Complete. Product : "+product.getName()+" tidak memiliki cost");
-			}
 		}
 	}
 	
