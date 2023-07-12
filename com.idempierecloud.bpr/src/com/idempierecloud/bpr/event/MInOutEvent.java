@@ -43,6 +43,7 @@ public class MInOutEvent extends CustomEvent {
 		log.fine("Minout Event : "+event.getTopic());
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			checkCostProduct();
 			checkMovementDate();
 			checkQtySalesOrder();
 			checkAvailableQtyProduct();
@@ -70,6 +71,19 @@ public class MInOutEvent extends CustomEvent {
 		inout.saveEx();				
 	}
 	
+	private void checkCostProduct() {
+		if(inout.isSOTrx()) {
+			for(MInOutLine line :inout.getLines()) {
+				String M_Cost_UU = DB.getSQLValueString(inout.get_TrxName(), "Select M_Cost_UU from M_Cost mc "
+						+ " where mc.M_Product_ID = ? and mc.AD_Org_ID = ? and mc.M_AttributeSetInstance_ID=?", line.getM_Product_ID(),inout.getAD_Org_ID(),line.getM_AttributeSetInstance_ID());
+				if(M_Cost_UU.isEmpty()) {
+					MProduct product = (MProduct) line.getM_Product();
+					throw new AdempiereException("Tidak dapat Complete. Product : "+product.getName()+" tidak memiliki cost");
+				}
+			}
+		}
+	}
+
 	private void voidShipment() {
 		if(inout.getC_DocType().getDocBaseType().equals("MMS")){
 			int confirm_id = DB.getSQLValue(inout.get_TrxName(),  "SELECT "+MInOutConfirm.COLUMNNAME_M_InOutConfirm_ID+" FROM "+MInOutConfirm.Table_Name+" WHERE M_InOut_ID=?", inout.getM_InOut_ID());

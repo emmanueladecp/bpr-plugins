@@ -9,6 +9,7 @@ import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MProduct;
 import org.compiere.model.PO;
 import org.compiere.model.X_M_RelatedProduct;
 import org.compiere.util.CLogger;
@@ -33,6 +34,7 @@ public class MProductionEvent extends CustomEvent{
 		log.fine("Production Event : "+event.getTopic());
 		production = (MProductionExt) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkCostProduct();
 			checkQtyUsed();
 			checkRelatedProduct();
 			checkWIP();
@@ -68,6 +70,19 @@ public class MProductionEvent extends CustomEvent{
 		
 	}
 
+	private void checkCostProduct() {
+		for(MProductionLineExt line :production.getLines()) {
+			if(line.get_ValueAsBoolean("IsEndProduct")) {
+				String M_Cost_UU = DB.getSQLValueString(production.get_TrxName(), "Select M_Cost_UU from M_Cost mc "
+						+ " where mc.M_Product_ID = ? and mc.AD_Org_ID = ? and mc.M_AttributeSetInstance_ID=?", line.getM_Product_ID(),production.getAD_Org_ID(),line.getM_AttributeSetInstance_ID());
+				if(M_Cost_UU.isEmpty()) {
+					MProduct product = (MProduct) line.getM_Product();
+					throw new AdempiereException("Tidak dapat Complete. Product : "+product.getName()+" tidak memiliki cost");
+				}
+			}
+		}
+	}
+	
 	private void checkWIP() {
 		if(!production.get_ValueAsBoolean("IsWIP"))
 			return;
