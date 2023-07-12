@@ -82,22 +82,26 @@ public class COrderEvent extends CustomEvent{
 	
 	private void checkCreditUsedSOClose() {
 		if(order.isSOTrx()) {
-			 BigDecimal outstandingCreditUsed = DB.getSQLValueBD(order.get_TrxName(), "with ship as (select co2.c_orderline_id, sum(ci.qtyinvoiced) as qtyinvoiced "
-			 		+ " from c_orderline co2 "
-			 		+ " left join m_inoutline mi on mi.c_orderline_id = co2.c_orderline_id "
-			 		+ " join m_inout mi2 on mi.m_inout_id =mi2.m_inout_id "
-			 		+ " left join c_invoiceline ci ON ci.m_inoutline_id = mi.m_inoutline_id  "
-			 		+ " join c_invoice ci2 on ci.c_invoice_id =ci2.c_invoice_id "
-			 		+ " where ci2.docstatus = 'CO' and mi2.docstatus = 'CO' "
-			 		+ " group by co2.c_orderline_id ) "
-			 		+ " SELECT sum((co.qtyordered - coalesce(ship.qtyinvoiced,0))*co.priceentered )as creditUseBack "
-			 		+ " FROM c_orderline co "
-			 		+ " left join ship on ship.c_orderline_id = co.c_orderline_id "
-			 		+ " where co.c_order_id = ?", order.getC_Order_ID());
-			 	MBPartner bp = (MBPartner) order.getC_BPartner();
-				BigDecimal creditUsed = bp.getSO_CreditUsed().add(outstandingCreditUsed);
-				bp.setSO_CreditUsed(creditUsed);
-				bp.saveEx();
+			BigDecimal credit=BigDecimal.ZERO;
+			for(MOrderLine line : order.getLines()) {
+				BigDecimal outstanding = DB.getSQLValueBD(order.get_TrxName(), 
+						" SELECT co2.qtyordered - COALESCE(SUM(mi.movementqty), 0) AS outstanding "
+						+ " FROM c_orderline co2 "
+						+ " LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
+						+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
+						+ " WHERE mi2.issotrx ='Y' AND mi2.docstatus NOT IN ('VO', 'RE') and co2.c_orderline_id = ? "
+						+ " Group By co2.qtyordered", line.getC_OrderLine_ID());
+				if(outstanding.compareTo(BigDecimal.ZERO)>0) {
+					credit= credit.add(line.getPriceActual().multiply(outstanding));
+				}
+			}
+			
+			if(credit.compareTo(BigDecimal.ZERO)>0) {
+				MBPartner cb = (MBPartner)order.getC_BPartner();
+                BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
+                cb.setSO_CreditUsed(creditUsed);
+                cb.saveEx();
+			}
 		}
 	}
 
