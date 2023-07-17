@@ -581,6 +581,9 @@ public class Doc_MatchPO extends Doc
 					}
 				}
 			}			
+			poCost = poCost.multiply(getQty());			//	Delivered so far
+			tAmt = tAmt.add(isReturnTrx ? poCost.negate() : poCost);
+			tQty = tQty.add(isReturnTrx ? getQty().negate() : getQty());
 			
 			if (mMatchPO.getReversal_ID() > 0) 
 			{
