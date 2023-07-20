@@ -8,6 +8,7 @@ import org.compiere.model.MBPartner;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
+import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
@@ -78,9 +79,13 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				invoice.setC_PaymentTerm_ID(bp.getC_PaymentTerm_ID());
 				invoice.saveEx();
 			}else {
-				MOrderLine oline = (MOrderLine) invoiceLine.getC_OrderLine();
-				invoice.setPaymentRule(oline.getC_Order().getPaymentRule());
-				invoice.setC_PaymentTerm_ID(oline.getC_Order().getC_PaymentTerm_ID());
+				int c_order_id = DB.getSQLValue(invoiceLine.get_TrxName(),"select distinct co.c_order_id "
+						+ " from c_invoiceline ci "
+						+ " join c_orderline co on ci.c_orderline_id = co.c_orderline_id "
+						+ " where ci.c_invoice_id = ? and ci.c_invoiceline_id not in (?)", invoiceLine.getC_Invoice_ID(), invoiceLine.get_ID());
+				MOrder order = new MOrder(invoiceLine.getCtx(), c_order_id, invoiceLine.get_TrxName());
+				invoice.setPaymentRule(order.getPaymentRule());
+				invoice.setC_PaymentTerm_ID(order.getC_PaymentTerm_ID());
 				invoice.saveEx();
 			}
 		}
