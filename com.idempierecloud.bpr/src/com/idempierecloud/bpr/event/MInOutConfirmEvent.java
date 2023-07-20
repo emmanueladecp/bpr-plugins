@@ -70,9 +70,12 @@ public class MInOutConfirmEvent extends CustomEvent {
 	}
 	
 	private void createMovementReject() {
-		int count = DB.getSQLValue(confirm.get_TrxName(), "select coalesce(sum(DifferenceQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
+		BigDecimal countTarget = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(sum(TargetQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
+		BigDecimal countDifference = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(sum(DifferenceQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
+		BigDecimal check = countTarget.subtract(countDifference);
 		final int DocType_MovementReject = 1000098;
-		if(count>0) {
+		if(check.compareTo(BigDecimal.ZERO)==1 
+				&& check.compareTo(countTarget)!=0) {
 			MInOut shipment = (MInOut) confirm.getM_InOut();
 			MMovement movement = new MMovement(confirm.getCtx(), 0, confirm.get_TrxName());
 			movement.setAD_Org_ID(shipment.getAD_Org_ID());
@@ -94,13 +97,11 @@ public class MInOutConfirmEvent extends CustomEvent {
 					mline.setM_Movement_ID(movement.getM_Movement_ID());
 					mline.setM_Product_ID(shipLine.getM_Product_ID());
 					mline.setM_Locator_ID(shipLine.getM_Locator_ID());
-					if(line.getDifferenceQty().compareTo(line.getTargetQty())<0) {
-						int MLocator_Retur = DB.getSQLValue(line.get_TrxName(), "Select coalesce(min(M_Locator_ID),0) from M_Locator where M_LocatorType_ID=1000004 and M_Warehouse_ID=?", shipment.getM_Warehouse_ID());
-						if(MLocator_Retur>0)
-							mline.setM_LocatorTo_ID(MLocator_Retur);
-						else 
-							throw new AdempiereException("Locator Retur tidak ditemukan");
-					}
+					int MLocator_Retur = DB.getSQLValue(line.get_TrxName(), "Select coalesce(min(M_Locator_ID),0) from M_Locator where M_LocatorType_ID=1000004 and M_Warehouse_ID=?", shipment.getM_Warehouse_ID());
+					if(MLocator_Retur>0)
+						mline.setM_LocatorTo_ID(MLocator_Retur);
+					else 
+						throw new AdempiereException("Locator Retur tidak ditemukan");
 					mline.setMovementQty(line.getDifferenceQty());
 					mline.set_ValueOfColumn("timbangannetamt", BigDecimal.ZERO);
 					mline.saveEx();
