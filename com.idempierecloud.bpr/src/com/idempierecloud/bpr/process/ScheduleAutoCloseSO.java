@@ -59,13 +59,15 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 							+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
 							+ " WHERE mi2.issotrx ='Y' AND mi2.docstatus NOT IN ('VO', 'RE') and co2.c_orderline_id = ? "
 							+ " Group By co2.qtyordered", line.getC_OrderLine_ID());
-					if(outstanding.compareTo(BigDecimal.ZERO)>0) {
-						credit= credit.add(line.getPriceActual().multiply(outstanding));
+					if(outstanding!=null) {
+						if(outstanding.compareTo(BigDecimal.ZERO)>0) {
+							credit= credit.add(line.getPriceActual().multiply(outstanding));
+						}
 					}
 				}
-				order.setDocAction(MInOut.DOCACTION_Close);
+				order.setDocAction(MOrder.DOCACTION_Close);
 				order.saveEx();
-				if(!order.processIt(MInOut.DOCACTION_Close))
+				if(!order.processIt(MOrder.DOCACTION_Close))
 					log.warning("ScheduleCloseSO. SO GAGAL CLOSE : "+order.getProcessMsg());
 				order.saveEx();
 				
