@@ -81,6 +81,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 						 if(!so.processIt(MOrder.DOCACTION_Close)) {
 		 							 throw new AdempiereException("Sales Order gagal Close : "+so.getProcessMsg());
 		 						 }
+		 						 so.saveEx();
 		 					 }
 	 					}
 	 					
@@ -107,6 +108,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 	 						 if(!so.processIt(MOrder.DOCACTION_Close)) {
 	 							 throw new AdempiereException("Sales Order gagal Close : "+so.getProcessMsg());
 	 						 }
+	 						 so.saveEx();
 	 					 }
 	 					 
 	 					/*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
