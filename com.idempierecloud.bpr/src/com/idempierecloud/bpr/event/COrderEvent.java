@@ -160,7 +160,8 @@ public class COrderEvent extends CustomEvent{
     }
 
 	private void resetCreditUsed() {
-		if(order.isSOTrx()) {
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			MBPartner bp = (MBPartner) order.getC_BPartner();
 			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
 			bp.setSO_CreditUsed(creditUsed);
@@ -170,7 +171,8 @@ public class COrderEvent extends CustomEvent{
 	}
 
 	private void setCreditUseBP() {
-		if(order.isSOTrx()) {
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			if(!order.get_ValueAsBoolean("isdone")) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
 				BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
