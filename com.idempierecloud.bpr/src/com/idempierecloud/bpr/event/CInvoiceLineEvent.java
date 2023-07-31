@@ -57,14 +57,18 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				}
 				invoice.setC_PaymentTerm_ID(bp.getC_PaymentTerm_ID());
 				invoice.saveEx();
-			}else {
+			}else if (count_corder==1){
 				int c_order_id = DB.getSQLValue(invoiceLine.get_TrxName(),"select distinct co.c_order_id "
 						+ " from c_invoiceline ci "
 						+ " join c_orderline co on ci.c_orderline_id = co.c_orderline_id "
-						+ " where ci.c_invoice_id = ? and ci.c_invoiceline_id not in (?)", invoiceLine.getC_Invoice_ID(), invoiceLine.get_ID());
+						+ " where ci.c_invoice_id = ? and ci.c_invoiceline_id in (?)", invoiceLine.getC_Invoice_ID(), invoiceLine.get_ID());
 				MOrder order = new MOrder(invoiceLine.getCtx(), c_order_id, invoiceLine.get_TrxName());
 				invoice.setPaymentRule(order.getPaymentRule());
 				invoice.setC_PaymentTerm_ID(order.getC_PaymentTerm_ID());
+				invoice.saveEx();
+			}else {
+				invoice.setPaymentRule(MInvoice.PAYMENTRULE_OnCredit);
+				invoice.setC_PaymentTerm_ID(bp.getC_PaymentTerm_ID());
 				invoice.saveEx();
 			}
 		}
