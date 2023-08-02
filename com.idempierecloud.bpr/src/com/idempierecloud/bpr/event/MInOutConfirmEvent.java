@@ -105,8 +105,10 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 		+ " join m_inoutline mi3 on mi2.m_inoutline_id = mi3.m_inoutline_id "
 		 		+ " join c_orderline co2 on mi3.c_orderline_id = co2.c_orderline_id "
 		 		+ " join c_order co on co2.c_order_id = co.c_order_id "
-		 		+ " where co.issotrx = 'Y' and mi.m_inoutconfirm_id=? "
-		 		+ " group by co.c_order_id ");
+		 		+ " join c_doctype cd on co.c_doctype_id = cd.c_doctype_id "
+		 		+ " where co.issotrx = 'Y' and mi.m_inoutconfirm_id=? and cd.isretur = 'N' "
+		 		+ " group by co.c_order_id "
+		 		+ " having sum(co2.qtyordered)-sum(mi3.movementqty)>0 ");
 	 		PreparedStatement pstmnt = null;
 	 		ResultSet rs = null;
 	 		try
