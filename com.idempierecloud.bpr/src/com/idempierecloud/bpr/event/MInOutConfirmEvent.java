@@ -31,6 +31,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 	
 	private static CLogger log = CLogger.getCLogger(CInvoiceEvent.class);
 	private MInOutConfirm confirm = null;
+	private Boolean hasOutstanding = false;
 	
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -41,6 +42,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 			checkPicklist();	
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			completeShipment();	
+			createMovementReject();
 			autoCloseSO();
 		}
 	
@@ -52,8 +54,8 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 * BPR dan RMP
 		 */
 		 MInOut shipment = (MInOut) confirm.getM_InOut();
-		 /*QUERY CHECK APAKAH SO DI TARIK FULL ATAU DI TARIK PARTIAL KE SHIPMENT*/
-		 StringBuilder sql = new StringBuilder ("SELECT co.c_order_id,sum(co2.qtyordered)-sum(mi3.movementqty) "
+		 //CARI LIST C_ORDER_ID DARI SHIPMENT
+		 StringBuilder sql = new StringBuilder ("SELECT co.c_order_id "
 		 		+ " from m_inoutconfirm mi  "
 		 		+ " join m_inoutlineconfirm mi2 on mi2.m_inoutconfirm_id = mi.m_inoutconfirm_id "
 		 		+ " join m_inoutline mi3 on mi2.m_inoutline_id = mi3.m_inoutline_id "
@@ -61,8 +63,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 		+ " join c_order co on co2.c_order_id = co.c_order_id "
 		 		+ " join c_doctype cd on co.c_doctype_id = cd.c_doctype_id "
 		 		+ " where co.issotrx = 'Y' and mi.m_inoutconfirm_id=? and cd.isretur = 'N' "
-		 		+ " group by co.c_order_id "
-		 		+ " having sum(co2.qtyordered)-sum(mi3.movementqty)>0 ");
+		 		+ " group by co.c_order_id ");
 	 		PreparedStatement pstmnt = null;
 	 		ResultSet rs = null;
 	 		try
@@ -73,66 +74,79 @@ public class MInOutConfirmEvent extends CustomEvent {
 	 	        rs = pstmnt.executeQuery ();
 	 			while (rs.next ()){
 	 				MOrder so = new MOrder(confirm.getCtx(), rs.getInt(1), confirm.get_TrxName());
-	 				/*JIKA PARSIAL*/
-	 				if(rs.getBigDecimal(2).compareTo(BigDecimal.ZERO)>0) {
-	 					/*CEK APAKAH SO LAINNYA SUDAH DITARIK SHIPMENT COMPLETE, maka SO boleh di Close*/
-	 					int check = DB.getSQLValue(confirm.get_TrxName(), "select co.c_order_id from m_inout mi "
-	 							+ " join m_inoutline mi2 on mi.m_inout_id = mi2.m_inout_id "
-	 							+ " join c_orderline co on co.c_orderline_id = mi2.c_orderline_id "
-	 							+ " where co.c_order_id = ? and mi.docstatus = 'CO'", rs.getInt(1));
-	 					if(check>0) {
-	 						if(so.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
-		 						 so.setDocAction(MOrder.DOCACTION_Close);
-		 						 so.saveEx();
-		 						 
-		 						 if(!so.processIt(MOrder.DOCACTION_Close)) {
-		 							 throw new AdempiereException("Sales Order gagal Close : "+so.getProcessMsg());
-		 						 }
-		 						 so.saveEx();
+	 				//CEK QTY OUTSTANDING Base On C_ORDERLINE_ID
+	 				StringBuilder sqli = new StringBuilder ("select co.c_orderline_id, co.qtyordered-coalesce (sum(mi.movementqty),0) from c_orderline co "
+	 							+ " join c_order co2 on co.c_order_id =co2.c_order_id left join m_inoutline mi ON mi.c_orderline_id = co.c_orderline_id "
+	 							+ " left join m_inout mi2 on mi.m_inout_id = mi2.m_inout_id where co.c_order_id = ? group by co.qtyordered,co.c_orderline_id");
+					PreparedStatement pstmt = null;
+					ResultSet rsl = null;
+					try
+					{
+						pstmt = DB.prepareStatement (sqli.toString(), confirm.get_TrxName());
+					 	pstmt.setInt(1, so.getC_Order_ID());
+					 	rsl = pstmt.executeQuery ();
+					 	while (rsl.next ()){
+					 		//CEK APAKAH ADA REJECT
+					 		BigDecimal reject = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(mm.movementqty,0) from m_movementline mm "
+					 					+ " join m_movement mm2 on mm.m_movement_id =mm2.m_movement_id "
+					 					+ " join m_inout mi on mi.documentno = mm2.poreference "
+					 					+ " join m_inoutline mi2 on mi2.m_inout_id = mi.m_inout_id "
+					 					+ " where mm2.poreference  = ? and mi2.c_orderline_id = ? and mm2.docstatus = 'CO' ", shipment.getDocumentNo(),rsl.getInt(1));
+					 		if(reject==null)
+					 			reject=BigDecimal.ZERO;
+					 		
+					 		//JIKA ADA REJECT, OUSTANDING PERLU DI KURANGI REJECT
+					 		BigDecimal outstanding = rsl.getBigDecimal(2).subtract(reject); 
+					 		if(outstanding.compareTo(BigDecimal.ZERO)>0) {
+			 					hasOutstanding = true;
+			 				}
+					 	}
+					 }
+					 catch (SQLException e){
+					 	 log.log(Level.SEVERE, " MInOutConfirmEvent- " + sqli.toString(), e);
+					 }
+					 finally{
+					 	DB.close(rsl, pstmt);
+					 	rsl = null;
+					 	pstmt = null;
+					 }
+					 	
+					 //CEK APAKAH FULL REJECT? jika full reject auto close SO
+					 BigDecimal fullReject = DB.getSQLValueBD(confirm.get_TrxName(), "select (sum(mi.targetqty))-sum(mi.differenceqty) "
+					 		+ " from m_inoutlineconfirm mi where m_inoutconfirm_id = ? ", confirm.getM_InOutConfirm_ID());
+					 if(fullReject!=null) {
+					 	if (fullReject.compareTo(BigDecimal.ZERO)==0) {
+					 		hasOutstanding=false;
+					 	}
+					 }
+					 	
+					 	
+					 //JIKA TIDAK ADA OUTSTANDING CLOSE SO
+					 if(!hasOutstanding) {
+					 	if(so.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
+		 					 so.setDocAction(MOrder.DOCACTION_Close);
+		 					 so.saveEx();
+		 					 
+		 					 if(!so.processIt(MOrder.DOCACTION_Close)) {
+		 						 throw new AdempiereException("Sales Order gagal Close : "+so.getProcessMsg());
 		 					 }
-	 					}
-	 					
-	 					/*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
-	 					BigDecimal creditUsedBack = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.differenceqty*co.priceactual)"
-	 					 		+ " from m_inoutlineconfirm mi "
-	 					 		+ " join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
-	 					 		+ " join c_orderline co on mi2.c_orderline_id = co.c_orderline_id "
-	 					 		+ " join m_inout mi3 on mi3.m_inout_id = mi2.m_inout_id "
-	 					 		+ " where mi3.docstatus = 'CO' and mi.m_inoutconfirm_id = ? "
-	 					 		+ " and co.c_order_id = ?",confirm.getM_InOutConfirm_ID(), rs.getInt(1));
-	 					 if(creditUsedBack.compareTo(BigDecimal.ZERO)>0) {
+		 					 so.saveEx();
+		 				 }
+					 }
+
+	 				/*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
+	 				BigDecimal creditUsedBack = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.differenceqty*co.priceactual)"
+	 				 		+ " from m_inoutlineconfirm mi "
+	 				 		+ " join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
+	 				 		+ " join c_orderline co on mi2.c_orderline_id = co.c_orderline_id "
+	 				 		+ " join m_inout mi3 on mi3.m_inout_id = mi2.m_inout_id "
+	 				 		+ " where mi3.docstatus = 'CO' and mi.m_inoutconfirm_id = ? "
+	 				 		+ " and co.c_order_id = ?",confirm.getM_InOutConfirm_ID(), rs.getInt(1));
+	 				if(creditUsedBack.compareTo(BigDecimal.ZERO)>0) {
 	 						 MBPartner cb = (MBPartner)so.getC_BPartner();
 	 						 BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(creditUsedBack);
 	 						 cb.setSO_CreditUsed(creditUsed);
 	 						 cb.saveEx();
-	 					 }
-	 					createMovementReject();
-	 				}else {/*JIKA DITARIK FULL SO AUTO CLOSE*/
-	 					 if(so.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
-	 						 so.setDocAction(MOrder.DOCACTION_Close);
-	 						 so.saveEx();
-	 						 
-	 						 if(!so.processIt(MOrder.DOCACTION_Close)) {
-	 							 throw new AdempiereException("Sales Order gagal Close : "+so.getProcessMsg());
-	 						 }
-	 						 so.saveEx();
-	 					 }
-	 					 
-	 					/*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
-	 					BigDecimal creditUsedBack = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.differenceqty*co.priceactual)"
-	 					 		+ " from m_inoutlineconfirm mi "
-	 					 		+ " join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
-	 					 		+ " join c_orderline co on mi2.c_orderline_id = co.c_orderline_id "
-	 					 		+ " join m_inout mi3 on mi3.m_inout_id = mi2.m_inout_id "
-	 					 		+ " where mi3.docstatus = 'CO' and mi.m_inoutconfirm_id = ? "
-	 					 		+ " and co.c_order_id = ?",confirm.getM_InOutConfirm_ID(), rs.getInt(1));
-	 					 if(creditUsedBack.compareTo(BigDecimal.ZERO)>0) {
-	 						 MBPartner cb = (MBPartner)so.getC_BPartner();
-	 						 BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(creditUsedBack);
-	 						 cb.setSO_CreditUsed(creditUsed);
-	 						 cb.saveEx();
-	 					 }
-	 					createMovementReject();
 	 				}
 	 			}
 	 		}
@@ -180,12 +194,21 @@ public class MInOutConfirmEvent extends CustomEvent {
 	}
 	
 	private void createMovementReject() {
-		BigDecimal countTarget = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(sum(TargetQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
-		BigDecimal countDifference = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(sum(DifferenceQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
-		BigDecimal check = countTarget.subtract(countDifference);
+		// CEK APAKAH ADA REJECT?
+		BigDecimal reject = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(sum(DifferenceQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
+		BigDecimal target = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(sum(TargetQty), 0) from M_InOutLineConfirm where M_InOutConfirm_ID=?", confirm.getM_InOutConfirm_ID());
 		final int DocType_MovementReject = 1000098;
-		if(check.compareTo(BigDecimal.ZERO)==1 
-				&& check.compareTo(countTarget)!=0) {
+		if(reject==null)// HANDLE NULL
+			reject=BigDecimal.ZERO;
+
+		/*JIKA TOTAL TARGET = TOTAL REJECT. TIDAK ADA BARANG YANG DITERIMA BUYER
+		 * STOCK TETAP DI FG. MAKA TIDAK MEMBUAT MOVEMENT REJECT
+		 */
+		if(reject.compareTo(target)==0){
+			return;
+		}
+		
+		if(reject.compareTo(BigDecimal.ZERO)>0) {
 			MInOut shipment = (MInOut) confirm.getM_InOut();
 			MMovement movement = new MMovement(confirm.getCtx(), 0, confirm.get_TrxName());
 			movement.setAD_Org_ID(shipment.getAD_Org_ID());
