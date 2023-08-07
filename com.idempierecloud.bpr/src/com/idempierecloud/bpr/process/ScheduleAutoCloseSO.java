@@ -30,19 +30,16 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 
 	@Override
 	protected String doIt() throws Exception {
-		StringBuilder sql = new StringBuilder ("SELECT distinct co.c_order_id "
-				+ " FROM c_order co "
-				+ " JOIN c_orderline co2 ON co.c_order_id = co2.c_order_id "
-				+ " LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
-				+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') "
-				+ " JOIN C_Doctype cd ON cd.C_Doctype_ID = co.C_Doctype_ID "
-				+ " WHERE co.docstatus = 'CO' "
-				+ " AND co.issotrx = 'Y' "
-				+ " AND cd.isretur = 'N' " 
-				+ " AND co.datepromised + INTERVAL '40 DAY' <= current_date "
-				+ " GROUP BY co.c_order_id,co2.qtyordered "
-				+ " HAVING co2.qtyordered - COALESCE(SUM(mi.movementqty), 0) > 0"
-				+ " order by co.c_order_id");
+		StringBuilder sql = new StringBuilder ("SELECT distinct co.c_order_id FROM c_order co "
+				+ "  JOIN c_orderline co2 ON co.c_order_id = co2.c_order_id "
+				+ "  LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
+				+ "  LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') and mi2.issotrx ='Y' and mi2.movementtype = 'C-' "
+				+ "  JOIN C_Doctype cd ON cd.C_Doctype_ID = co.C_Doctype_ID "
+				+ "  WHERE co.docstatus = 'CO'  AND co.issotrx = 'Y'  AND cd.isretur = 'N' "
+				+ "  and co.C_Order_ID in (1023168,1023169) "
+				+ "  AND co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay where date1 between now()-45 and now())<= current_date  "
+				+ "  GROUP BY co.c_order_id,co2.qtyordered "
+				+ "  order by co.c_order_id");
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
 		try
@@ -51,33 +48,57 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 			rsl = pstmnt.executeQuery ();
 			while (rsl.next ()){
 				BigDecimal credit=BigDecimal.ZERO;
+				BigDecimal outstanding = BigDecimal.ZERO;
+				BigDecimal sumqty = BigDecimal.ZERO;
+				BigDecimal sumoutstanding = BigDecimal.ZERO;
 				MOrder order = new MOrder(getCtx(), rsl.getInt(1), get_TrxName());
 				for(MOrderLine line : order.getLines()) {
-					BigDecimal outstanding = DB.getSQLValueBD(get_TrxName(), 
-							" SELECT co2.qtyordered - COALESCE(SUM(mi.movementqty), 0) AS outstanding "
+					outstanding = DB.getSQLValueBD(get_TrxName(), 
+							"  SELECT co2.qtyordered - COALESCE(SUM(mi.movementqty), 0) AS outstanding "
 							+ " FROM c_orderline co2 "
 							+ " LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
-							+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
-							+ " WHERE mi2.issotrx ='Y' AND mi2.docstatus NOT IN ('VO', 'RE') and co2.c_orderline_id = ? "
-							+ " Group By co2.qtyordered", line.getC_OrderLine_ID());
+							+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') "
+							+ " and mi2.issotrx ='Y' and mi2.movementtype = 'C-' "
+							+ " WHERE co2.c_orderline_id = ?"
+							+ " Group By co2.qtyordered ", line.getC_OrderLine_ID());
 					if(outstanding!=null) {
 						if(outstanding.compareTo(BigDecimal.ZERO)>0) {
 							credit= credit.add(line.getPriceActual().multiply(outstanding));
 						}
+						sumoutstanding = sumoutstanding.add(outstanding);
+						sumqty = line.getQtyOrdered().add(sumqty);
 					}
 				}
-				order.setDocAction(MOrder.DOCACTION_Close);
-				order.saveEx();
-				if(!order.processIt(MOrder.DOCACTION_Close))
-					log.warning("ScheduleCloseSO. SO GAGAL CLOSE : "+order.getProcessMsg());
-				order.saveEx();
-				
-				if(credit.compareTo(BigDecimal.ZERO)>0) {
-					MBPartner cb = (MBPartner)order.getC_BPartner();
-	                BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
-	                cb.setSO_CreditUsed(creditUsed);
-	                cb.saveEx();
+				// JIKA TOTAL OUTSTANDING QTY SAMA DENGAN TOTAL QTYORDERED MAKA DAPAT DI SIMPULKAN TIDAK ADA PENGIRIMAN PADA SO TERSEBUT SEHINGGA DI VOID
+				if(sumoutstanding.compareTo(sumqty)==0) {
+					order.setDocAction(MOrder.DOCACTION_Void);
+					order.saveEx();
+					if(!order.processIt(MOrder.DOCACTION_Void)) {
+						log.warning("ScheduleCloseSO. SO GAGAL VOID : "+order.getProcessMsg());
+						addLog("ScheduleCloseSO. SO GAGAL VOID : "+order.getProcessMsg());
+						continue;
+					}
+						
+				}else if (sumoutstanding.compareTo(sumqty)<1) {
+					order.setDocAction(MOrder.DOCACTION_Close);
+					order.saveEx();
+					if(!order.processIt(MOrder.DOCACTION_Close)) {
+						log.warning("ScheduleCloseSO. SO GAGAL CLOSE : "+order.getProcessMsg());
+						addLog("ScheduleCloseSO. SO GAGAL CLOSE : "+order.getProcessMsg());
+						continue;
+					}
 				}
+				order.saveEx();
+				if(order.getDocStatus().equals(MOrder.DOCSTATUS_Closed)||order.getDocStatus().equals(MOrder.DOCSTATUS_Voided)) {
+					if(credit.compareTo(BigDecimal.ZERO)>0) {
+						MBPartner cb = (MBPartner)order.getC_BPartner();
+		                BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
+		                cb.setSO_CreditUsed(creditUsed);
+		                cb.saveEx();
+					}
+				}
+				
+				
 			}
 		}
 		catch (SQLException e){
