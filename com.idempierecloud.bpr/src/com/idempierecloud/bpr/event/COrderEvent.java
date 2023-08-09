@@ -52,13 +52,12 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setCreditUseBP();
 			checkMethodCreditUseBP();
 			setPriceCost();
 			setPotongKarung();
 			setInsentif();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
-			setCreditUseBP();
-			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetMStorageReservation();
 			resetQtyReserved();
@@ -108,7 +107,8 @@ public class COrderEvent extends CustomEvent{
 	}
 
 	private void checkMethodCreditUseBP() {
-		if(order.isSOTrx()) {
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			if(!order.get_ValueAsBoolean("isdone")) {
 				log.warning("Validation Method setCreditUseBP is not triggered");
 				throw new AdempiereException("Please Try Again");
@@ -201,11 +201,14 @@ public class COrderEvent extends CustomEvent{
 	private void resetCreditUsed() {
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
-			MBPartner bp = (MBPartner) order.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();	
 			order.set_ValueOfColumn("isdone", false);
+			if(!order.get_ValueAsBoolean("isdone")) {
+				MBPartner bp = (MBPartner) order.getC_BPartner();
+				BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
+				bp.setSO_CreditUsed(creditUsed);
+				bp.saveEx();	
+				order.set_ValueOfColumn("isdone", false);
+			}
 		}
 	}
 
