@@ -82,26 +82,33 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private void checkCreditUsedSOClose() {
-		if(order.isSOTrx()) {
+        MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+        if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			BigDecimal credit=BigDecimal.ZERO;
+			BigDecimal outstanding = BigDecimal.ZERO;
 			for(MOrderLine line : order.getLines()) {
-				BigDecimal outstanding = DB.getSQLValueBD(order.get_TrxName(), 
-						" SELECT co2.qtyordered - COALESCE(SUM(mi.movementqty), 0) AS outstanding "
+				outstanding = DB.getSQLValueBD(order.get_TrxName(), 
+						"  SELECT co2.qtyordered - COALESCE(SUM(mi.movementqty), 0) AS outstanding "
 						+ " FROM c_orderline co2 "
 						+ " LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
-						+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id "
-						+ " WHERE mi2.issotrx ='Y' AND mi2.docstatus NOT IN ('VO', 'RE') and co2.c_orderline_id = ? "
-						+ " Group By co2.qtyordered", line.getC_OrderLine_ID());
-				if(outstanding.compareTo(BigDecimal.ZERO)>0) {
-					credit= credit.add(line.getPriceActual().multiply(outstanding));
+						+ " LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') "
+						+ " and mi2.issotrx ='Y' and mi2.movementtype = 'C-' "
+						+ " WHERE co2.c_orderline_id = ?"
+						+ " Group By co2.qtyordered ", line.getC_OrderLine_ID());
+				if(outstanding!=null) {
+					if(outstanding.compareTo(BigDecimal.ZERO)>0) {
+						credit= credit.add(line.getPriceActual().multiply(outstanding));
+					}
 				}
 			}
-			
-			if(credit.compareTo(BigDecimal.ZERO)>0) {
-				MBPartner cb = (MBPartner)order.getC_BPartner();
-                BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
-                cb.setSO_CreditUsed(creditUsed);
-                cb.saveEx();
+			order.saveEx();
+			if(order.getDocStatus().equals(MOrder.DOCSTATUS_Closed)||order.getDocStatus().equals(MOrder.DOCSTATUS_Voided)) {
+				if(credit.compareTo(BigDecimal.ZERO)>0) {
+					MBPartner cb = (MBPartner)order.getC_BPartner();
+	                BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
+	                cb.setSO_CreditUsed(creditUsed);
+	                cb.saveEx();
+				}
 			}
 		}
 	}
