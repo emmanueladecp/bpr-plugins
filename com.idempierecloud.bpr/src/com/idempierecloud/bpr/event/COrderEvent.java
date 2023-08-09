@@ -52,11 +52,13 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkMethodCreditUseBP();
 			setPriceCost();
 			setPotongKarung();
 			setInsentif();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
+			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetQtyReserved();
 			checkCreditOrder();
@@ -76,6 +78,15 @@ public class COrderEvent extends CustomEvent{
 		
 	}
 	
+	private void checkMethodCreditUseBP() {
+		if(order.isSOTrx()) {
+			if(!order.get_ValueAsBoolean("isdone")) {
+				log.warning("Validation Method setCreditUseBP is not triggered");
+				throw new AdempiereException("Please Try Again");
+			}
+		}
+	}
+
 	private void setInsentif() {		
 		MDocType docType = (MDocType) order.getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
@@ -176,10 +187,12 @@ public class COrderEvent extends CustomEvent{
 				BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
 				bp.setSO_CreditUsed(creditUsed);
 				bp.saveEx();
+				order.set_ValueOfColumn("isdone", true);
 			}
-			order.set_ValueOfColumn("isdone", true);
 		}
 	}
+	
+	
 
 	/**
 	 * Purchase Order Price Cost
