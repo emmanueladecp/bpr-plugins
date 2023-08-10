@@ -98,6 +98,7 @@ public class COrderEvent extends CustomEvent{
 					}
 				}
 			}
+			order.setIsSelfService(true);
 			order.saveEx();
 			if(order.getDocStatus().equals(MOrder.DOCSTATUS_Closed)||order.getDocStatus().equals(MOrder.DOCSTATUS_Voided)) {
 				if(credit.compareTo(BigDecimal.ZERO)>0) {

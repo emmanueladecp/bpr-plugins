@@ -103,6 +103,7 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.DOC_BEFORE_REVERSECORRECT, I_C_Order.Table_Name, COrderEvent.class);
 		registerEvent(IEventTopics.DOC_BEFORE_PREPARE, I_C_Order.Table_Name, COrderEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Order.Table_Name, COrderEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_CLOSE, I_C_Order.Table_Name, COrderEvent.class);
 		
 		// C_OrderLine
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_OrderLine.Table_Name, COrderLineEvent.class);
