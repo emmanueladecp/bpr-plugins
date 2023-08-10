@@ -36,7 +36,6 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 				+ "  LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') and mi2.issotrx ='Y' and mi2.movementtype = 'C-' "
 				+ "  JOIN C_Doctype cd ON cd.C_Doctype_ID = co.C_Doctype_ID "
 				+ "  WHERE co.docstatus = 'CO'  AND co.issotrx = 'Y'  AND cd.isretur = 'N' "
-				+ "  and co.C_Order_ID in (1023168,1023169) "
 				+ "  AND co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay where date1 between now()-45 and now())<= current_date  "
 				+ "  GROUP BY co.c_order_id,co2.qtyordered "
 				+ "  order by co.c_order_id");
@@ -90,7 +89,7 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 				}
 				order.saveEx();
 				if(order.getDocStatus().equals(MOrder.DOCSTATUS_Closed)||order.getDocStatus().equals(MOrder.DOCSTATUS_Voided)) {
-					if(credit.compareTo(BigDecimal.ZERO)>0) {
+					if(credit.compareTo(BigDecimal.ZERO)>0&&!order.isSelfService()) {
 						MBPartner cb = (MBPartner)order.getC_BPartner();
 		                BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
 		                cb.setSO_CreditUsed(creditUsed);
