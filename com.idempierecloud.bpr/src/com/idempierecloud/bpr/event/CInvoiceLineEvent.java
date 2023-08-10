@@ -37,14 +37,31 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			setQtyInvoice();
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
-			setPaymentTermHeader();
+            setPaymentTermHeader(event);
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
-			setPaymentTermHeader();
+            setPaymentTermHeader(event);
 		}
 			
 	}
 	
-	private void setPaymentTermHeader() {
+	private void checkqtyShipment() {
+		if(invoiceLine.getC_Invoice().isSOTrx()) {
+			if(invoiceLine.getM_InOutLine_ID()>0) {
+				MInOutLine shipLine = (MInOutLine) invoiceLine.getM_InOutLine();
+				if(shipLine.getMovementQty().compareTo(invoiceLine.getQtyInvoiced())!=0) {
+					if(shipLine.getM_Locator().getM_LocatorType_ID()==M_LocatorType_CustomerShipment) {
+						throw new AdempiereException("Qty Shipment tidak sama dengan Qty Invoice,"
+								+ " Qty Shipment : "+shipLine.getQtyEntered()
+								+ " Qty Invoice  : "+invoiceLine.getQtyEntered()
+								+ " Product : "+invoiceLine.getM_Product().getName());
+					}
+				}	
+			}
+		}
+		
+	}
+
+    private void setPaymentTermHeader(Event event) {
 		if(invoiceLine.getC_Invoice().isSOTrx()) {
 			MInvoice invoice = (MInvoice) invoiceLine.getC_Invoice();
 			MBPartner bp = (MBPartner) invoice.getC_BPartner();
@@ -57,11 +74,20 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				}
 				invoice.setC_PaymentTerm_ID(bp.getC_PaymentTerm_ID());
 				invoice.saveEx();
-			}else if (count_corder==1){
-				int c_order_id = DB.getSQLValue(invoiceLine.get_TrxName(),"select distinct co.c_order_id "
-						+ " from c_invoiceline ci "
-						+ " join c_orderline co on ci.c_orderline_id = co.c_orderline_id "
-						+ " where ci.c_invoice_id = ? and ci.c_invoiceline_id in (?)", invoiceLine.getC_Invoice_ID(), invoiceLine.get_ID());
+			}else if (count_corder==1){				
+                int c_order_id = 0;
+                if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
+                    c_order_id = DB.getSQLValue(invoiceLine.get_TrxName(),"select distinct co.c_order_id "
+                            + " from c_invoiceline ci "
+                            + " join c_orderline co on ci.c_orderline_id = co.c_orderline_id "
+                            + " where ci.c_invoice_id = ? and ci.c_invoiceline_id in (?)", invoiceLine.getC_Invoice_ID(), invoiceLine.get_ID());
+                }else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
+                    c_order_id = DB.getSQLValue(invoiceLine.get_TrxName(),"select distinct co.c_order_id "
+                            + " from c_invoiceline ci "
+                            + " join c_orderline co on ci.c_orderline_id = co.c_orderline_id "
+                            + " where ci.c_invoice_id = ? and ci.c_invoiceline_id not in (?)", invoiceLine.getC_Invoice_ID(), invoiceLine.get_ID());
+                }
+				
 				MOrder order = new MOrder(invoiceLine.getCtx(), c_order_id, invoiceLine.get_TrxName());
 				invoice.setPaymentRule(order.getPaymentRule());
 				invoice.setC_PaymentTerm_ID(order.getC_PaymentTerm_ID());
