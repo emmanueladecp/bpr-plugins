@@ -130,8 +130,22 @@ public class MInOutEvent extends CustomEvent {
 			
 		    int PeriodCreate = DB.getSQLValue(inout.get_TrxName(), "select cp.c_period_id from c_period cp where ? >= cp.startdate AND ? <= cp.enddate", inout.getCreated(),inout.getCreated());
 		    int PeriodMovementDate = DB.getSQLValue(inout.get_TrxName(), "select cp.c_period_id from c_period cp where ? >= cp.startdate AND ? <= cp.enddate", inout.getMovementDate(),inout.getMovementDate());
-			
-			if(MovementDate.compareTo(Created)<0)
+            
+		    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            try {
+                Created = sdf.parse(sdf.format(Created));
+            } catch (ParseException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }          
+            Date date = new Date(Created.getTime());         
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);  
+
+            Date CreatedDate = cal.getTime();
+		    
+		    
+			if(MovementDate.compareTo(CreatedDate)<0)
 				throw new AdempiereException("Movement Date tidak boleh kurang dari tanggal pembuatan Shipment. created : "+inout.getCreated());
 			else if(PeriodCreate!=PeriodMovementDate)
 				throw new AdempiereException("Movement Date tidak boleh berbeda period dari tanggal pembuatan Shipment. created : "+inout.getCreated());
