@@ -14,15 +14,18 @@ import java.util.logging.Level;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
+import org.compiere.model.MDocType;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
+import org.compiere.model.MPeriod;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.TimeUtil;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -76,6 +79,15 @@ public class CInvoiceEvent extends CustomEvent {
 	}
 	
 	private void checkMovementDate() {
+		if(!invoice.isReversal()) {
+			MDocType dt = MDocType.get(invoice.getC_DocType_ID());
+			invoice.setDateInvoiced(TimeUtil.getDay(0));
+			if (invoice.getDateAcct().before(invoice.getDateInvoiced())) {
+				invoice.setDateAcct(invoice.getDateInvoiced());
+				MPeriod.testPeriodOpen(invoice.getCtx(), invoice.getDateAcct(), invoice.getC_DocType_ID(), invoice.getAD_Org_ID());
+			}
+		}
+		
 		if(invoice.isSOTrx()){
 			if(invoice.getReversal_ID()>0)
 				return;
@@ -134,6 +146,12 @@ public class CInvoiceEvent extends CustomEvent {
 		
 	}
 	private void resetCreditUseBP() {
+		MDocType dt = MDocType.get(invoice.getC_DocType_ID());
+		invoice.setDateInvoiced(TimeUtil.getDay(0));
+		if (invoice.getDateAcct().before(invoice.getDateInvoiced())) {
+			invoice.setDateAcct(invoice.getDateInvoiced());
+			MPeriod.testPeriodOpen(invoice.getCtx(), invoice.getDateAcct(), invoice.getC_DocType_ID(), invoice.getAD_Org_ID());
+		}
 		if(invoice.isSOTrx()) {
 			MBPartner bp = (MBPartner) invoice.getC_BPartner();
 			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
