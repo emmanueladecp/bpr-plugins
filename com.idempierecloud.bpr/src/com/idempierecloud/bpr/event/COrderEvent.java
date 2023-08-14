@@ -52,12 +52,13 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			setCreditUseBP();
 			checkMethodCreditUseBP();
 			setPriceCost();
 			setPotongKarung();
 			setInsentif();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			setCreditUseBP();
+			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetMStorageReservation();
 			resetQtyReserved();
