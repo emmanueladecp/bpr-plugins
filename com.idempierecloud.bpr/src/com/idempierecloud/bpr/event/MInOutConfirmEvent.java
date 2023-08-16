@@ -49,7 +49,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 * BPR dan RMP
 		 */
 		 MInOut shipment = (MInOut) confirm.getM_InOut();
-		 //CARI LIST C_ORDER_ID DARI SHIPMENT
+		 //CARI LIST ID SO (C_ORDER_ID) DARI SHIPMENT
 		 StringBuilder sql = new StringBuilder ("SELECT co.c_order_id "
 		 		+ " from m_inoutconfirm mi  "
 		 		+ " join m_inoutlineconfirm mi2 on mi2.m_inoutconfirm_id = mi.m_inoutconfirm_id "
@@ -81,7 +81,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 					 	pstmt.setInt(1, so.getC_Order_ID());
 					 	rsl = pstmt.executeQuery ();
 					 	while (rsl.next ()){
-					 		//CEK APAKAH ADA REJECT
+					 		//CEK APAKAH ADA Movement REJECT
 					 		BigDecimal reject = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(mm.movementqty,0) from m_movementline mm "
 					 					+ " join m_movement mm2 on mm.m_movement_id =mm2.m_movement_id "
 					 					+ " join m_inout mi on mi.documentno = mm2.poreference "
@@ -91,7 +91,8 @@ public class MInOutConfirmEvent extends CustomEvent {
 					 			reject=BigDecimal.ZERO;
 					 		
 					 		//JIKA ADA REJECT, OUSTANDING PERLU DI KURANGI REJECT
-					 		BigDecimal outstanding = rsl.getBigDecimal(2).subtract(reject); 
+					 		BigDecimal outstanding = rsl.getBigDecimal(2).subtract(reject);
+					 		//JIKA MASIH ADA OUTSTANDING MAKA SO TIDAK BOLEH DI CLOSE
 					 		if(outstanding.compareTo(BigDecimal.ZERO)>0) {
 			 					hasOutstanding = true;
 			 				}
@@ -106,7 +107,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 					 	pstmt = null;
 					 }
 					 	
-					 //CEK APAKAH FULL REJECT? jika full reject auto close SO
+					 //CEK APAKAH FULL REJECT? JIKA FULL REJECT MAKA SO DI CLOSE
 					 BigDecimal fullReject = DB.getSQLValueBD(confirm.get_TrxName(), "select (sum(mi.targetqty))-sum(mi.differenceqty) "
 					 		+ " from m_inoutlineconfirm mi where m_inoutconfirm_id = ? ", confirm.getM_InOutConfirm_ID());
 					 if(fullReject!=null) {
@@ -116,7 +117,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 					 }
 					 	
 					 	
-					 //JIKA TIDAK ADA OUTSTANDING CLOSE SO
+					 //JIKA TIDAK ADA OUTSTANDING MAKA SO DI CLOSE
 					 if(!hasOutstanding) {
 					 	if(so.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
 		 					 so.setDocAction(MOrder.DOCACTION_Close);
@@ -129,20 +130,22 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 				 }
 					 }
 
-	 				/*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
-	 				BigDecimal creditUsedBack = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.differenceqty*co.priceactual)"
-	 				 		+ " from m_inoutlineconfirm mi "
-	 				 		+ " join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
-	 				 		+ " join c_orderline co on mi2.c_orderline_id = co.c_orderline_id "
-	 				 		+ " join m_inout mi3 on mi3.m_inout_id = mi2.m_inout_id "
-	 				 		+ " where mi3.docstatus = 'CO' and mi.m_inoutconfirm_id = ? "
-	 				 		+ " and co.c_order_id = ?",confirm.getM_InOutConfirm_ID(), rs.getInt(1));
-	 				if(creditUsedBack.compareTo(BigDecimal.ZERO)>0) {
-	 						 MBPartner cb = (MBPartner)so.getC_BPartner();
-	 						 BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(creditUsedBack);
-	 						 cb.setSO_CreditUsed(creditUsed);
-	 						 cb.saveEx();
-	 				}
+					 if(!so.isSelfService()) {
+						 /*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
+			 				BigDecimal creditUsedBack = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.differenceqty*co.priceactual)"
+			 				 		+ " from m_inoutlineconfirm mi "
+			 				 		+ " join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
+			 				 		+ " join c_orderline co on mi2.c_orderline_id = co.c_orderline_id "
+			 				 		+ " join m_inout mi3 on mi3.m_inout_id = mi2.m_inout_id "
+			 				 		+ " where mi3.docstatus = 'CO' and mi.m_inoutconfirm_id = ? "
+			 				 		+ " and co.c_order_id = ?",confirm.getM_InOutConfirm_ID(), rs.getInt(1));
+			 				if(creditUsedBack.compareTo(BigDecimal.ZERO)>0) {
+			 						 MBPartner cb = (MBPartner)so.getC_BPartner();
+			 						 BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(creditUsedBack);
+			 						 cb.setSO_CreditUsed(creditUsed);
+			 						 cb.saveEx();
+			 				} 
+					 }
 	 			}
 	 		}
 	 		catch (SQLException e){
