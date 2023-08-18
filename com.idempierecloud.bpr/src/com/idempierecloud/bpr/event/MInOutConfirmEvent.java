@@ -89,8 +89,8 @@ public class MInOutConfirmEvent extends CustomEvent {
 					 		//CEK APAKAH ADA Movement REJECT
 					 		BigDecimal reject = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(mm.movementqty,0) from m_movementline mm "
 					 					+ " join m_movement mm2 on mm.m_movement_id =mm2.m_movement_id "
-					 					+ " join m_inout mi on mi.documentno = mm2.poreference "
-					 					+ " join m_inoutline mi2 on mi2.m_inout_id = mi.m_inout_id "
+					 					+ " join m_inoutline mi2 on mi2.m_inoutline_id = mm.m_inoutline_id "
+					 					+ " join m_inout mi on mi2.m_inout_id = mi.m_inout_id"
 					 					+ " where mm2.poreference  = ? and mi2.c_orderline_id = ? and mm2.docstatus = 'CO' ", shipment.getDocumentNo(),rsl.getInt(1));
 					 		if(reject==null)
 					 			reject=BigDecimal.ZERO;
@@ -151,6 +151,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 			 						 cb.saveEx();
 			 				} 
 					 }
+					 hasOutstanding=false;
 	 			}
 	 		}
 	 		catch (SQLException e){
@@ -240,6 +241,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 						throw new AdempiereException("Locator Retur tidak ditemukan");
 					mline.setMovementQty(line.getDifferenceQty());
 					mline.set_ValueOfColumn("timbangannetamt", BigDecimal.ZERO);
+					mline.set_ValueOfColumn("m_inoutline_id", shipLine.getM_InOutLine_ID());
 					mline.saveEx();
 				}
 			}
