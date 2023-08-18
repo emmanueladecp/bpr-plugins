@@ -8,6 +8,7 @@ import java.util.List;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
+import org.compiere.model.MInOutLine;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
@@ -38,6 +39,7 @@ public class MMovementEvent extends CustomEvent {
 		String desc = movement.getC_DocType().getDescription();
 		
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkProductCost();
 			if(desc!=null && desc.equals("CONFIRM")) {
 				if(movement.getReversal_ID()==0) {
 					checkMovementLine();
@@ -65,6 +67,29 @@ public class MMovementEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			if(desc!=null && desc.equals("INTRANSIT")) {
 				checkConfirmMovement();
+			}
+		}
+	}
+	
+	private void checkProductCost() {
+		int M_CostElement_ID_AveragePO=1000004;
+		for(MMovementLine line : movement.getLines(true)) {
+			BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
+			 " and M_Product_ID = ? and M_CostElement_ID=?",movement.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
+			
+			if(MCost_CurrentCostPrice == null) {
+				throw new AdempiereException("Tidak ditemukan Cost untuk Product : "+line.getM_Product().getName()
+						+", Organization :  "+line.getAD_Org_ID()
+						+", Cost Elemet : Average PO");
+			}
+			else if(MCost_CurrentCostPrice.compareTo(BigDecimal.ZERO)>0) {
+				if(MCost_CurrentCostPrice.compareTo(BigDecimal.valueOf(0.001))>0) {
+					log.fine("Found Product Cost");
+				}else {
+					throw new AdempiereException("Cost untuk Product : "+line.getM_Product().getName()
+							+", Organization :  "+line.getAD_Org_ID()
+							+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0.001");
+				}				
 			}
 		}
 	}

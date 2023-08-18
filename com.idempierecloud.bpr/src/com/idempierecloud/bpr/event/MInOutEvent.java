@@ -44,6 +44,7 @@ public class MInOutEvent extends CustomEvent {
 		log.fine("Minout Event : "+event.getTopic());
 		inout = (MInOut) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			checkProductCost();
 			checkMovementDate();
 			checkQtySalesOrder();
 			checkAvailableQtyProduct();
@@ -62,6 +63,27 @@ public class MInOutEvent extends CustomEvent {
 		}
 	}
 	
+	private void checkProductCost() {
+		if(inout.isSOTrx()) {
+			int M_CostElement_ID_AveragePO=1000004;
+			for(MInOutLine line : inout.getLines(true)) {
+				BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
+				 " and M_Product_ID = ? and M_CostElement_ID=?",inout.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
+				if(MCost_CurrentCostPrice==null) {
+					throw new AdempiereException("Tidak ditemukan Cost untuk Product : "+line.getM_Product().getName()
+												+", Organization :  "+line.getAD_Org_ID()
+												+", Cost Elemet : Average PO");
+				}else if(MCost_CurrentCostPrice.compareTo(BigDecimal.ZERO)>0) {
+					if(MCost_CurrentCostPrice.compareTo(BigDecimal.valueOf(0.001))<=0) {
+						throw new AdempiereException("Cost untuk Product : "+line.getM_Product().getName()
+								+", Organization :  "+line.getAD_Org_ID()
+								+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0.001");
+					}
+				}
+			}
+		}
+	}
+
 	private void voidShipment() {
 		if(inout.getC_DocType().getDocBaseType().equals("MMS")){
 			int confirm_id = DB.getSQLValue(inout.get_TrxName(),  "SELECT "+MInOutConfirm.COLUMNNAME_M_InOutConfirm_ID+" FROM "+MInOutConfirm.Table_Name+" WHERE M_InOut_ID=?", inout.getM_InOut_ID());
