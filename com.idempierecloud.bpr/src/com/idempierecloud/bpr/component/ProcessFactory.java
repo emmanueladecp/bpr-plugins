@@ -27,6 +27,7 @@ import com.idempierecloud.bpr.process.ImportRelatedProduct;
 import com.idempierecloud.bpr.process.ImportUOM;
 import com.idempierecloud.bpr.process.ImportUpdateSalesRepBP;
 import com.idempierecloud.bpr.process.LCO_GenerateWithholding;
+import com.idempierecloud.bpr.process.ScheduleAutoCloseSO;
 import com.idempierecloud.bpr.process.SyncBP;
 import com.idempierecloud.bpr.process.UpdateProductCostPrice;
 
@@ -56,6 +57,7 @@ public class ProcessFactory extends CustomProcessFactory {
 		registerProcess(ImportUOM.class);
 		registerProcess(SyncBP.class);
 		registerProcess(ImportUpdateSalesRepBP.class);
+		registerProcess(ScheduleAutoCloseSO.class);
 		
 	}
 
