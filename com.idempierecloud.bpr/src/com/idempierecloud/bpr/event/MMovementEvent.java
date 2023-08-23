@@ -82,14 +82,10 @@ public class MMovementEvent extends CustomEvent {
 						+", Organization :  "+line.getAD_Org_ID()
 						+", Cost Elemet : Average PO");
 			}
-			else if(MCost_CurrentCostPrice.compareTo(BigDecimal.ZERO)>0) {
-				if(MCost_CurrentCostPrice.compareTo(BigDecimal.valueOf(0.001))>0) {
-					log.fine("Found Product Cost");
-				}else {
+			else if(MCost_CurrentCostPrice.signum()<=0) {
 					throw new AdempiereException("Cost untuk Product : "+line.getM_Product().getName()
 							+", Organization :  "+line.getAD_Org_ID()
-							+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0.001");
-				}				
+							+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0");			
 			}
 		}
 	}

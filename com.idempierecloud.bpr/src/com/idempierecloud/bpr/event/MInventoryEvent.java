@@ -42,6 +42,9 @@ public class MInventoryEvent extends CustomEvent {
 
 	private void checkProductCost() {
 		int M_CostElement_ID_AveragePO=1000004;
+		if(inventory.getC_DocType_ID()==1000027) {//Doctype Cost Adjustment
+			return;
+		}
 		for(MInventoryLine line : inventory.getLines(true)) {
 			BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? and M_Product_ID = ? and M_CostElement_ID=?",inventory.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
 			
@@ -50,14 +53,10 @@ public class MInventoryEvent extends CustomEvent {
 						+", Organization :  "+line.getAD_Org_ID()
 						+", Cost Elemet : Average PO");
 			}
-			else if(MCost_CurrentCostPrice.compareTo(BigDecimal.ZERO)>0) {
-				if(MCost_CurrentCostPrice.compareTo(BigDecimal.valueOf(0.001))>0) {
-					log.fine("Found Product Cost");
-				}else {
+			else if(MCost_CurrentCostPrice.signum()<=0) {
 					throw new AdempiereException("Cost untuk Product : "+line.getM_Product().getName()
 							+", Organization :  "+line.getAD_Org_ID()
-							+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0.001");
-				}				
+							+", Cost Elemet : Average PO, Current Cost Price Harus Lebih Besar dari 0");				
 			}
 		}
 	}
