@@ -52,11 +52,13 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkMethodCreditUseBP();
 			setPriceCost();
 			setPotongKarung();
 			setInsentif();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
+			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
 			resetQtyReserved();
 			checkCreditOrder();
@@ -105,6 +107,16 @@ public class COrderEvent extends CustomEvent{
 	            BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(credit);
 	            cb.setSO_CreditUsed(creditUsed);
 	            cb.saveEx();
+			}
+		}
+	}
+
+	private void checkMethodCreditUseBP() {
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
+			if(!order.get_ValueAsBoolean("isdone")) {
+				log.warning("Validation Method setCreditUseBP is not triggered");
+				throw new AdempiereException("Please Try Again");
 			}
 		}
 	}
@@ -193,26 +205,32 @@ public class COrderEvent extends CustomEvent{
     }
 
 	private void resetCreditUsed() {
-		if(order.isSOTrx()) {
-			MBPartner bp = (MBPartner) order.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();	
-			order.set_ValueOfColumn("isdone", false);
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
+			if(!order.get_ValueAsBoolean("isdone")) {
+				MBPartner bp = (MBPartner) order.getC_BPartner();
+				BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
+				bp.setSO_CreditUsed(creditUsed);
+				bp.saveEx();	
+				order.set_ValueOfColumn("isdone", false);
+			}
 		}
 	}
 
 	private void setCreditUseBP() {
-		if(order.isSOTrx()) {
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			if(!order.get_ValueAsBoolean("isdone")) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
 				BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
 				bp.setSO_CreditUsed(creditUsed);
 				bp.saveEx();
+				order.set_ValueOfColumn("isdone", true);
 			}
-			order.set_ValueOfColumn("isdone", true);
 		}
 	}
+	
+	
 
 	/**
 	 * Purchase Order Price Cost
