@@ -16,6 +16,7 @@ import org.compiere.model.MInOutLineConfirm;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
 import org.compiere.model.MOrder;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.osgi.service.event.Event;
 import org.compiere.util.CLogger;
@@ -69,44 +70,30 @@ public class MInOutConfirmEvent extends CustomEvent {
 	 	        rs = pstmnt.executeQuery ();
 	 			while (rs.next ()){
 	 				MOrder so = new MOrder(confirm.getCtx(), rs.getInt(1), confirm.get_TrxName());
-	 				//CEK QTY OUTSTANDING Base On C_ORDERLINE_ID
-	 				StringBuilder sqli = new StringBuilder ("select co.c_orderline_id, co.qtyordered-coalesce (sum(mi.movementqty),0) from c_orderline co "
-	 							+ " join c_order co2 on co.c_order_id =co2.c_order_id left join m_inoutline mi ON mi.c_orderline_id = co.c_orderline_id "
-	 							+ " left join m_inout mi2 on mi.m_inout_id = mi2.m_inout_id where co.c_order_id = ? group by co.qtyordered,co.c_orderline_id");
-					PreparedStatement pstmt = null;
-					ResultSet rsl = null;
-					try
-					{
-						pstmt = DB.prepareStatement (sqli.toString(), confirm.get_TrxName());
-					 	pstmt.setInt(1, so.getC_Order_ID());
-					 	rsl = pstmt.executeQuery ();
-					 	while (rsl.next ()){
+					 for(MOrderLine line:so.getLines()) {
+						 BigDecimal qtycomplete = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.movementqty) from m_inoutline mi "
+					 				+ "join m_inout mi2 ON mi2.m_inout_id = mi.m_inout_id "
+					 				+ "where mi2.docstatus = 'CO' and mi.c_orderline_id = ? ", line.getC_OrderLine_ID());
+					 		if(qtycomplete==null)
+					 			qtycomplete=BigDecimal.ZERO;
+					 		
+					 		BigDecimal outstanding = line.getQtyOrdered().subtract(qtycomplete);
 					 		//CEK APAKAH ADA Movement REJECT
 					 		BigDecimal reject = DB.getSQLValueBD(confirm.get_TrxName(), "select coalesce(mm.movementqty,0) from m_movementline mm "
 					 					+ " join m_movement mm2 on mm.m_movement_id =mm2.m_movement_id "
 					 					+ " join m_inoutline mi2 on mi2.m_inoutline_id = mm.m_inoutline_id "
 					 					+ " join m_inout mi on mi2.m_inout_id = mi.m_inout_id"
-					 					+ " where mm2.poreference  = ? and mi2.c_orderline_id = ? and mm2.docstatus = 'CO' ", shipment.getDocumentNo(),rsl.getInt(1));
+					 					+ " where mm2.poreference  = ? and mi2.c_orderline_id = ? and mm2.docstatus = 'CO' ", shipment.getDocumentNo(),line.getC_OrderLine_ID());
 					 		if(reject==null)
 					 			reject=BigDecimal.ZERO;
+					 		//JIKA ADA REJECT, OUSTANDING PERLU DI KURANGI REJECT					 		
+					 		outstanding = outstanding.subtract(reject);
 					 		
-					 		//JIKA ADA REJECT, OUSTANDING PERLU DI KURANGI REJECT
-					 		BigDecimal outstanding = rsl.getBigDecimal(2).subtract(reject);
 					 		//JIKA MASIH ADA OUTSTANDING MAKA SO TIDAK BOLEH DI CLOSE
 					 		if(outstanding.compareTo(BigDecimal.ZERO)>0) {
 			 					hasOutstanding = true;
 			 				}
-					 	}
 					 }
-					 catch (SQLException e){
-					 	 log.log(Level.SEVERE, " MInOutConfirmEvent- " + sqli.toString(), e);
-					 }
-					 finally{
-					 	DB.close(rsl, pstmt);
-					 	rsl = null;
-					 	pstmt = null;
-					 }
-					 	
 					 //CEK APAKAH FULL REJECT? JIKA FULL REJECT MAKA SO DI CLOSE
 					 BigDecimal fullReject = DB.getSQLValueBD(confirm.get_TrxName(), "select (sum(mi.targetqty))-sum(mi.differenceqty) "
 					 		+ " from m_inoutlineconfirm mi where m_inoutconfirm_id = ? ", confirm.getM_InOutConfirm_ID());
