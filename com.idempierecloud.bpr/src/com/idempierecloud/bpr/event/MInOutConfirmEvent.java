@@ -220,7 +220,7 @@ public class MInOutConfirmEvent extends CustomEvent {
 					mline.setM_Movement_ID(movement.getM_Movement_ID());
 					mline.setM_Product_ID(shipLine.getM_Product_ID());
 					mline.setM_Locator_ID(shipLine.getM_Locator_ID());
-					int MLocator_Retur = DB.getSQLValue(line.get_TrxName(), "Select coalesce(min(M_Locator_ID),0) from M_Locator where M_LocatorType_ID=1000004 and M_Warehouse_ID=?", shipment.getM_Warehouse_ID());
+					int MLocator_Retur = DB.getSQLValue(line.get_TrxName(), "Select coalesce(min(M_Locator_ID),0)  from M_Locator where  M_LocatorType_ID=1000004 and M_Warehouse_ID=?", shipment.getM_Warehouse_ID());
 					if(MLocator_Retur>0)
 						mline.setM_LocatorTo_ID(MLocator_Retur);
 					else 
