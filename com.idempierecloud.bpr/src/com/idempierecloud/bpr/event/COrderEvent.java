@@ -340,6 +340,9 @@ public class COrderEvent extends CustomEvent{
 					.list();
 			if(order.getC_DocTypeTarget().getDocSubTypeSO()!=null&&order.getC_DocTypeTarget().getDocSubTypeSO().equals(MDocType.DOCSUBTYPESO_OnCreditOrder)) {
 				for(MInvoice invoice : invoices){
+					if(invoice.getDocStatus().equals(MOrder.DOCSTATUS_Reversed)) {
+						continue;
+					}
 					if(!invoice.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
 						throw new AdempiereException("Please Check Status Invoice");
 					}
@@ -388,6 +391,9 @@ public class COrderEvent extends CustomEvent{
 					.setParameters(order.getC_Order_ID())
 					.list();
 			for(MInOut shipment : shipments){
+				if(shipment.getDocStatus().equals(MInOut.DOCSTATUS_Reversed)) {
+					continue;
+				}
 				if(shipment.processIt(DocAction.ACTION_Reverse_Correct)) {
 					MInOut reversal = (MInOut) shipment.getReversal();
 					if(!reversal.getDocStatus().equalsIgnoreCase("RE")&&!shipment.getDocStatus().equalsIgnoreCase("RE")) {
