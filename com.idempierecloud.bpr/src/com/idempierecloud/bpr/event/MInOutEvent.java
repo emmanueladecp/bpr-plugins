@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Level;
@@ -51,6 +52,7 @@ public class MInOutEvent extends CustomEvent {
 			checkReversalDocumentNo();
 			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			setDateShipment();
 			checkReversal();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment(event.getTopic());
@@ -71,6 +73,16 @@ public class MInOutEvent extends CustomEvent {
 		inout.saveEx();				
 	}
 	
+	private void setDateShipment() {
+		if(inout.isSOTrx()&&
+				inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerShipment)) {
+            LocalDateTime currentDateTime = LocalDateTime.now();
+            Timestamp timestamp = Timestamp.valueOf(currentDateTime);
+            inout.setMovementDate(timestamp);
+            inout.setDateAcct(timestamp);
+		}
+	}
+
 	private void checkProductCost() {
 		if(inout.isSOTrx()) {
 			int M_CostElement_ID_AveragePO=1000004;
@@ -146,7 +158,10 @@ public class MInOutEvent extends CustomEvent {
 			if(MovementDate.compareTo(CreatedDate)<0)
 				throw new AdempiereException("Movement Date tidak boleh kurang dari tanggal pembuatan Shipment. created : "+inout.getCreated());
 			else if(PeriodCreate!=PeriodMovementDate)
-				throw new AdempiereException("Movement Date tidak boleh berbeda period dari tanggal pembuatan Shipment. created : "+inout.getCreated());
+				if(!inout.isProcessed()) {
+					throw new AdempiereException("Movement Date tidak boleh berbeda period dari tanggal pembuatan Shipment. created : "+inout.getCreated());
+				}
+				
 		}
 	}
 
