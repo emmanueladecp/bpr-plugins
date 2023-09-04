@@ -72,6 +72,8 @@ public class MMovementEvent extends CustomEvent {
 	}
 	
 	private void checkProductCost() {
+		if(movement.getC_DocType().getDescription().equals("CONFIRM"))
+			return;
 		int M_CostElement_ID_AveragePO=1000004;
 		for(MMovementLine line : movement.getLines(true)) {
 			BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
