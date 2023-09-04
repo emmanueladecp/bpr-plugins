@@ -155,13 +155,20 @@ public class MInOutEvent extends CustomEvent {
             Date CreatedDate = cal.getTime();
 		    
 		    
-			if(MovementDate.compareTo(CreatedDate)<0)
+			if(MovementDate.compareTo(CreatedDate)<0) {
 				throw new AdempiereException("Movement Date tidak boleh kurang dari tanggal pembuatan Shipment. created : "+inout.getCreated());
-			else if(PeriodCreate!=PeriodMovementDate)
-				if(!inout.isProcessed()) {
+			}
+			else if(PeriodCreate!=PeriodMovementDate) {
+				String DateComplete = DB.getSQLValueString(inout.get_TrxName(), "(with a as(select record_ID,created from ad_changelog where ad_table_ID=319 and record_ID=? "
+						+ " and ad_column_ID=4323 and newvalue='IP' order by created desc limit 1),"
+						+ " b as(select record_ID,created from ad_changelog where ad_table_ID=319 and record_ID=? "
+						+ " and ad_column_ID=4323 and newvalue='CO' order by created desc limit 1)"
+						+ " select coalesce(a.created,b.created)from m_inout c left join a on c.m_inout_ID = a.record_ID left join b on c.m_inout_ID = b.record_ID "
+						+ " where m_inout_ID=?)", inout.getM_InOut_ID(),inout.getM_InOut_ID(),inout.getM_InOut_ID());				
+				if(DateComplete==null) {//untuk validasi shipment tidak boleh beda period hanya ketika DR ke IP
 					throw new AdempiereException("Movement Date tidak boleh berbeda period dari tanggal pembuatan Shipment. created : "+inout.getCreated());
 				}
-				
+			}
 		}
 	}
 
