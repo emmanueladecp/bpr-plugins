@@ -295,12 +295,20 @@ public class MMovementEvent extends CustomEvent {
 	}
 	
 	private void checkAvailableQtyProduct() {
-		for(MMovementLine line : movement.getLines(true)) {			
-			BigDecimal qtyAvailable = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0)"
-					+ "	FROM M_Storageonhand s"
+		for(MMovementLine line : movement.getLines(true)) {		
+			BigDecimal qtyonhand = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
 					+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+			
+			BigDecimal qtyIntransit = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(s.confirmedqty), 0)"
+					+ "	FROM M_InOutLineConfirm s"
+					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
+					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
+					+ "	WHERE c.docstatus in ('DR','IP','IN') AND iol.M_Product_ID=? AND iol.m_locator_id=?"
+					, line.getM_Product_ID(),line.getM_Locator_ID());
+			
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).subtract(line.getMovementQty());
 			if(qtyAvailable.compareTo(line.getMovementQty())<0)
-				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Movement = "+line.getMovementQty()+", pada Movement Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());		
+				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Intransit Shipment = "+qtyIntransit+", Quantity Movement = "+line.getMovementQty()+", pada Movement Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());		
 		}
 	}
 
