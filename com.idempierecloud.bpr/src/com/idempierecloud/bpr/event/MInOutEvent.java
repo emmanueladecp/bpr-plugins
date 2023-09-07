@@ -175,7 +175,6 @@ public class MInOutEvent extends CustomEvent {
 	private void checkReversal() {
 		if(inout.getReversal_ID()==0 || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns))
 			return;
-		
 		for(MInOutLine line : inout.getLines(false)) {
 			BigDecimal qty = line.getMovementQty();
 			
@@ -193,10 +192,21 @@ public class MInOutEvent extends CustomEvent {
 			//	Attribute Set Instance
 			//  Create an  Attribute Set Instance to any receipt FIFO/LIFO
 			if (product != null && line.getM_AttributeSetInstance_ID() == 0)
-			{
+			{	
+				//Check If Duplicate product
+				int count_duplicate_product = DB.getSQLValue(inout.get_TrxName(), "select coalesce(count(m_product_id),0) from m_inoutline mi where mi.m_inout_id = ?", inout.getM_InOut_ID());
+				
 				String MMPolicy = product.getMMPolicy();
-				MStorageOnHand[] storages = MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
-						null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), inout.get_TrxName());
+				MStorageOnHand[] storages;
+				if(count_duplicate_product<=1) {
+					storages= MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
+							null, false, true, line.getM_Locator_ID(), inout.get_TrxName());
+				}else {
+					storages= MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
+							null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), inout.get_TrxName());
+				}
+				
+				
 	
 				BigDecimal qtyToDeliver = line.getMovementQty().abs();
 	
