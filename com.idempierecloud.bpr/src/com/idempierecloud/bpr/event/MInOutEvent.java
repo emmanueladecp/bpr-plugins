@@ -76,10 +76,17 @@ public class MInOutEvent extends CustomEvent {
 	private void setDateShipment() {
 		if(inout.isSOTrx()&&
 				inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerShipment)) {
-            LocalDateTime currentDateTime = LocalDateTime.now();
-            Timestamp timestamp = Timestamp.valueOf(currentDateTime);
-            inout.setMovementDate(timestamp);
-            inout.setDateAcct(timestamp);
+			String Picklist = DB.getSQLValueString(inout.get_TrxName(), "(select max (bp2.documentno) from bpr_picklistline bp "
+					+ " left join bpr_picklist bp2 on bp2.bpr_picklist_id = bp.bpr_picklist_id "
+					+ " and bp2.docstatus = 'CO' where bp.m_inout_id = ?)", inout.getM_InOut_ID());
+			Boolean isComplete = (Picklist!=null)?true:false; 
+			if(isComplete) {
+				LocalDateTime currentDateTime = LocalDateTime.now();
+	            Timestamp timestamp = Timestamp.valueOf(currentDateTime);
+	            inout.setMovementDate(timestamp);
+	            inout.setDateAcct(timestamp);
+			}
+            
 		}
 	}
 
