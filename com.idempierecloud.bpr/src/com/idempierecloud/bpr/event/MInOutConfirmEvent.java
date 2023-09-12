@@ -51,11 +51,16 @@ public class MInOutConfirmEvent extends CustomEvent {
 	}
 	
 	private void autoCloseSO() {
+		MInOut shipment = (MInOut) confirm.getM_InOut();
+		/*Check Shipment status*/
+		if(!shipment.getDocStatus().equalsIgnoreCase(MInOut.DOCSTATUS_Completed)) {
+			throw new AdempiereException("Shipment Gagal Complete");
+		}
+		
 		/*Nomor CR ICT 210
 		 * Title Auto close SO saat ship receipt confirm untuk semua item order ditolak
 		 * BPR dan RMP
 		 */
-		 MInOut shipment = (MInOut) confirm.getM_InOut();
 		 //CARI LIST ID SO (C_ORDER_ID) DARI SHIPMENT
 		 StringBuilder sql = new StringBuilder ("SELECT co.c_order_id "
 		 		+ " from m_inoutconfirm mi  "
