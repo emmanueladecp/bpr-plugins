@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
@@ -172,6 +174,10 @@ public class MInOutConfirmEvent extends CustomEvent {
 		
 		MInOut shipment = (MInOut) confirm.getM_InOut();
 		shipment.setDocAction(MInOut.DOCACTION_Complete);
+		LocalDateTime currentDateTime = LocalDateTime.now();
+        Timestamp timestamp = Timestamp.valueOf(currentDateTime);
+        shipment.setMovementDate(timestamp);
+        shipment.setDateAcct(timestamp);
 		shipment.saveEx();
 		if(!shipment.processIt(MInOut.DOCACTION_Complete))
 			throw new AdempiereException("Shipment gagal Complete : "+shipment.getProcessMsg());
