@@ -307,7 +307,7 @@ public class MMovementEvent extends CustomEvent {
 					, line.getM_Product_ID(),line.getM_Locator_ID());
 			
 			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).subtract(line.getMovementQty());
-			if(qtyAvailable.compareTo(line.getMovementQty())<0)
+			if(qtyAvailable.signum()<0)
 				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Intransit Shipment = "+qtyIntransit+", Quantity Movement = "+line.getMovementQty()+", pada Movement Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());		
 		}
 	}
