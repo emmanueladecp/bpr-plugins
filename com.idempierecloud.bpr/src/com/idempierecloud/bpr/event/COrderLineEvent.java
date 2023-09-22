@@ -210,7 +210,7 @@ public class COrderLineEvent extends CustomEvent {
 		additionalCostSql.append(" from m_product mp");
 		additionalCostSql.append(" join bpr_additionalcost_line bal on mp.m_product_category_id = bal.m_product_category_id");
 		additionalCostSql.append(" join bpr_additionalcost ba on bal.bpr_additionalcost_id = ba.bpr_additionalcost_id");
-		additionalCostSql.append(" where ba.c_bp_group_id=? and ba.m_pricelist_id=? and mp.m_product_id = ?");
+		additionalCostSql.append(" where ba.c_bp_group_id=? and ba.m_pricelist_id=? and mp.m_product_id = ? and ba.isactive = 'Y' and bal.isactive='Y' ");
 		
 		PreparedStatement pstmt = DB.prepareStatement(additionalCostSql.toString(), orderLine.get_TrxName());
 		ResultSet rs = null;
