@@ -109,7 +109,7 @@ public class COrderLineEvent extends CustomEvent {
 		
 		BigDecimal discount = reward.getAmount();
 		if(reward.getRewardType().equals(MPromotionReward.REWARDTYPE_Percentage)) {
-			discount = orderLine.getPriceEntered().multiply(discount.divide(Env.ONEHUNDRED, 8, RoundingMode.HALF_UP));
+			discount = orderLine.getPriceList().multiply(discount.divide(Env.ONEHUNDRED, 8, RoundingMode.HALF_UP));
 		}
 		
 		orderLine.set_ValueOfColumn("DiscountAmt", discount);
