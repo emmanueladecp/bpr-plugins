@@ -38,6 +38,7 @@ public class CInvoiceEvent extends CustomEvent {
 	
 	private MInvoice invoice = null;
 	private final static int M_LocatorType_CustomerShipment = 1000002;
+	private final static int C_Doctype_AR_CreditMemo = 1000004;
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -183,8 +184,9 @@ public class CInvoiceEvent extends CustomEvent {
 		}
 	}
 	private void setFaktur() {
-		if(!invoice.isSOTrx() || invoice.get_ValueAsString("TypePajak")==null || invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")>0)
-			return;
+        if(!invoice.isSOTrx() || invoice.get_ValueAsString("TypePajak")==null || 
+                invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")>0 || invoice.getC_DocTypeTarget_ID() == C_Doctype_AR_CreditMemo)
+        return;
 		
 		MBPRListFakturPajak pajak = MBPRListFakturPajak.getNext(invoice);
 		if(pajak==null)
