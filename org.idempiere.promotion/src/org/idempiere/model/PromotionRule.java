@@ -52,7 +52,7 @@ import org.idempiere.model.PromotionRule;
  * 
  */
 public class PromotionRule {
-
+	private static String REWARDTYPE_Item = "I";
 	public static void applyPromotions(MOrder order) throws Exception {
 		//key = C_OrderLine, value = Qty to distribution
 		Map<Integer, BigDecimal> orderLineQty = new LinkedHashMap<Integer, BigDecimal>();
@@ -275,7 +275,7 @@ public class PromotionRule {
 									} else if (pr.getRewardType().equals(MPromotionReward.REWARDTYPE_AbsoluteAmount)) {
 										BigDecimal priceActual = ol.getPriceEntered();
 										totalPrice = totalPrice.add(priceActual.multiply(qty));
-									} else if (pr.getRewardType().equals(MPromotionReward.REWARDTYPE_Item)) {
+									} else if (pr.getRewardType().equals(REWARDTYPE_Item)) {
 										addProductLine(order, ol, Env.ONE, pr.get_ValueAsInt("M_Product_ID"), pr.get_ValueAsInt("C_UOM_ID"), pr.getM_Promotion());
 									}
 								}
