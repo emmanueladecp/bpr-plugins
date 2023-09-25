@@ -16,9 +16,11 @@ package org.idempiere.model;
 import org.adempiere.base.event.AbstractEventHandler;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.adempiere.model.MPromotionPreCondition;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.osgi.service.event.Event;
@@ -36,6 +38,11 @@ public class PromotionValidator extends AbstractEventHandler {
 	protected void initialize() {
 		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MOrderLine.Table_Name);
 		registerTableEvent(IEventTopics.DOC_AFTER_PREPARE, MOrder.Table_Name);
+		
+		// M_PromotionPreCondition
+		registerTableEvent(IEventTopics.PO_BEFORE_NEW, MPromotionPreCondition.Table_Name);
+		registerTableEvent(IEventTopics.PO_BEFORE_CHANGE, MPromotionPreCondition.Table_Name);
+		
 		log.info("PROMOTION MODEL VALIDATOR IS NOW INITIALIZED");
 	}
 	
@@ -78,6 +85,23 @@ public class PromotionValidator extends AbstractEventHandler {
 						}
 					}
 				}
+			}
+		}
+		
+		if (po instanceof MPromotionPreCondition ) {
+			if (IEventTopics.PO_BEFORE_NEW.equals(type) || IEventTopics.PO_BEFORE_CHANGE.equals(type)) {
+				MPromotionPreCondition preCondition = (MPromotionPreCondition) po;
+				String whereSql = "(? between date(startdate)  and date(enddate) or ? between date(startdate)  and date(enddate))"
+						+ " and exists(select 1 from m_promotion p where m_promotionprecondition.m_promotion_id=p.m_promotion_id and p.description='DISCOUNT' and p.isactive='Y')"
+						+ " and m_pricelist_id=? and m_promotionprecondition_id<>?"; 
+						
+				
+				int count = new Query(preCondition.getCtx(), MPromotionPreCondition.Table_Name, whereSql, preCondition.get_TrxName())
+						.setParameters(preCondition.getStartDate(), preCondition.getEndDate(), preCondition.getM_PriceList_ID(), preCondition.getM_PromotionPreCondition_ID())
+						.count();
+				
+				if(count>0)
+					throw new AdempiereException("Promotion Discount already exists on date range and pricelist");
 			}
 		}
 	}
