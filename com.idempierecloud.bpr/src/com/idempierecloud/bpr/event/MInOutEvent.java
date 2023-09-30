@@ -127,7 +127,7 @@ public class MInOutEvent extends CustomEvent {
 			Date MovementDate = inout.getMovementDate();
 			Date Created = inout.getCreated();
 			
-		    int PeriodCreate = DB.getSQLValue(inout.get_TrxName(), "select cp.c_period_id from c_period cp where ? >= cp.startdate AND ? <= cp.enddate", inout.getCreated(),inout.getCreated());
+		    int PeriodCreate = DB.getSQLValue(inout.get_TrxName(), "	SELECT cp.c_period_id FROM c_period cp WHERE CAST(? AS DATE) >= cp.startdate AND CAST(? AS DATE) <= cp.enddate", inout.getCreated(),inout.getCreated());
 		    int PeriodMovementDate = DB.getSQLValue(inout.get_TrxName(), "select cp.c_period_id from c_period cp where ? >= cp.startdate AND ? <= cp.enddate", inout.getMovementDate(),inout.getMovementDate());
             
 		    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
