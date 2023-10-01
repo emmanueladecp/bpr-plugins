@@ -36,7 +36,7 @@ public class ScheduleAnalisaPembelianBahanBaku extends CustomProcess {
 		LocalDate date = LocalDate.now();
 		int id = 0;
 		if(date.getDayOfMonth()==1) {
-			MPeriod period = new Query(getCtx(), MPeriod.Table_Name, " NOW()-INTERVAL '1 DAY' >= startdate AND NOW()-INTERVAL '1 DAY' <= enddate ", get_TrxName())
+			MPeriod period = new Query(getCtx(), MPeriod.Table_Name, " NOW() >= startdate AND NOW() <= enddate ", get_TrxName())
 					.setClient_ID()
 					.setOnlyActiveRecords(true)
 					.first();
