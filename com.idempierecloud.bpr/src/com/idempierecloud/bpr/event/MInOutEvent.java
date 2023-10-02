@@ -189,10 +189,10 @@ public class MInOutEvent extends CustomEvent {
 				MStorageOnHand[] storages;
 				if(count_duplicate_product<=1) {
 					storages= MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
-							null, false, true, line.getM_Locator_ID(), inout.get_TrxName());
+							null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), inout.get_TrxName());
 				}else {
 					storages= MStorageOnHand.getWarehouse(inout.getCtx(), 0, line.getM_Product_ID(), 0, 
-							null, MClient.MMPOLICY_FiFo.equals(MMPolicy), true, line.getM_Locator_ID(), inout.get_TrxName());
+							null, false, true, line.getM_Locator_ID(), inout.get_TrxName());
 				}
 				
 				
