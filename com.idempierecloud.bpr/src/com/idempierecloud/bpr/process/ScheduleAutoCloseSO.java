@@ -30,15 +30,31 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 
 	@Override
 	protected String doIt() throws Exception {
-		StringBuilder sql = new StringBuilder ("SELECT distinct co.c_order_id FROM c_order co "
-				+ "  JOIN c_orderline co2 ON co.c_order_id = co2.c_order_id "
-				+ "  LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
-				+ "  LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') and mi2.issotrx ='Y' and mi2.movementtype = 'C-' "
+		StringBuilder sql = new StringBuilder ("with shipment as ( select mi.m_inout_id as shipment_id, "
+				+ "		so.c_order_id as so_id from c_orderline col "
+				+ "  	join c_order so on so.c_order_id = col.c_order_id"
+				+ "		join m_inoutline mi on mi.c_orderline_id = col.c_orderline_id "
+				+ "  	join m_inout mi2 on mi2.m_inout_id= mi.m_inout_id"
+				+ "  	where mi2.docstatus not in ('VO','RE') "
+				+ "  	and mi2.issotrx ='Y' and mi2.movementtype = 'C-')"
+				+ "  ,inv as (select inv.c_invoice_id as invoice, so.c_order_id as s_id "
+				+ "  	from c_orderline col"
+				+ "  	join c_order so on so.c_order_id = col.c_order_id"
+				+ "		join c_invoiceline invl on col.c_orderline_id = invl.c_orderline_id"
+				+ "		join c_invoice inv on invl.c_invoice_id = inv.c_invoice_id "
+				+ "  	where inv.docstatus not in ('VO','RE') and inv.issotrx ='Y') "
+				+ " SELECT distinct co.c_order_id FROM c_order co "
+				+ "  JOIN c_orderline co2 ON co.c_order_id = co2.c_order_id  "
 				+ "  JOIN C_Doctype cd ON cd.C_Doctype_ID = co.C_Doctype_ID "
 				+ "  WHERE co.docstatus = 'CO'  AND co.issotrx = 'Y'  AND cd.isretur = 'N' "
-				+ "  AND co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay where date1 between now()-45 and now())<= current_date  "
-				+ "  GROUP BY co.c_order_id,co2.qtyordered "
-				+ "  order by co.c_order_id");
+				+ "  AND co.datepromised + INTERVAL '45 DAY'- (select count(date1) from C_NonBusinessDay "
+				+ "  where date1 between now()-45 and now())<= current_date"
+				+ "  and co.IsSOTrx='Y' And co.C_DocTypeTarget_ID IN (select c_doctype_id from c_doctype "
+				+ "  where isactive='Y' and issotrx='Y' and docbasetype='SOO' and docsubtypeso='SO' and isretur='N') "
+				+ "  and not exists (select shipment_id from shipment sp where sp.so_id = co.c_order_id)"
+				+ "  and not exists (select invoice from inv where inv.s_id = co.c_order_id)"
+				+ "  GROUP BY co.c_order_id "
+				+ "  order by co.c_order_id desc");
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
 		try
