@@ -121,8 +121,6 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine.set_ValueOfColumn("DiscountAmt", discount);
 	}
 	
-	}
-	
 	private void checkCreditUsedChange(String event) {
 		MOrder order = (MOrder) orderLine.getC_Order();
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
