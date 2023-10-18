@@ -114,6 +114,7 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_BEFORE_DELETE, I_C_OrderLine.Table_Name, COrderLineEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_CHANGE, I_C_OrderLine.Table_Name, COrderLineEvent.class);
 		registerEvent(IEventTopics.PO_AFTER_NEW, I_C_OrderLine.Table_Name, COrderLineEvent.class);
+		registerEvent(IEventTopics.PO_AFTER_DELETE, I_C_OrderLine.Table_Name, COrderLineEvent.class);
 		
 		// M_Movement
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Movement.Table_Name, MMovementEvent.class);

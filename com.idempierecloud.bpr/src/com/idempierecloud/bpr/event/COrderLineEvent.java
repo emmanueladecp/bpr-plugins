@@ -79,9 +79,11 @@ public class COrderLineEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
-			checkCreditUsedChange();
+			checkCreditUsedChange(IEventTopics.PO_AFTER_CHANGE);
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
-			checkCreditUsedChange();
+			checkCreditUsedChange(IEventTopics.PO_AFTER_NEW);
+		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
+			checkCreditUsedChange(IEventTopics.PO_AFTER_DELETE);
 		}
 	}	
 	
@@ -121,17 +123,22 @@ public class COrderLineEvent extends CustomEvent {
 	
 	}
 	
-	private void checkCreditUsedChange() {
+	private void checkCreditUsedChange(String event) {
 		MOrder order = (MOrder) orderLine.getC_Order();
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			if(order.get_ValueAsBoolean("isdone")&&order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress)) {
-					MBPartner bp = (MBPartner) order.getC_BPartner();
-					BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
-									
+				MBPartner bp = (MBPartner) order.getC_BPartner();
+				BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
+				if(event.equals(IEventTopics.PO_AFTER_NEW)) {
+					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
+					//set new credit used
+					BigDecimal NewcreditUsed = bp.getSO_CreditUsed().add(LineNetAmt);
+					bp.setSO_CreditUsed(NewcreditUsed);
+					bp.saveEx();
+				}else if (event.equals(IEventTopics.PO_AFTER_CHANGE)) {									
 					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
 					BigDecimal OldLineNetAmt = (BigDecimal) orderLine.get_ValueOld("LineNetAmt");
-					
 					
 					BigDecimal GrandTotal = LineNetAmt.add(sumLineAmt);
 					BigDecimal OldGrandTotal = OldLineNetAmt.add(sumLineAmt);
@@ -141,6 +148,25 @@ public class COrderLineEvent extends CustomEvent {
 					BigDecimal NewcreditUsed = creditUsed.add(GrandTotal);
 					bp.setSO_CreditUsed(NewcreditUsed);
 					bp.saveEx();
+				}else if (event.equals(IEventTopics.PO_AFTER_DELETE)) {
+					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
+					
+					//reset credit used
+					BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(LineNetAmt);
+					bp.setSO_CreditUsed(creditUsed);
+					bp.saveEx();
+				}
+				
+				BigDecimal lineamt = orderLine.getLineNetAmt();
+				BigDecimal SO_CreditAvaiable = (BigDecimal) order.get_Value("SO_CreditAvailable");
+				if(SO_CreditAvaiable==null)
+					SO_CreditAvaiable = Env.ZERO;
+				BigDecimal grandTotal = lineamt.add(sumLineAmt);
+				if(SO_CreditAvaiable.compareTo(grandTotal)<0) {
+					log.warning("Grand Total Melebihi SO Credit Available pada Header");
+					throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
+				}
+					
 			}
 		}
 	}
