@@ -52,10 +52,10 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			checkMethodCreditUseBP();
 			setPriceCost();
 			setPotongKarung();
 			setInsentif();
+			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			checkSOCreditLimit();
 			setCreditUseBP();
@@ -250,8 +250,6 @@ public class COrderEvent extends CustomEvent{
 			}
 		}
 	}
-	
-	
 
 	/**
 	 * Purchase Order Price Cost

@@ -78,6 +78,10 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
+		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
+			checkCreditUsedChange();
+		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
+			checkCreditUsedChange();
 		}
 	}	
 	
@@ -113,6 +117,32 @@ public class COrderLineEvent extends CustomEvent {
 		}
 		
 		orderLine.set_ValueOfColumn("DiscountAmt", discount);
+	}
+	
+	}
+	
+	private void checkCreditUsedChange() {
+		MOrder order = (MOrder) orderLine.getC_Order();
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
+			if(order.get_ValueAsBoolean("isdone")&&order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress)) {
+					MBPartner bp = (MBPartner) order.getC_BPartner();
+					BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
+									
+					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
+					BigDecimal OldLineNetAmt = (BigDecimal) orderLine.get_ValueOld("LineNetAmt");
+					
+					
+					BigDecimal GrandTotal = LineNetAmt.add(sumLineAmt);
+					BigDecimal OldGrandTotal = OldLineNetAmt.add(sumLineAmt);
+					//reset credit used
+					BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(OldGrandTotal);
+					//set new credit used
+					BigDecimal NewcreditUsed = creditUsed.add(GrandTotal);
+					bp.setSO_CreditUsed(NewcreditUsed);
+					bp.saveEx();
+			}
+		}
 	}
 	
 	private void calculatePriceInsentif() {
