@@ -80,6 +80,7 @@ public class COrderEvent extends CustomEvent{
 		
 	}
 
+	
 	private void checkCreditUsedSOClose() {
         MDocType doctype = (MDocType) order.getC_DocTypeTarget();
         if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){

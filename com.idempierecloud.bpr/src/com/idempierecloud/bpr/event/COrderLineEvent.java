@@ -54,6 +54,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
@@ -66,13 +67,10 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			checkSOCreditLimit();
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
 			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
-		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
-			checkCreditUsedChange(IEventTopics.PO_AFTER_CHANGE);
-		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
-			checkCreditUsedChange(IEventTopics.PO_AFTER_NEW);
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
 			checkCreditUsedChange(IEventTopics.PO_AFTER_DELETE);
 		}
@@ -85,43 +83,47 @@ public class COrderLineEvent extends CustomEvent {
 			if(order.get_ValueAsBoolean("isdone")&&order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress)) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
 				BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
-				if(event.equals(IEventTopics.PO_AFTER_NEW)) {
-					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
+				BigDecimal LineNetAmt = orderLine.getLineNetAmt();
+				BigDecimal OldLineNetAmt = (BigDecimal) orderLine.get_ValueOld("LineNetAmt");
+				BigDecimal GrandTotal = LineNetAmt.add(sumLineAmt);
+				if(OldLineNetAmt==null) {
+					OldLineNetAmt=BigDecimal.ZERO;
+				}
+				BigDecimal OldGrandTotal = OldLineNetAmt.add(sumLineAmt);
+				if(event.equals(IEventTopics.PO_BEFORE_NEW)) {
 					//set new credit used
 					BigDecimal NewcreditUsed = bp.getSO_CreditUsed().add(LineNetAmt);
 					bp.setSO_CreditUsed(NewcreditUsed);
-					bp.saveEx();
-				}else if (event.equals(IEventTopics.PO_AFTER_CHANGE)) {									
-					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
-					BigDecimal OldLineNetAmt = (BigDecimal) orderLine.get_ValueOld("LineNetAmt");
 					
-					BigDecimal GrandTotal = LineNetAmt.add(sumLineAmt);
-					BigDecimal OldGrandTotal = OldLineNetAmt.add(sumLineAmt);
+				}else if (event.equals(IEventTopics.PO_BEFORE_CHANGE)) {									
 					//reset credit used
 					BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(OldGrandTotal);
 					//set new credit used
 					BigDecimal NewcreditUsed = creditUsed.add(GrandTotal);
 					bp.setSO_CreditUsed(NewcreditUsed);
-					bp.saveEx();
 				}else if (event.equals(IEventTopics.PO_AFTER_DELETE)) {
-					BigDecimal LineNetAmt = orderLine.getLineNetAmt();
-					
 					//reset credit used
 					BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(LineNetAmt);
 					bp.setSO_CreditUsed(creditUsed);
-					bp.saveEx();
 				}
 				
-				BigDecimal lineamt = orderLine.getLineNetAmt();
-				BigDecimal SO_CreditAvaiable = (BigDecimal) order.get_Value("SO_CreditAvailable");
-				if(SO_CreditAvaiable==null)
-					SO_CreditAvaiable = Env.ZERO;
-				BigDecimal grandTotal = lineamt.add(sumLineAmt);
-				if(SO_CreditAvaiable.compareTo(grandTotal)<0) {
-					log.warning("Grand Total Melebihi SO Credit Available pada Header");
-					throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
-				}
+				/*Additional Validation for Credit Limit
+				 * jika So sudah Inprogress namun melakukan perubahan harga maka cek credit available*/
+				if(order.getC_DocTypeTarget_ID()!=1000084) {//proposal retur
+					//get credit available BP
+					BigDecimal SO_CreditAvailable = order.getC_BPartner().getSO_CreditLimit().subtract((BigDecimal) bp.get_ValueOld("SO_CreditUsed"));
+					if(SO_CreditAvailable==null)
+						SO_CreditAvailable = Env.ZERO;
+					//untuk mendapatkan credit available sebelum di complete agar bisa dipakai compare
+					SO_CreditAvailable = SO_CreditAvailable.add(OldGrandTotal);
 					
+					if(SO_CreditAvailable.compareTo(GrandTotal)<0) {
+						throw new AdempiereException("Grand Total Melebihi Credit Available Business Partner."
+								+order.getGrandTotal().setScale(0)+">"+SO_CreditAvailable.setScale(0));
+					}
+					
+					bp.saveEx();
+				}		
 			}
 		}
 	}
