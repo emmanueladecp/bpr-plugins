@@ -82,25 +82,6 @@ public class COrderEvent extends CustomEvent{
 		}
 		
 	}
-
-	private void checkSOCreditLimit() {
-		/*Additional Validation for Credit Limit
-		 * IF Business Partner have more than one SO Draft
-		 * then Prepare will re-check credit limit  
-		 * from Business Partner */
-		if(order.isSOTrx()) {
-			if(order.getC_DocTypeTarget_ID()!=1000084) {//proposal retur
-				BigDecimal SO_CreditAvailable = this.getBPCreditAvailable();
-                order.set_ValueOfColumn("SO_CreditAvailable", SO_CreditAvailable);
-				if(SO_CreditAvailable==null)
-					SO_CreditAvailable = Env.ZERO;
-				if(SO_CreditAvailable.compareTo(order.getGrandTotal())<0) {
-					log.warning("Grand Total Melebihi Credit Available pada Business Partner");
-					throw new AdempiereException("Grand Total Melebihi Credit Available pada Business Partner");
-				}
-			}
-		}
-	}
 	
 	private void checkCreditUsedSOClose() {
         MDocType doctype = (MDocType) order.getC_DocTypeTarget();
