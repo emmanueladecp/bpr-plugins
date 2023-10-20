@@ -57,7 +57,6 @@ public class COrderEvent extends CustomEvent{
 			setInsentif();
 			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
-			checkSOCreditLimit();
 			setCreditUseBP();
 			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REACTIVATE)) {
@@ -311,8 +310,7 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private void checkCreditAvailable() {
-		if(order.is_ValueChanged("SO_CreditAvailable")||
-				order.is_ValueChanged("GrandTotal")) {
+		if(order.is_ValueChanged("SO_CreditAvailable")) {
 			BigDecimal BPCreditAvailable = this.getBPCreditAvailable();
 			BigDecimal amtApproval = DB.getSQLValueBD(order.get_TrxName(), "SELECT COALESCE(AmtApproval,0) FROM AD_Role WHERE AD_Role_ID=?", Env.getAD_Role_ID(Env.getCtx()));
 			BigDecimal SO_CreditAvailable = (BigDecimal) order.get_Value("SO_CreditAvailable");
