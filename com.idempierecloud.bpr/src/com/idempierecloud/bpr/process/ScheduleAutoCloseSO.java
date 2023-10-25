@@ -30,15 +30,13 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 
 	@Override
 	protected String doIt() throws Exception {
-		StringBuilder sql = new StringBuilder ("SELECT distinct co.c_order_id FROM c_order co "
-				+ "  JOIN c_orderline co2 ON co.c_order_id = co2.c_order_id "
-				+ "  LEFT JOIN m_inoutline mi ON co2.c_orderline_id = mi.c_orderline_id "
-				+ "  LEFT JOIN m_inout mi2 ON mi.m_inout_id = mi2.m_inout_id AND mi2.docstatus NOT IN ('VO', 'RE') and mi2.issotrx ='Y' and mi2.movementtype = 'C-' "
-				+ "  JOIN C_Doctype cd ON cd.C_Doctype_ID = co.C_Doctype_ID "
-				+ "  WHERE co.docstatus = 'CO'  AND co.issotrx = 'Y'  AND cd.isretur = 'N' "
-				+ "  AND co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay where date1 between now()-45 and now())<= current_date  "
-				+ "  GROUP BY co.c_order_id,co2.qtyordered "
-				+ "  order by co.c_order_id");
+		StringBuilder sql = new StringBuilder ("select distinct co.C_Order_ID "
+				+ "	from C_Order co "
+				+ "	join C_Doctype dt on co.C_DoctypeTarget_ID = dt.C_Doctype_ID "
+				+ "	join c_orderline col on co.C_Order_ID = col.C_Order_ID "
+				+ "	where co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay  where date1 between now()-45 and now())<= current_date "
+				+ " and docstatus in ('CO','IP') and co.issotrx = 'Y' and dt.c_doctype_id = 1000084 "
+				+ " and (qtyordered <> qtydelivered or qtyordered <> qtyinvoiced) ");
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
 		try
