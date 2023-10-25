@@ -30,36 +30,13 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 
 	@Override
 	protected String doIt() throws Exception {
-		//subquery shipment untuk cek so yang di close hanya yang memiliki outstanding qty
-		StringBuilder sql = new StringBuilder ("with shipment as ( select so.c_order_id as so_id from c_orderline col"
-				+ "  	join c_order so on so.c_order_id = col.c_order_id"
-				+ "		join m_inoutline mi on mi.c_orderline_id = col.c_orderline_id "
-				+ "  	join m_inout mi2 on mi2.m_inout_id= mi.m_inout_id"
-				+ "  	where mi2.docstatus not in ('VO','RE') "
-				+ "  	and mi2.issotrx ='Y' and mi2.movementtype = 'C-'"
-				+ "  	group by so.c_order_id"
-				+ "  	having sum(col.qtyordered)-sum(mi.movementqty)>0)"
-				+ "  ,inv as (select so2.c_order_id as s_id from c_orderline col2"
-				+ "  	join c_order so2 on so2.c_order_id = col2.c_order_id"
-				+ "		join c_invoiceline invl on col2.c_orderline_id = invl.c_orderline_id"
-				+ "		join c_invoice inv on invl.c_invoice_id = inv.c_invoice_id and inv.docstatus = 'CO'"
-				+ "  	where inv.docstatus not in ('VO','RE') and inv.issotrx ='Y'"
-				+ "  	group by so2.c_order_id"
-				+ "  	having (select mino.m_inout_id from c_orderline col3"
-				+ "			join m_inoutline minol on minol.c_orderline_id = col3.c_orderline_id "
-				+ "		  	join m_inout mino on mino.m_inout_id= minol.m_inout_id"
-				+ "  		where mino.docstatus='CO' limit 1) is null) "
-				+ " SELECT distinct co.c_order_id FROM c_order co "
-				+ "  JOIN c_orderline co2 ON co.c_order_id = co2.c_order_id  "
-				+ "  JOIN C_Doctype cd ON cd.C_Doctype_ID = co.C_Doctype_ID "
-				+ "  WHERE co.docstatus = 'CO'  AND co.issotrx = 'Y' "
-				+ "  AND co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay "
-				+ "  		where date1 between now()-45 and now())<= current_date"
-				+ "  and co.IsSOTrx='Y' And co.C_DocTypeTarget_ID IN (select c_doctype_id from c_doctype "
-				+ "  		where isactive='Y' and issotrx='Y' and docbasetype='SOO' and docsubtypeso='SO' and isretur='N') "
-				+ "  and exists (select so_id from shipment sp where sp.so_id = co.c_order_id) "
-				+ "  and not exists (select inv.s_id from inv where inv.s_id = co.c_order_id)"
-				+ "  GROUP BY co.c_order_id order by co.c_order_id desc limit 500");
+		StringBuilder sql = new StringBuilder ("select distinct co.C_Order_ID "
+				+ "	from C_Order co "
+				+ "	join C_Doctype dt on co.C_DoctypeTarget_ID = dt.C_Doctype_ID "
+				+ "	join c_orderline col on co.C_Order_ID = col.C_Order_ID "
+				+ "	where co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay  where date1 between now()-45 and now())<= current_date "
+				+ " and docstatus in ('CO','IP') and co.issotrx = 'Y' and dt.c_doctype_id = 1000084 "
+				+ " and (qtyordered <> qtydelivered or qtyordered <> qtyinvoiced) ");
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
 		try
