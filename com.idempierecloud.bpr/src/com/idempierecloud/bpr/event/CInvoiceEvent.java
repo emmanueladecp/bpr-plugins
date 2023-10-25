@@ -47,20 +47,29 @@ public class CInvoiceEvent extends CustomEvent {
 		invoice = (MInvoice) po;
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID))
 			checkFaktur();
-		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
+		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkFaktur();
 			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setDateComplete();
 			checkPeriodShipment();
+			checkMovementDate();
 			checkqtyShipment();
 			setFaktur();
 			checkDocStatusShipment();
 			setCreditUseBP();
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+			setDoctype();
 		}
+			
 	}
 	
+	private void setDoctype() {
+		//untuk create line from invoice #request-001261U
+		invoice.setC_DocType_ID(invoice.getC_DocTypeTarget_ID());
+	}
+
 	private void checkqtyShipment() {
 		if(invoice.isSOTrx()) {
 			for(MInvoiceLine invoiceLine : invoice.getLines(true)){
