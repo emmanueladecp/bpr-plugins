@@ -54,7 +54,6 @@ public class CInvoiceEvent extends CustomEvent {
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setDateComplete();
 			checkPeriodShipment();
-			checkMovementDate();
 			checkqtyShipment();
 			setFaktur();
 			checkDocStatusShipment();
