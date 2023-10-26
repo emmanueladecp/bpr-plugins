@@ -35,7 +35,7 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 				+ "	join C_Doctype dt on co.C_DoctypeTarget_ID = dt.C_Doctype_ID "
 				+ "	join c_orderline col on co.C_Order_ID = col.C_Order_ID "
 				+ "	where co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay  where date1 between now()-45 and now())<= current_date "
-				+ " and docstatus in ('CO','IP') and co.issotrx = 'Y' and dt.c_doctype_id = 1000084 "
+				+ " and docstatus in ('CO','IP') and co.issotrx = 'Y' and dt.c_doctype_id not in (1000084) "
 				+ " and (qtyordered <> qtydelivered or qtyordered <> qtyinvoiced) ");
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
