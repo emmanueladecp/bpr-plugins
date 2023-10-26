@@ -52,10 +52,10 @@ public class COrderEvent extends CustomEvent{
 			checkCreditAvailable();
 			checkPOReference();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			checkMethodCreditUseBP();
 			setPriceCost();
 			setPotongKarung();
 			setInsentif();
+			checkMethodCreditUseBP();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
 			setCreditUseBP();
 			checkMethodCreditUseBP();
@@ -81,6 +81,7 @@ public class COrderEvent extends CustomEvent{
 		}
 		
 	}
+
 	
 	private void checkCreditUsedSOClose() {
         MDocType doctype = (MDocType) order.getC_DocTypeTarget();
@@ -209,7 +210,7 @@ public class COrderEvent extends CustomEvent{
 	private void resetCreditUsed() {
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
-			if(order.get_ValueAsBoolean("isdone")) {
+			if(order.get_ValueAsBoolean("isdone")&&order.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
 				BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
 				bp.setSO_CreditUsed(creditUsed);
@@ -231,8 +232,6 @@ public class COrderEvent extends CustomEvent{
 			}
 		}
 	}
-	
-	
 
 	/**
 	 * Purchase Order Price Cost
