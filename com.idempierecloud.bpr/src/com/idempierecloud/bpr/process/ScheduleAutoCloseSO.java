@@ -36,7 +36,7 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 				+ "	join c_orderline col on co.C_Order_ID = col.C_Order_ID "
 				+ "	where co.datepromised + INTERVAL '45 DAY'+ (select count(date1) from C_NonBusinessDay  where date1 between now()-45 and now())<= current_date "
 				+ " and docstatus in ('CO','IP') and co.issotrx = 'Y' and dt.c_doctype_id not in (1000084) "
-				+ " and (qtyordered <> qtydelivered or qtyordered <> qtyinvoiced) ");
+				+ " and (qtyordered <> qtydelivered or qtyordered <> qtyinvoiced)  and qtydelivered >= qtyinvoiced ");
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
 		try
@@ -44,10 +44,14 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 			pstmnt = DB.prepareStatement (sql.toString(), get_TrxName());
 			rsl = pstmnt.executeQuery ();
 			while (rsl.next ()){
-				BigDecimal credit=BigDecimal.ZERO;
-				BigDecimal outstanding = BigDecimal.ZERO;
-				BigDecimal sumqty = BigDecimal.ZERO;
-				BigDecimal sumoutstanding = BigDecimal.ZERO;
+				BigDecimal credit		=BigDecimal.ZERO;
+				BigDecimal outstanding  = BigDecimal.ZERO;
+				BigDecimal sumqty 		= BigDecimal.ZERO;
+				BigDecimal sumoutstanding 	 = BigDecimal.ZERO;
+				int ExistsShipmentFullReject = 0;
+				int ShipmentFullReject 		 = 0;
+				int ExistsShipmentInProgress = 0;
+				int ShipmentInProgress 		 = 0;
 				MOrder order = new MOrder(getCtx(), rsl.getInt(1), get_TrxName());
 				for(MOrderLine line : order.getLines()) {
 					outstanding = DB.getSQLValueBD(get_TrxName(), 
@@ -65,9 +69,26 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 						sumoutstanding = sumoutstanding.add(outstanding);
 						sumqty = line.getQtyOrdered().add(sumqty);
 					}
+					
+					/*
+					 * Check Apakah ada Shipment line atas SO Line ini
+					 */
+					ShipmentFullReject = DB.getSQLValue(get_TrxName(), "select 1 from m_inoutline mi join m_inout mi2 on mi2.m_inout_id = mi.m_inout_id where mi2.docstatus in ('CO') and mi.c_orderline_id = ? ", line.getC_OrderLine_ID());
+					if(ShipmentFullReject<0) {
+						ShipmentFullReject=0;
+					}
+					ExistsShipmentFullReject +=ShipmentFullReject;
+					
+					ShipmentInProgress = DB.getSQLValue(get_TrxName(), "select 1 from m_inoutline mi join m_inout mi2 on mi2.m_inout_id = mi.m_inout_id where mi2.docstatus in ('IP') and mi.c_orderline_id = ? ", line.getC_OrderLine_ID());
+					if(ShipmentInProgress<0) {
+						ShipmentInProgress=0;
+					}
+					ExistsShipmentInProgress +=ShipmentInProgress;
 				}
+				
 				// JIKA TOTAL OUTSTANDING QTY SAMA DENGAN TOTAL QTYORDERED MAKA DAPAT DI SIMPULKAN TIDAK ADA PENGIRIMAN PADA SO TERSEBUT SEHINGGA DI VOID
-				if(sumoutstanding.compareTo(sumqty)==0) {
+				if(sumoutstanding.compareTo(sumqty)==0 
+						&& ExistsShipmentFullReject==0&&ExistsShipmentInProgress==0) {//jika menemukan shipment yang full reject maka tidak di void namun di close
 					order.setDocAction(MOrder.DOCACTION_Void);
 					order.saveEx();
 					if(!order.processIt(MOrder.DOCACTION_Void)) {
@@ -76,7 +97,8 @@ public class ScheduleAutoCloseSO extends CustomProcess{
 						continue;
 					}
 						
-				}else if (sumoutstanding.compareTo(sumqty)<1) {
+				}else if (ExistsShipmentInProgress<=0 //Jika ada shipment inprogress maka tidak boleh di close 
+						&& (sumoutstanding.compareTo(sumqty)<1 || ExistsShipmentFullReject>0) ) {
 					order.setDocAction(MOrder.DOCACTION_Close);
 					order.saveEx();
 					if(!order.processIt(MOrder.DOCACTION_Close)) {
