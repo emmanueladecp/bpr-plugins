@@ -34,6 +34,7 @@ import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 
 import com.idempierecloud.bpr.base.CustomForm;
+import com.idempierecloud.bpr.model.MAllocationHdrExt;
 
 
 public class PaymentAllocation extends CustomForm
@@ -967,8 +968,10 @@ public class PaymentAllocation extends CustomForm
 		int iRows = invoice.getRowCount();
 		
 		//	Create Allocation
-		MAllocationHdr alloc = new MAllocationHdr (Env.getCtx(), true,	//	manual
+		MAllocationHdr alloca = new MAllocationHdr (Env.getCtx(), true,	//	manual
 			DateTrx, C_Currency_ID, Env.getContext(Env.getCtx(), "#AD_User_Name"), trxName);
+		MAllocationHdrExt alloc = new MAllocationHdrExt(alloca.getCtx(), alloca.getC_AllocationHdr_ID(), alloca.get_TrxName());
+		alloc.setC_Currency_ID(alloca.getC_Currency_ID());
 		alloc.setAD_Org_ID(AD_Org_ID);
 		alloc.setC_DocType_ID(m_C_DocType_ID);
 		alloc.setDescription(alloc.getDescriptionForManualAllocation(m_C_BPartner_ID, trxName)+"_"+Description);
@@ -1130,9 +1133,9 @@ public class PaymentAllocation extends CustomForm
 			if (log.isLoggable(Level.CONFIG)) log.config("Payment #" + i + (pay.isAllocated() ? " not" : " is") 
 					+ " fully allocated");
 		}
-		MBPartner bpartner = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
-		bpartner.setTotalOpenBalance();
-		bpartner.saveEx();
+//		MBPartner bpartner = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
+//		bpartner.setTotalOpenBalance();
+//		bpartner.saveEx();
 		paymentList.clear();
 		amountList.clear();
 		
