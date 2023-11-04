@@ -61,9 +61,9 @@ public class COrderLineEvent extends CustomEvent {
 			setProposalRetur();
 			calculateLinetNetAmt();
 			setDiscount();
+			setIfOrderlineFOC();
 			checkSOCreditLimit();
 			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
-			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			calculatePriceInsentif();
@@ -75,9 +75,10 @@ public class COrderLineEvent extends CustomEvent {
 			calculatePrice();
 			calculateLinetNetAmt();
 			setDiscount();
+			setIfOrderlineFOC();
 			checkSOCreditLimit();
 			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
-			setIfOrderlineFOC();
+
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
@@ -422,6 +423,8 @@ public class COrderLineEvent extends CustomEvent {
         }
         	
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
+		if(ongkosAngkut==null)
+			ongkosAngkut=BigDecimal.ZERO;
 		BigDecimal priceEntered = ongkosAngkut.add(orderLine.getPriceList());
 		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("SubsidiAmt");
 		if(subsidiAmt==null)
