@@ -51,8 +51,7 @@ public class CInvoiceEvent extends CustomEvent {
 			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			setDateComplete();
-			checkPeriodShipment();
+			checkMovementDate();
 			checkqtyShipment();
 			setFaktur();
 			checkDocStatusShipment();
@@ -79,7 +78,7 @@ public class CInvoiceEvent extends CustomEvent {
 		
 	}
 	
-	private void setDateComplete() {
+	private void checkMovementDate() {
 		if(!invoice.isReversal()) {
 			MDocType dt = MDocType.get(invoice.getC_DocType_ID());
 			invoice.setDateInvoiced(TimeUtil.getDay(0));
@@ -88,9 +87,7 @@ public class CInvoiceEvent extends CustomEvent {
 				MPeriod.testPeriodOpen(invoice.getCtx(), invoice.getDateAcct(), invoice.getC_DocType_ID(), invoice.getAD_Org_ID());
 			}
 		}
-	}
-	
-	private void checkPeriodShipment() {
+		
 		if(invoice.isSOTrx()){
 			if(invoice.getReversal_ID()>0)
 				return;
@@ -122,7 +119,7 @@ public class CInvoiceEvent extends CustomEvent {
 			}
 			catch (SQLException e)
 			{
-				log.log(Level.SEVERE, " C_invoiceEvent - " + sql.toString(), e);
+				log.log(Level.SEVERE, " i_bankstatement - " + sql.toString(), e);
 			}
 			finally
 			{
@@ -149,6 +146,12 @@ public class CInvoiceEvent extends CustomEvent {
 		
 	}
 	private void resetCreditUseBP() {
+		MDocType dt = MDocType.get(invoice.getC_DocType_ID());
+		invoice.setDateInvoiced(TimeUtil.getDay(0));
+		if (invoice.getDateAcct().before(invoice.getDateInvoiced())) {
+			invoice.setDateAcct(invoice.getDateInvoiced());
+			MPeriod.testPeriodOpen(invoice.getCtx(), invoice.getDateAcct(), invoice.getC_DocType_ID(), invoice.getAD_Org_ID());
+		}
 		if(invoice.isSOTrx()) {
 			MBPartner bp = (MBPartner) invoice.getC_BPartner();
 			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
