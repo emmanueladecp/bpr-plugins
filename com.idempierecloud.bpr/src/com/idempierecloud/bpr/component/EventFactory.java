@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import org.adempiere.base.event.IEventTopics;
+import org.compiere.model.I_C_BPartner;
 import org.compiere.model.I_C_BPartner_Location;
 import org.compiere.model.I_C_Invoice;
 import org.compiere.model.I_C_InvoiceLine;
@@ -39,6 +40,7 @@ import org.compiere.model.I_M_ProductionLine;
 import org.compiere.model.I_M_Requisition;
 
 import com.idempierecloud.bpr.base.CustomEventFactory;
+import com.idempierecloud.bpr.event.CBPartnerEvent;
 import com.idempierecloud.bpr.event.CBPartnerLocationEvent;
 import com.idempierecloud.bpr.event.CInvoiceEvent;
 import com.idempierecloud.bpr.event.CInvoiceLineEvent;
@@ -78,6 +80,9 @@ public class EventFactory extends CustomEventFactory {
 	@Override
 	protected void initialize() {
 		registerEvent(IEventTopics.AFTER_LOGIN, null, LoginEvent.class);
+		
+		//C_BPartner
+		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_BPartner.Table_Name, CBPartnerEvent.class);
 		
 		// C_BPartner_Location
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_BPartner_Location.Table_Name, CBPartnerLocationEvent.class);
