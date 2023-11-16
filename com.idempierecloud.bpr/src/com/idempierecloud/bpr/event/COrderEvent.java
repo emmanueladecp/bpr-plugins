@@ -208,11 +208,11 @@ public class COrderEvent extends CustomEvent{
 	private void resetCreditUsed() {
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
-			if(order.get_ValueAsBoolean("isdone")&&order.getDocStatus().equals(MOrder.DOCSTATUS_Completed)) {
+			if(order.get_ValueAsBoolean("isdone")&&(order.getDocStatus().equals(MOrder.DOCSTATUS_Completed)||order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress))) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
 				BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
 				bp.setSO_CreditUsed(creditUsed);
-				bp.saveEx();	
+				bp.saveEx();
 				order.set_ValueOfColumn("isdone", false);
 			}
 		}
@@ -223,10 +223,10 @@ public class COrderEvent extends CustomEvent{
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			if(!order.get_ValueAsBoolean("isdone")) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
-				BigDecimal creditUsed = bp.getSO_CreditUsed().add(order.getGrandTotal());
-				bp.setSO_CreditUsed(creditUsed);
+				BigDecimal CreditUsed = DB.getSQLValueBD(order.get_TrxName(), "SELECT calculate_credituse(?)", bp.getC_BPartner_ID());			
+				bp.setSO_CreditUsed(CreditUsed);
 				bp.saveEx();
-				order.set_ValueOfColumn("isdone", true);
+				order.set_ValueOfColumn("isdone", true);	
 			}
 		}
 	}
