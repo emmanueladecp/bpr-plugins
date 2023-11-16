@@ -46,6 +46,7 @@ public class CInvoiceEvent extends CustomEvent {
 			checkFaktur();
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkFaktur();
+			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkMovementDate();
@@ -53,8 +54,6 @@ public class CInvoiceEvent extends CustomEvent {
 			setFaktur();
 			checkDocStatusShipment();
 			setCreditUseBP();
-		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
-			resetCreditUseBP();
 		}
 	}
 	
@@ -127,45 +126,18 @@ public class CInvoiceEvent extends CustomEvent {
 		/* Request Set Credit Availabel ketika SO inprogress,
 		 * karena code sudah di terapkan di SO. maka agar invoice tidak menambahkan credit use, di buatkan lah code ini
 		 */
-		
-		/*
-		 * Tambahan Validasi untuk cek apakah harga di invoice berbeda dengan di SO
-		 */
-//		if(invoice.getReversal_ID()<=0) {
-			BigDecimal Credit = BigDecimal.ZERO;
-	        for(MInvoiceLine line :invoice.getLines()) {
-	            if(line.getC_OrderLine_ID()>0) {
-	                BigDecimal SOLPrAct= line.getC_OrderLine().getPriceActual();
-	                BigDecimal InvLPrAct= line.getPriceActual();
-	                if(SOLPrAct.compareTo(InvLPrAct)!=0) {
-	                    BigDecimal diff = InvLPrAct.subtract(SOLPrAct);
-	                    Credit = Credit.add(diff.multiply(line.getQtyInvoiced()));
-	                }
-	            }
-//	        }
-	        
-	        MBPartner bp = (MBPartner) invoice.getC_BPartner();
-	        BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(invoice.getGrandTotal().subtract(Credit));
+		if(invoice.isSOTrx()) {
+			MBPartner bp = (MBPartner) invoice.getC_BPartner();
+			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(invoice.getGrandTotal());
 			bp.setSO_CreditUsed(creditUsed);
 			bp.saveEx();
 		}
+		
 	}
 	private void resetCreditUseBP() {
 		if(invoice.isSOTrx()) {
-			BigDecimal Credit = BigDecimal.ZERO;
-		    for(MInvoiceLine line :invoice.getLines()) {
-		        if(line.getC_OrderLine_ID()>0) {
-		             BigDecimal SOLPrAct= line.getC_OrderLine().getPriceActual();
-		             BigDecimal InvLPrAct= line.getPriceActual();
-		             if(SOLPrAct.compareTo(InvLPrAct)!=0) {
-		                 BigDecimal diff = InvLPrAct.subtract(SOLPrAct);
-		                 Credit = Credit.add(diff.multiply(line.getQtyInvoiced()));
-		             }
-		        }
-		    }
-			
 			MBPartner bp = (MBPartner) invoice.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal().subtract(Credit));
+			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
 			bp.setSO_CreditUsed(creditUsed);
 			bp.saveEx();
 		}
