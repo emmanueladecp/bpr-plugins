@@ -62,8 +62,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
-			checkSOCreditLimit();
-			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
+			checkSOCreditLimit();			
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			calculatePriceInsentif();
@@ -77,7 +76,6 @@ public class COrderLineEvent extends CustomEvent {
 			setDiscount();
 			setIfOrderlineFOC();
 			checkSOCreditLimit();
-			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
 
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
@@ -94,6 +92,7 @@ public class COrderLineEvent extends CustomEvent {
 				
 				if(promotion.getDescription()!=null && promotion.getDescription().equals("DISCOUNT")) {
 					calculateDiscount(promotion);
+					orderLine.set_ValueOfColumn("isPromo", true);
 				}
 			}
 		} catch (Exception e) {
