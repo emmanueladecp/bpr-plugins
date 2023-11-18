@@ -52,7 +52,20 @@ public class CInvoiceEvent extends CustomEvent {
 			checkqtyShipment();
 			setFaktur();
 			checkDocStatusShipment();
+		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+			setCreditUsed();
+		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSEACCRUAL)) {
+			setCreditUsed();
+		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
+			setCreditUsed();
 		}
+	}
+	
+	private void setCreditUsed() {
+		MBPartner bpartner = new MBPartner(invoice.getCtx(), invoice.getC_BPartner_ID(), invoice.get_TrxName());
+		BigDecimal creditUsed = DB.getSQLValueBD(invoice.get_TrxName(), "SELECT calculate_credituse(?)", bpartner.getC_BPartner_ID());            
+		bpartner.setSO_CreditUsed(creditUsed);
+		bpartner.saveEx();
 	}
 	
 	private void checkqtyShipment() {

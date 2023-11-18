@@ -1,6 +1,10 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
+import org.compiere.model.MAllocationLine;
+import org.compiere.model.MBPartner;
 import org.compiere.model.MPayment;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -26,7 +30,20 @@ public class CPaymentEvent extends CustomEvent {
 			setBankAccount();
 		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setIsPrepayment();
+		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+			setCreditUsed();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSEACCRUAL)) {
+			setCreditUsed();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
+			setCreditUsed();
 		}
+	}
+	
+	private void setCreditUsed() {
+		MBPartner bpartner = new MBPartner(payment.getCtx(), payment.getC_BPartner_ID(), payment.get_TrxName());
+		BigDecimal creditUsed = DB.getSQLValueBD(payment.get_TrxName(), "SELECT calculate_credituse(?)", payment.getC_BPartner_ID());            
+		bpartner.setSO_CreditUsed(creditUsed);
+		bpartner.saveEx();
 	}
 	
 	private void setIsPrepayment() { /*Ticket #request-001160 [BPR] setIsPrepayment pada prepayment*/
