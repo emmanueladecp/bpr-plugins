@@ -410,6 +410,7 @@ public class PromotionRule {
 			description += (", " + ol.getName());
 		nol.setDescription(description);
 		nol.set_ValueOfColumn("M_Promotion_ID", promotion.getM_Promotion_ID());
+		nol.set_ValueOfColumn("isPromo", true);
 		if (promotion.getC_Campaign_ID() > 0) {
 			nol.setC_Campaign_ID(promotion.getC_Campaign_ID());
 		}
@@ -454,6 +455,7 @@ public class PromotionRule {
 				description += (", " + ol.getName());
 			nol.setDescription(description);
 			nol.set_ValueOfColumn("M_Promotion_ID", promotion.getM_Promotion_ID());
+			nol.set_ValueOfColumn("isPromo", true);
 			if (promotion.getC_Campaign_ID() > 0) {
 				nol.setC_Campaign_ID(promotion.getC_Campaign_ID());
 			}
