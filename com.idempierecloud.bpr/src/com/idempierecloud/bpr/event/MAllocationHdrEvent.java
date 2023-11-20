@@ -26,10 +26,6 @@ public class MAllocationHdrEvent extends CustomEvent{
 		alloc = (MAllocationHdr) po;
 		if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			setCreditUsed();
-		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSEACCRUAL)) {
-			setCreditUsed();
-		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
-			setCreditUsed();
 		}
 	}
 
