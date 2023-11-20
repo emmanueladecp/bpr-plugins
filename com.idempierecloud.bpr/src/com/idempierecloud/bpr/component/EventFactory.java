@@ -19,6 +19,7 @@
 package com.idempierecloud.bpr.component;
 
 import org.adempiere.base.event.IEventTopics;
+import org.compiere.model.I_C_AllocationHdr;
 import org.compiere.model.I_C_BPartner;
 import org.compiere.model.I_C_BPartner_Location;
 import org.compiere.model.I_C_Invoice;
@@ -48,6 +49,7 @@ import com.idempierecloud.bpr.event.COrderLineEvent;
 import com.idempierecloud.bpr.event.CPaymentEvent;
 import com.idempierecloud.bpr.event.ImportInvoiceEvent;
 import com.idempierecloud.bpr.event.LoginEvent;
+import com.idempierecloud.bpr.event.MAllocationHdrEvent;
 import com.idempierecloud.bpr.event.MBPRPicklistLineEvent;
 import com.idempierecloud.bpr.event.MInOutConfirmEvent;
 import com.idempierecloud.bpr.event.MInOutEvent;
@@ -91,8 +93,6 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_REVERSEACCRUAL, I_C_Invoice.Table_Name, CInvoiceEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		
 		// C_InvoiceLine
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_InvoiceLine.Table_Name, CInvoiceLineEvent.class);
@@ -143,9 +143,9 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Payment.Table_Name, CPaymentEvent.class);
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Payment.Table_Name, CPaymentEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_C_Payment.Table_Name, CPaymentEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Invoice.Table_Name, CPaymentEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_REVERSEACCRUAL, I_C_Invoice.Table_Name, CPaymentEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_Invoice.Table_Name, CPaymentEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Payment.Table_Name, CPaymentEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_REVERSEACCRUAL, I_C_Payment.Table_Name, CPaymentEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_Payment.Table_Name, CPaymentEvent.class);
 		
 		//MProduction
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Production.Table_Name, MProductionEvent.class);
@@ -183,6 +183,10 @@ public class EventFactory extends CustomEventFactory {
 		//BPR_Picklist
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_BPR_PicklistLine.Table_Name, MBPRPicklistLineEvent.class);
 		//registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_BPR_Picklist.Table_Name, MBPRPicklistEvent.class);
+		
+		//MAllocationHdr
+		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_AllocationHdr.Table_Name, MAllocationHdrEvent.class);
+		
 		
 		
 	}

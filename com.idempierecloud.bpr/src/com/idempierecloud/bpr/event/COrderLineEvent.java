@@ -62,7 +62,8 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
-			checkSOCreditLimit();			
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
+			checkSOCreditLimit();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			calculatePriceInsentif();
@@ -75,8 +76,8 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
-			checkSOCreditLimit();
-
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
+			checkSOCreditLimit();			
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
