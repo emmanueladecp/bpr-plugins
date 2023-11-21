@@ -195,6 +195,8 @@ public class COrderEvent extends CustomEvent{
 				bp.setSO_CreditUsed(creditUsed);
 				bp.saveEx();
 				order.set_ValueOfColumn("isdone", false);
+				
+				BigDecimal credit = bp.getSO_CreditUsed();
 			}
 		}
 	}
@@ -203,7 +205,13 @@ public class COrderEvent extends CustomEvent{
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			MBPartner bp = (MBPartner) order.getC_BPartner();
-			BigDecimal CreditUsed = DB.getSQLValueBD(order.get_TrxName(), "SELECT calculate_credituse(?)", bp.getC_BPartner_ID());			
+			BigDecimal CreditUsed = BigDecimal.ZERO;
+			if(order.get_ValueAsBoolean("isdone")) {
+				CreditUsed = DB.getSQLValueBD(order.get_TrxName(), "SELECT calculate_credituse(?)", bp.getC_BPartner_ID());
+			}else {
+				CreditUsed = DB.getSQLValueBD(order.get_TrxName(), "SELECT calculate_credituse(?)+?", bp.getC_BPartner_ID(),order.getGrandTotal());
+			}
+						
 			bp.setSO_CreditUsed(CreditUsed);
 			bp.saveEx();
 			order.set_ValueOfColumn("isdone", true);	
