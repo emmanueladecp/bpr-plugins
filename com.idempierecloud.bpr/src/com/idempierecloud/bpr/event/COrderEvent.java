@@ -310,7 +310,8 @@ public class COrderEvent extends CustomEvent{
 	}
 	
 	private BigDecimal getBPCreditAvailable() {
-		return order.getC_BPartner().getSO_CreditLimit().subtract(order.getC_BPartner().getSO_CreditUsed());
+		BigDecimal creditUsed = DB.getSQLValueBD(order.get_TrxName(), "SELECT calculate_credituse(?)", order.getC_BPartner_ID());
+		return order.getC_BPartner().getSO_CreditLimit().subtract(creditUsed);
 	}
 	private void checkSalesRep() {
 		if(order.get_ValueAsInt("SalesRep_ID2")>0)
