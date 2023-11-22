@@ -416,6 +416,9 @@ public class PromotionRule {
 		}
 		if (!nol.save())
 			throw new AdempiereException("Failed to add discount line to order");
+		
+		ol.set_ValueOfColumn("isPromo", true);
+		ol.saveEx();
 	}
 
 	private static void addProductLine(MOrder order, MOrderLine ol,
@@ -471,6 +474,9 @@ public class PromotionRule {
 		}
 		if (!nol.save())
 			throw new AdempiereException("Failed to add free product to order");
+		
+		ol.set_ValueOfColumn("isPromo", true);
+		ol.saveEx();
 	}
 
 	/**
