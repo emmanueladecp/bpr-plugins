@@ -26,13 +26,15 @@ public class MAllocationHdrEvent extends CustomEvent{
 		alloc = (MAllocationHdr) po;
 		if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			setCreditUsed();
+		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
+			setCreditUsed();
 		}
 	}
 
 	private void setCreditUsed() {
 		for(MAllocationLine line : alloc.getLines(false)) {
 			MBPartner bpartner = new MBPartner(line.getCtx(), line.getC_BPartner_ID(), line.get_TrxName());
-			BigDecimal creditUsed = DB.getSQLValueBD(alloc.get_TrxName(), "SELECT calculate_credituse(?)", bpartner.getC_BPartner_ID());            
+			BigDecimal creditUsed = DB.getSQLValueBD(alloc.get_TrxName(), "SELECT calculate_credituse(?)+?", bpartner.getC_BPartner_ID(),line.getAmount());            
 			bpartner.setSO_CreditUsed(creditUsed);
 			bpartner.saveEx();
 		}

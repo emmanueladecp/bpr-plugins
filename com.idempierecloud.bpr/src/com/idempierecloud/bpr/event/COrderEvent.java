@@ -191,12 +191,10 @@ public class COrderEvent extends CustomEvent{
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			if((order.getDocStatus().equals(MOrder.DOCSTATUS_Completed)||order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress))) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
-				BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
-				bp.setSO_CreditUsed(creditUsed);
+				BigDecimal CreditUsed = bp.getSO_CreditUsed().subtract(order.getGrandTotal());
+				bp.setSO_CreditUsed(CreditUsed);
 				bp.saveEx();
 				order.set_ValueOfColumn("isdone", false);
-				
-				BigDecimal credit = bp.getSO_CreditUsed();
 			}
 		}
 	}
