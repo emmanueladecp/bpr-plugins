@@ -55,9 +55,11 @@ public class CInvoiceEvent extends CustomEvent {
 			setDoctype(IEventTopics.PO_BEFORE_NEW);
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setDoctype(IEventTopics.PO_BEFORE_CHANGE);
-		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_POST)) {
 			setCreditUsed();
-		}	
+		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
+			setCreditUsed();
+		}
 	}
 	
 	private void setDoctype(String event) {
@@ -74,7 +76,7 @@ public class CInvoiceEvent extends CustomEvent {
 
 	private void setCreditUsed() {
 		MBPartner bpartner = new MBPartner(invoice.getCtx(), invoice.getC_BPartner_ID(), invoice.get_TrxName());
-		BigDecimal creditUsed = DB.getSQLValueBD(invoice.get_TrxName(), "SELECT calculate_credituse(?)+?", bpartner.getC_BPartner_ID(),invoice.getGrandTotal());            
+		BigDecimal creditUsed = DB.getSQLValueBD(invoice.get_TrxName(), "SELECT calculate_credituse(?)", bpartner.getC_BPartner_ID());            
 		bpartner.setSO_CreditUsed(creditUsed);
 		bpartner.saveEx();
 	}

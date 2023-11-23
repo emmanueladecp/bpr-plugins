@@ -128,22 +128,6 @@ public class MInOutConfirmEvent extends CustomEvent {
 		 				 }
 					 }
 
-					 if(!so.isSelfService()) {
-						 /*Jika ada Difference maka akan mengembalikan/mengurangi credit used*/
-			 				BigDecimal creditUsedBack = DB.getSQLValueBD(confirm.get_TrxName(), "select sum(mi.differenceqty*co.priceactual)"
-			 				 		+ " from m_inoutlineconfirm mi "
-			 				 		+ " join m_inoutline mi2 on mi.m_inoutline_id = mi2.m_inoutline_id "
-			 				 		+ " join c_orderline co on mi2.c_orderline_id = co.c_orderline_id "
-			 				 		+ " join m_inout mi3 on mi3.m_inout_id = mi2.m_inout_id "
-			 				 		+ " where mi3.docstatus = 'CO' and mi.m_inoutconfirm_id = ? "
-			 				 		+ " and co.c_order_id = ?",confirm.getM_InOutConfirm_ID(), rs.getInt(1));
-			 				if(creditUsedBack.compareTo(BigDecimal.ZERO)>0) {
-			 						 MBPartner cb = (MBPartner)so.getC_BPartner();
-			 						 BigDecimal creditUsed = cb.getSO_CreditUsed().subtract(creditUsedBack);
-			 						 cb.setSO_CreditUsed(creditUsed);
-			 						 cb.saveEx();
-			 				} 
-					 }
 					 hasOutstanding=false;
 	 			}
 	 		}

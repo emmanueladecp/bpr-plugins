@@ -93,6 +93,8 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_POST, I_C_Invoice.Table_Name, CInvoiceEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		
 		// C_InvoiceLine
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_InvoiceLine.Table_Name, CInvoiceLineEvent.class);
@@ -143,9 +145,7 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_C_Payment.Table_Name, CPaymentEvent.class);
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Payment.Table_Name, CPaymentEvent.class);
 		registerEvent(IEventTopics.PO_BEFORE_CHANGE, I_C_Payment.Table_Name, CPaymentEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Payment.Table_Name, CPaymentEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_REVERSEACCRUAL, I_C_Payment.Table_Name, CPaymentEvent.class);
-		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_Payment.Table_Name, CPaymentEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_POST, I_C_Payment.Table_Name, CPaymentEvent.class);
 		
 		//MProduction
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_M_Production.Table_Name, MProductionEvent.class);
@@ -186,6 +186,7 @@ public class EventFactory extends CustomEventFactory {
 		
 		//MAllocationHdr
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_AllocationHdr.Table_Name, MAllocationHdrEvent.class);
+		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_AllocationHdr.Table_Name, MAllocationHdrEvent.class);
 		
 		
 		
