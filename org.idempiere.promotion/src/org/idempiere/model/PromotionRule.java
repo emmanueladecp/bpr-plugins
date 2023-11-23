@@ -39,6 +39,7 @@ import org.compiere.model.I_M_PromotionLine;
 import org.compiere.model.I_M_PromotionReward;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MProductPrice;
 import org.compiere.model.MTable;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
@@ -409,11 +410,15 @@ public class PromotionRule {
 			description += (", " + ol.getName());
 		nol.setDescription(description);
 		nol.set_ValueOfColumn("M_Promotion_ID", promotion.getM_Promotion_ID());
+		nol.set_ValueOfColumn("isPromo", true);
 		if (promotion.getC_Campaign_ID() > 0) {
 			nol.setC_Campaign_ID(promotion.getC_Campaign_ID());
 		}
 		if (!nol.save())
 			throw new AdempiereException("Failed to add discount line to order");
+		
+		ol.set_ValueOfColumn("isPromo", true);
+		ol.saveEx();
 	}
 
 	private static void addProductLine(MOrder order, MOrderLine ol,
@@ -453,6 +458,7 @@ public class PromotionRule {
 				description += (", " + ol.getName());
 			nol.setDescription(description);
 			nol.set_ValueOfColumn("M_Promotion_ID", promotion.getM_Promotion_ID());
+			nol.set_ValueOfColumn("isPromo", true);
 			if (promotion.getC_Campaign_ID() > 0) {
 				nol.setC_Campaign_ID(promotion.getC_Campaign_ID());
 			}
@@ -460,8 +466,17 @@ public class PromotionRule {
 		}else {
 			nol.setQty(nol.getQtyEntered().add(qty));
 		}
+		
+		int M_PriceList_Version_ID = DB.getSQLValue(order.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE isActive='Y' AND M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", order.getM_PriceList_ID(), order.getDateOrdered());
+		MProductPrice price = MProductPrice.get(order.getCtx(), M_PriceList_Version_ID, M_Product_ID, order.get_TrxName());
+		if(price==null) {
+			throw new AdempiereException("Gagal Menambahkan Promotion Product : "+nol.getM_Product().getName()+", karena tidak terdapat pada Pricelist : "+order.getM_PriceList().getName());
+		}
 		if (!nol.save())
 			throw new AdempiereException("Failed to add free product to order");
+		
+		ol.set_ValueOfColumn("isPromo", true);
+		ol.saveEx();
 	}
 
 	/**
