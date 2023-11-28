@@ -84,7 +84,7 @@ public class COrderEvent extends CustomEvent{
 
 	
 	private void checkCreditUsedSOClose() {
-        MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
         if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
 			MBPartner bp = (MBPartner) order.getC_BPartner();
 			BigDecimal CreditUsed = DB.getSQLValueBD(order.get_TrxName(), "SELECT calculate_credituse(?)", bp.getC_BPartner_ID());			

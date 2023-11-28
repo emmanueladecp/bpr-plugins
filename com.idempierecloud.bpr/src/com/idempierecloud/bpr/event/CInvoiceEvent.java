@@ -54,12 +54,10 @@ public class CInvoiceEvent extends CustomEvent {
 			checkDocStatusShipment();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setDoctype(IEventTopics.PO_BEFORE_NEW);
+
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setDoctype(IEventTopics.PO_BEFORE_CHANGE);
-		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_POST)) {
-			setCreditUsed();
-		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_REVERSECORRECT)) {
-			setCreditUsed();
+			
 		}
 	}
 	

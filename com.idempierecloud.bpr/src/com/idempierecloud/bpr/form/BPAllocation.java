@@ -878,12 +878,12 @@ public class BPAllocation extends CustomForm {
 			if (log.isLoggable(Level.CONFIG)) log.config("Payment #" + i + (pay.isAllocated() ? " not" : " is") 
 					+ " fully allocated");
 		}
-//		MBPartner bpartner = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
-//		bpartner.setTotalOpenBalance();
-//		bpartner.saveEx();
-//		MBPartner bpartner2 = new MBPartner(Env.getCtx(), m_C_BPartner2_ID, trxName);
-//		bpartner2.setTotalOpenBalance();
-//		bpartner2.saveEx();
+		MBPartner bpartner = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
+		bpartner.setTotalOpenBalance();
+		bpartner.saveEx();
+		MBPartner bpartner2 = new MBPartner(Env.getCtx(), m_C_BPartner2_ID, trxName);
+		bpartner2.setTotalOpenBalance();
+		bpartner2.saveEx();
 		paymentList.clear();
 		amountList.clear();
 		
