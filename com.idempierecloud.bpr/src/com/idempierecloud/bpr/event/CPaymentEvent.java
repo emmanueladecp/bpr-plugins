@@ -29,17 +29,8 @@ public class CPaymentEvent extends CustomEvent {
 		}else if (event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setBankAccount();
 		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			setIsPrepayment();
-		}else if (event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
-			setCreditUsed();
+			setIsPrepayment();			
 		}
-	}
-	
-	private void setCreditUsed() {
-		MBPartner bpartner = new MBPartner(payment.getCtx(), payment.getC_BPartner_ID(), payment.get_TrxName());
-		BigDecimal creditUsed = DB.getSQLValueBD(payment.get_TrxName(), "SELECT calculate_credituse(?)", payment.getC_BPartner_ID());            
-		bpartner.setSO_CreditUsed(creditUsed);
-		bpartner.saveEx();
 	}
 	
 	private void setIsPrepayment() { /*Ticket #request-001160 [BPR] setIsPrepayment pada prepayment*/
