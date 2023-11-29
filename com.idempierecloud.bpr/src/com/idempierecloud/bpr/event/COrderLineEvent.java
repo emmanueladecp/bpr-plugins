@@ -62,7 +62,8 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
-			checkSOCreditLimit();			
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
+			checkSOCreditLimit();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			calculatePriceInsentif();
@@ -75,8 +76,8 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
-			checkSOCreditLimit();
-
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
+			checkSOCreditLimit();			
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
@@ -124,7 +125,7 @@ public class COrderLineEvent extends CustomEvent {
 		MOrder order = (MOrder) orderLine.getC_Order();
 		MDocType doctype = (MDocType) order.getC_DocTypeTarget();
 		if(order.isSOTrx()&&!doctype.get_ValueAsBoolean("isRetur")){
-			if(order.get_ValueAsBoolean("isdone")&&order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress)) {
+			if(order.getDocStatus().equals(MOrder.DOCSTATUS_InProgress)) {
 				MBPartner bp = (MBPartner) order.getC_BPartner();
 				BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
 				BigDecimal LineNetAmt = orderLine.getLineNetAmt();
