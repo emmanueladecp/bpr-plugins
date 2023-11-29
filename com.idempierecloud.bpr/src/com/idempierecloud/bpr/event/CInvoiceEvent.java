@@ -62,9 +62,16 @@ public class CInvoiceEvent extends CustomEvent {
 			
 	}
 	
-	private void setDoctype() {
+	private void setDoctype(String event) {
 		//untuk create line from invoice #request-001261U
-		invoice.setC_DocType_ID(invoice.getC_DocTypeTarget_ID());
+		if(event.equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			if(invoice.is_ValueChanged("C_DocTypeTarget_ID")) {
+				invoice.setC_DocType_ID(invoice.getC_DocTypeTarget_ID());
+			}
+		}else if(event.equals(IEventTopics.PO_BEFORE_NEW)) {
+			invoice.setC_DocType_ID(invoice.getC_DocTypeTarget_ID());
+		}
+		
 	}
 
 	private void checkqtyShipment() {
