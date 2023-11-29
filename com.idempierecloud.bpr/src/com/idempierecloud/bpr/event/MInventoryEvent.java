@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MCost;
+import org.compiere.model.MDocType;
 import org.compiere.model.MInventory;
 import org.compiere.model.MInventoryLine;
 import org.compiere.model.PO;
@@ -30,11 +31,28 @@ public class MInventoryEvent extends CustomEvent {
 			checkProductCost();
 			checkLines();
 			checkAvailableQtyProduct();
+			checkPhysicalInventory();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
 		}
 	}
+	
+	private void checkPhysicalInventory() {
+		MDocType dt = new MDocType(inventory.getCtx(), inventory.getC_DocType_ID(), inventory.get_TrxName());
+		if(dt.getC_DocType_ID()==1000023&&dt.getDocBaseType().equals("MMI")&&(dt.getDocSubTypeInv().equals("PI") || dt.getDocSubTypeInv().equals(null))){
+			for(MInventoryLine line : inventory.getLines(true)) {
+				if(line.getQtyCount().compareTo(line.getQtyBook())<=0) {
+					throw new AdempiereException("Qty Count tidak boleh lebih kecil dari Qty Book");
+				}
+			}
+		}
+		
+	}
 	private void checkAvailableQtyProduct() {
+		MDocType dt = new MDocType(inventory.getCtx(), inventory.getC_DocType_ID(), inventory.get_TrxName());
+		if(dt.getC_DocType_ID()==1000023&&dt.getDocBaseType().equals("MMI")&&(dt.getDocSubTypeInv().equals("PI") || dt.getDocSubTypeInv().equals(null))){
+			return;
+		}
 		for(MInventoryLine line : inventory.getLines(true)) {		
 			BigDecimal qtyonhand = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
 					+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
