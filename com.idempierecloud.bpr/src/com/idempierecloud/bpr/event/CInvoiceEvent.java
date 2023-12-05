@@ -46,15 +46,26 @@ public class CInvoiceEvent extends CustomEvent {
 			checkFaktur();
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkFaktur();
-			resetCreditUseBP();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkMovementDate();
 			checkqtyShipment();
 			setFaktur();
 			checkDocStatusShipment();
-			setCreditUseBP();
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+
+
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+
+			
 		}
+	}
+	
+	private void setCreditUsed() {
+		MBPartner bpartner = new MBPartner(invoice.getCtx(), invoice.getC_BPartner_ID(), invoice.get_TrxName());
+		BigDecimal creditUsed = DB.getSQLValueBD(invoice.get_TrxName(), "SELECT calculate_credituse(?)", bpartner.getC_BPartner_ID());            
+		bpartner.setSO_CreditUsed(creditUsed);
+		bpartner.saveEx();
 	}
 	
 	private void checkqtyShipment() {
@@ -119,27 +130,6 @@ public class CInvoiceEvent extends CustomEvent {
 		    
 		    
 			
-		}
-	}
-
-	private void setCreditUseBP() {
-		/* Request Set Credit Availabel ketika SO inprogress,
-		 * karena code sudah di terapkan di SO. maka agar invoice tidak menambahkan credit use, di buatkan lah code ini
-		 */
-		if(invoice.isSOTrx()) {
-			MBPartner bp = (MBPartner) invoice.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().subtract(invoice.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();
-		}
-		
-	}
-	private void resetCreditUseBP() {
-		if(invoice.isSOTrx()) {
-			MBPartner bp = (MBPartner) invoice.getC_BPartner();
-			BigDecimal creditUsed = bp.getSO_CreditUsed().add(invoice.getGrandTotal());
-			bp.setSO_CreditUsed(creditUsed);
-			bp.saveEx();
 		}
 	}
 

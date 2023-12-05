@@ -1,6 +1,10 @@
 package com.idempierecloud.bpr.event;
 
+import java.math.BigDecimal;
+
 import org.adempiere.base.event.IEventTopics;
+import org.compiere.model.MAllocationLine;
+import org.compiere.model.MBPartner;
 import org.compiere.model.MPayment;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -25,7 +29,7 @@ public class CPaymentEvent extends CustomEvent {
 		}else if (event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setBankAccount();
 		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			setIsPrepayment();
+			setIsPrepayment();			
 		}
 	}
 	
