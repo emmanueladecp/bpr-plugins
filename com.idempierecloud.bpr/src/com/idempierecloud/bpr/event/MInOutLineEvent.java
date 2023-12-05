@@ -3,6 +3,7 @@ package com.idempierecloud.bpr.event;
 import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MDocType;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MOrderLine;
@@ -25,8 +26,9 @@ public class MInOutLineEvent extends CustomEvent {
 		line = (MInOutLine) po;
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkQtyEntered();
-			setLocator();
+			setLocator();			
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
+			checkIsPromo();
 			setLocator();
 			setLocatorTurus();
 			setLocatorByOrder();
@@ -34,6 +36,20 @@ public class MInOutLineEvent extends CustomEvent {
 	}
 	
 	
+	private void checkIsPromo() {
+		if(line.getC_OrderLine_ID()==0 || !line.getC_OrderLine().getC_Order().isSOTrx())
+			return;
+		MOrderLine soLine = (MOrderLine) line.getC_OrderLine();
+		Boolean ispromo =soLine.get_ValueAsBoolean("IsPromo");
+		if(soLine.get_ValueAsBoolean("ispromo")) {
+			if(soLine.getQtyOrdered().compareTo(line.getMovementQty())!=0||soLine.getQtyEntered().compareTo(line.getQtyEntered())!=0)
+				throw new AdempiereException("Quentity tidak boleh dirubah karena terikat Promo, silahkan coba lagi");
+			line.set_ValueOfColumn("IsPromo", true);
+		}
+			
+	}
+
+
 	private void setLocatorTurus() {
 		if(line.getC_OrderLine_ID()==0 || line.getC_OrderLine().getC_Order().isSOTrx())
 			return;

@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-Category: idempiere-plugin
+Bundle-ManifestVersion: 2
+Bundle-Name: Promotions for iDempiere
+Bundle-SymbolicName: org.idempiere.promotion
+Bundle-Version: 2.0.0.qualifier
+Automatic-Module-Name: org.idempiere.promotion
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.adempiere.base,
+ org.adempiere.plugin.utils
+Bundle-Activator: org.adempiere.plugin.utils.Incremental2PackActivator
+Import-Package: org.osgi.service.event
+Bundle-Vendor: iDempiere Community
+Service-Component: OSGI-INF/EventHandler.xml
+Export-Package: org.idempiere.model

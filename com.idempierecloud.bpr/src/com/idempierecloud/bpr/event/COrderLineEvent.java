@@ -5,10 +5,15 @@ import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
+import org.adempiere.model.MPromotion;
+import org.adempiere.model.MPromotionReward;
+import org.compiere.model.I_M_PromotionReward;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MDocType;
@@ -18,6 +23,7 @@ import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
 import org.compiere.model.MProductCategory;
 import org.compiere.model.MProductPrice;
+import org.compiere.model.MTable;
 import org.compiere.model.MTax;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
@@ -27,6 +33,7 @@ import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.globalqss.model.X_LCO_WithholdingCalc;
 import org.globalqss.model.X_LCO_WithholdingType;
+import org.idempiere.model.PromotionRule;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -49,12 +56,13 @@ public class COrderLineEvent extends CustomEvent {
 			calculateGrossUp();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
+			calculatePromo();
 			calculatePrice();
 			setProposalRetur();
 			calculateLinetNetAmt();
 			setDiscount();
-			checkSOCreditLimit();
 			setIfOrderlineFOC();
+			checkSOCreditLimit();			
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			calculatePriceInsentif();
@@ -62,15 +70,53 @@ public class COrderLineEvent extends CustomEvent {
 			calculateGrossUp();
 			calculateOngkosAngkut();
 			calculateAdditionalCost();
+			calculatePromo();
 			calculatePrice();
 			calculateLinetNetAmt();
 			setDiscount();
-			checkSOCreditLimit();
 			setIfOrderlineFOC();
+			checkSOCreditLimit();
+
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}
 	}	
+	
+	private void calculatePromo() {
+		try {
+			MOrder order = orderLine.getParent();
+			Map<Integer, List<Integer>> promotions = PromotionRule.findM_Promotion_ID(order);
+			
+			for (Map.Entry<Integer, List<Integer>> entry : promotions.entrySet()) {
+				MPromotion promotion = new MPromotion(order.getCtx(), entry.getKey(), order.get_TrxName());
+				
+				if(promotion.getDescription()!=null && promotion.getDescription().equals("DISCOUNT")) {
+					calculateDiscount(promotion);
+					orderLine.set_ValueOfColumn("isPromo", true);
+				}
+			}
+		} catch (Exception e) {
+			
+		}
+	}
+	
+	private void calculateDiscount(MPromotion promotion) {
+		Query rewardQuery = new Query(Env.getCtx(), MTable.get(orderLine.getCtx(), I_M_PromotionReward.Table_ID),
+				"M_PromotionReward.M_Promotion_ID = ? AND M_PromotionReward.IsActive = 'Y'", orderLine.get_TrxName());
+		rewardQuery.setParameters(new Object[]{promotion.getM_Promotion_ID()});
+		rewardQuery.setOrderBy("SeqNo");
+		MPromotionReward reward = rewardQuery.first();
+		if(reward==null)
+			return;
+		
+		BigDecimal discount = reward.getAmount();
+		if(reward.getRewardType().equals(MPromotionReward.REWARDTYPE_Percentage)) {
+			discount = orderLine.getPriceList().multiply(discount.divide(Env.ONEHUNDRED, 8, RoundingMode.HALF_UP));
+		}
+		
+		orderLine.set_ValueOfColumn("DiscountAmt", discount);
+	}
+	
 	private void calculatePriceInsentif() {
 		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
 		if(!docType.get_ValueAsBoolean("isTurus"))
@@ -324,12 +370,18 @@ public class COrderLineEvent extends CustomEvent {
         }
         	
 		BigDecimal ongkosAngkut = (BigDecimal) orderLine.get_Value("OngkosAngkut");
+		if(ongkosAngkut==null)
+			ongkosAngkut=BigDecimal.ZERO;
 		BigDecimal priceEntered = ongkosAngkut.add(orderLine.getPriceList());
 		BigDecimal subsidiAmt = (BigDecimal) orderLine.get_Value("SubsidiAmt");
 		if(subsidiAmt==null)
 			subsidiAmt = Env.ZERO;
 		
 		priceEntered = priceEntered.add(subsidiAmt);
+		BigDecimal discountAmt = (BigDecimal) orderLine.get_Value("DiscountAmt");
+		if(discountAmt==null)
+			discountAmt = Env.ZERO;
+		priceEntered = priceEntered.subtract(discountAmt);
 		orderLine.setPriceActual(priceEntered);
 		priceEntered = MUOMConversion.convertProductFrom(order.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), priceEntered);
         orderLine.setPriceEntered(priceEntered);
