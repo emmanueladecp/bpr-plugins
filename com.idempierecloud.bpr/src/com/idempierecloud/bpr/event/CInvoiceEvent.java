@@ -52,10 +52,10 @@ public class CInvoiceEvent extends CustomEvent {
 			checkqtyShipment();
 			checkDocStatusShipment();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
-			setDoctype(IEventTopics.PO_BEFORE_NEW);
+
 
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
-			setDoctype(IEventTopics.PO_BEFORE_CHANGE);
+
 			
 		}
 	}
