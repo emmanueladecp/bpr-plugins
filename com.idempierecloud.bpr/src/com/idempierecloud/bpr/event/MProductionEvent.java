@@ -44,6 +44,9 @@ public class MProductionEvent extends CustomEvent{
 	private void checkProductCost() {
 		int M_CostElement_ID_AveragePO=1000004;
 		for(MProductionLineExt line : production.getLines()) {
+			if(line.get_ValueAsBoolean("IsTurunan")&& 
+					(line.get_ValueAsString("JenisProduk")!=null && line.get_ValueAsString("JenisProduk").equalsIgnoreCase("T")))
+				continue;
 			BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
 			 " and M_Product_ID = ? and M_CostElement_ID=?",production.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
 			if(MCost_CurrentCostPrice==null) {
