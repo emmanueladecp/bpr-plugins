@@ -50,7 +50,6 @@ public class CInvoiceEvent extends CustomEvent {
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkMovementDate();
 			checkqtyShipment();
-			setFaktur();
 			checkDocStatusShipment();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 
@@ -157,23 +156,6 @@ public class CInvoiceEvent extends CustomEvent {
 					throw new AdempiereException("Shipment Document No : "+shipment.getDocumentNo()+" pada Invoice Line No "+ line.getLine()+" Belum complete!");
 			}
 		}
-	}
-	private void setFaktur() {
-        if(!invoice.isSOTrx() || invoice.get_ValueAsString("TypePajak")==null || 
-                invoice.get_ValueAsInt("BPR_ListFakturPajak_ID")>0 || invoice.getC_DocTypeTarget_ID() == C_Doctype_AR_CreditMemo)
-        return;
-		
-		MBPRListFakturPajak pajak = MBPRListFakturPajak.getNext(invoice);
-		if(pajak==null)
-			throw new AdempiereException("Tidak ada nomor faktur pajak yang tersedia");
-		
-		
-		MBPRHistoryFakturPajak history = MBPRHistoryFakturPajak.addHistory(invoice, pajak);
-
-		invoice.set_ValueOfColumn(MBPRListFakturPajak.COLUMNNAME_BPR_ListFakturPajak_ID, pajak.getBPR_ListFakturPajak_ID());
-		invoice.set_ValueOfColumn(MBPRHistoryFakturPajak.COLUMNNAME_BPR_HistoryFakturPajak_ID, history.getBPR_HistoryFakturPajak_ID());
-		invoice.set_ValueOfColumn("tax_no", history.getDescription());
-		invoice.saveEx();
 	}
 
 	
