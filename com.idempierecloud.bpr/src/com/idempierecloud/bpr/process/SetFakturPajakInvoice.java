@@ -48,8 +48,9 @@ public class SetFakturPajakInvoice extends CustomProcess{
 		try
 		{
 			pstmnt = DB.prepareStatement (sql.toString(), get_TrxName());
-			if(!DocNoInv.equals(null))
+			if(DocNoInv!=null) {
 				pstmnt.setString(1, DocNoInv);
+			}
 			rsl = pstmnt.executeQuery ();
 			while (rsl.next ()){
 				MInvoice invoice = new MInvoice(getCtx(),rsl.getInt(1), get_TrxName());
@@ -65,7 +66,7 @@ public class SetFakturPajakInvoice extends CustomProcess{
 				invoice.set_ValueOfColumn("tax_no", history.getDescription());
 				invoice.saveEx();
 				
-				Count++;
+				Count=Count+1; //count++
 				
 			}
 		}
