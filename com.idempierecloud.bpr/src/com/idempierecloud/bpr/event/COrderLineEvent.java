@@ -518,10 +518,13 @@ public class COrderLineEvent extends CustomEvent {
 		//hanya berlaku untuk BPR 1
 		//default true
 		
+		if (orderLine.getM_Product_ID()==0)
+			return;
+		
 		MOrder order = (MOrder)orderLine.getC_Order();
 		MDocType dt = (MDocType) order.getC_DocTypeTarget();
 		
-		if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003) {
+		if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003&&(!orderLine.getC_Order().getDocStatus().equals("CO"))) {
 		
 			boolean markPotongKarung = true;
 			MProductCategory productCategory = (MProductCategory) orderLine.getM_Product().getM_Product_Category();
