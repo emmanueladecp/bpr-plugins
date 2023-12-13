@@ -64,6 +64,8 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
 			checkSOCreditLimit();
+			
+			setMarkPotongKarung();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
 			calculatePriceInsentif();
@@ -76,8 +78,8 @@ public class COrderLineEvent extends CustomEvent {
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
-			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
-			checkSOCreditLimit();			
+			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);	
+			checkSOCreditLimit();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
@@ -506,6 +508,41 @@ public class COrderLineEvent extends CustomEvent {
 			BigDecimal qtyOrdered = MUOMConversion.convertProductFrom(orderLine.getCtx(), orderLine.getM_Product_ID(), orderLine.getC_UOM_ID(), orderLine.getQtyEntered());
 			orderLine.setQtyOrdered(qtyOrdered);
 		}	
+	}
+	
+	private void setMarkPotongKarung() {
+		//ICT-283 : perubahan potong karung set default sesuai jenis kategori parent produk
+		//requirement
+		//Jenis PO Turus
+		//Parent category beras => mark as no
+		//Parent category gabah => mark as yes
+		//hanya berlaku untuk BPR 1
+		//default true
+		
+		if (orderLine.getM_Product_ID()==0)
+			return;
+		
+		MOrder order = (MOrder)orderLine.getC_Order();
+		MDocType dt = (MDocType) order.getC_DocTypeTarget();
+		
+		if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")&&order.get_ValueAsInt("AD_Org_ID")==1000003&&(!orderLine.getC_Order().getDocStatus().equals("CO"))) {
+		
+			boolean markPotongKarung = true;
+			MProductCategory productCategory = (MProductCategory) orderLine.getM_Product().getM_Product_Category();
+			
+			String parentCategoryName = productCategory.getM_Product_Category_Parent().getName();
+			
+	        if (parentCategoryName.equalsIgnoreCase("BERAS")) {
+	        	markPotongKarung = false;
+	        }
+	        
+	        if (parentCategoryName.equalsIgnoreCase("GABAH")) {
+	        	markPotongKarung = true;
+	        }
+	        
+	        order.set_ValueOfColumn("IsAllowPotongKarung", markPotongKarung);
+	        order.saveEx();
+		}
 	}
 	
 	@Override
