@@ -12,11 +12,14 @@ import java.util.logging.Level;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.model.MPromotion;
+import org.adempiere.model.MPromotionGroupLine;
 import org.adempiere.model.MPromotionReward;
+import org.compiere.model.I_M_PromotionGroupLine;
 import org.compiere.model.I_M_PromotionReward;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MDocType;
+import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
@@ -37,6 +40,8 @@ import org.idempiere.model.PromotionRule;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
+import com.idempierecloud.bpr.model.MBPRHistoryFakturPajak;
+import com.idempierecloud.bpr.model.MBPRListFakturPajak;
 
 public class COrderLineEvent extends CustomEvent {
 
@@ -97,7 +102,6 @@ public class COrderLineEvent extends CustomEvent {
 				
 				if(promotion.getDescription()!=null && promotion.getDescription().equals("DISCOUNT")) {
 					calculateDiscount(promotion);
-					orderLine.set_ValueOfColumn("isPromo", true);
 				}
 			}
 		} catch (Exception e) {
@@ -119,7 +123,37 @@ public class COrderLineEvent extends CustomEvent {
 			discount = orderLine.getPriceList().multiply(discount.divide(Env.ONEHUNDRED, 8, RoundingMode.HALF_UP));
 		}
 		
-		orderLine.set_ValueOfColumn("DiscountAmt", discount);
+		StringBuilder sql = new StringBuilder ("select mp4.m_product_id "
+				+ "	from m_promotion mp "
+				+ "	join m_promotionline mp2 on mp.m_promotion_id = mp2.m_promotion_id "
+				+ "	join m_promotiongroup mp3 on mp2.m_promotiongroup_id = mp3.m_promotiongroup_id "
+				+ "	join m_promotiongroupline mp4 on mp4.m_promotiongroup_id = mp3.m_promotiongroup_id "
+				+ "	where mp.m_promotion_id = ? "
+				+ "	and mp4.m_product_id = ? and mp3.isactive = 'Y' ");
+		
+		PreparedStatement pstmnt = null;
+		ResultSet rsl = null;
+		try
+		{
+			pstmnt = DB.prepareStatement (sql.toString(), promotion.get_TrxName());
+			pstmnt.setInt(1, promotion.getM_Promotion_ID());
+			pstmnt.setInt(2, orderLine.getM_Product_ID());
+			rsl = pstmnt.executeQuery ();
+			while (rsl.next ()){
+				
+				orderLine.set_ValueOfColumn("DiscountAmt", discount);
+				orderLine.set_ValueOfColumn("isPromo", true);
+			}
+		}
+		catch (SQLException e){
+			 log.log(Level.SEVERE, "Cant find this product:"+orderLine.getM_Product().getName()+" on Promotion group Line - Corderline.calculateDiscount " + sql.toString(), e);
+		}
+		finally{
+			DB.close(rsl, pstmnt);
+			rsl = null;
+			pstmnt = null;
+		}
+		
 	}
 	
 	private void checkCreditUsedChange(String event) {
