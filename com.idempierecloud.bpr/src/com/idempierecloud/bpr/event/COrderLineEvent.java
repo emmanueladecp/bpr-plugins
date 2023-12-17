@@ -123,26 +123,30 @@ public class COrderLineEvent extends CustomEvent {
 			discount = orderLine.getPriceList().multiply(discount.divide(Env.ONEHUNDRED, 8, RoundingMode.HALF_UP));
 		}
 		
+		/*additional validation :
+		 * 
+		 */
+		
+		Boolean isAllProduct = true;
+		Boolean exists = false;
 		StringBuilder sql = new StringBuilder ("select mp4.m_product_id "
 				+ "	from m_promotion mp "
 				+ "	join m_promotionline mp2 on mp.m_promotion_id = mp2.m_promotion_id "
 				+ "	join m_promotiongroup mp3 on mp2.m_promotiongroup_id = mp3.m_promotiongroup_id "
 				+ "	join m_promotiongroupline mp4 on mp4.m_promotiongroup_id = mp3.m_promotiongroup_id "
-				+ "	where mp.m_promotion_id = ? "
-				+ "	and mp4.m_product_id = ? and mp3.isactive = 'Y' ");
-		
+				+ "	where mp.isactive = 'Y' and mp3.isactive = 'Y' and mp4.isactive = 'Y' and mp.m_promotion_id = ?");		
 		PreparedStatement pstmnt = null;
 		ResultSet rsl = null;
 		try
 		{
 			pstmnt = DB.prepareStatement (sql.toString(), promotion.get_TrxName());
 			pstmnt.setInt(1, promotion.getM_Promotion_ID());
-			pstmnt.setInt(2, orderLine.getM_Product_ID());
 			rsl = pstmnt.executeQuery ();
 			while (rsl.next ()){
-				
-				orderLine.set_ValueOfColumn("DiscountAmt", discount);
-				orderLine.set_ValueOfColumn("isPromo", true);
+				if(rsl.getInt(1)==orderLine.getM_Product_ID()){
+					exists = true;
+				}
+				isAllProduct = false;
 			}
 		}
 		catch (SQLException e){
@@ -153,6 +157,13 @@ public class COrderLineEvent extends CustomEvent {
 			rsl = null;
 			pstmnt = null;
 		}
+		
+		if(isAllProduct||exists) {
+			orderLine.set_ValueOfColumn("DiscountAmt", discount);
+			orderLine.set_ValueOfColumn("isPromo", true);
+		}
+
+		
 		
 	}
 	
