@@ -31,23 +31,11 @@ public class MInventoryEvent extends CustomEvent {
 			checkProductCost();
 			checkLines();
 			checkAvailableQtyProduct();
-			checkPhysicalInventory();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
 		}
 	}
-	
-	private void checkPhysicalInventory() {
-		MDocType dt = new MDocType(inventory.getCtx(), inventory.getC_DocType_ID(), inventory.get_TrxName());
-		if(dt.getC_DocType_ID()==1000023&&dt.getDocBaseType().equals("MMI")&&(dt.getDocSubTypeInv().equals("PI") || dt.getDocSubTypeInv().equals(null))){
-			for(MInventoryLine line : inventory.getLines(true)) {
-				if(line.getQtyCount().compareTo(line.getQtyBook())<=0) {
-					throw new AdempiereException("Qty Count tidak boleh lebih kecil dari Qty Book");
-				}
-			}
-		}
-		
-	}
+
 	private void checkAvailableQtyProduct() {
 		MDocType dt = new MDocType(inventory.getCtx(), inventory.getC_DocType_ID(), inventory.get_TrxName());
 		if(dt.getC_DocType_ID()==1000023&&dt.getDocBaseType().equals("MMI")&&(dt.getDocSubTypeInv().equals("PI") || dt.getDocSubTypeInv().equals(null))){
