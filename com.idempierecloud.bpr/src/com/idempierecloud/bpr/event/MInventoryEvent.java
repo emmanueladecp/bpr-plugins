@@ -5,10 +5,9 @@ import java.math.BigDecimal;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MCost;
+import org.compiere.model.MDocType;
 import org.compiere.model.MInventory;
 import org.compiere.model.MInventoryLine;
-import org.compiere.model.MMovementLine;
-import org.compiere.model.MProduct;
 import org.compiere.model.PO;
 import org.compiere.process.DocAction;
 import org.compiere.util.CLogger;
@@ -31,10 +30,34 @@ public class MInventoryEvent extends CustomEvent {
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkProductCost();
 			checkLines();
+			checkAvailableQtyProduct();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			createCostAdjustment();
 		}
 	}
+
+	private void checkAvailableQtyProduct() {
+		MDocType dt = new MDocType(inventory.getCtx(), inventory.getC_DocType_ID(), inventory.get_TrxName());
+		if(dt.getC_DocType_ID()==1000023&&dt.getDocBaseType().equals("MMI")&&(dt.getDocSubTypeInv().equals("PI") || dt.getDocSubTypeInv().equals(null))){
+			return;
+		}
+		for(MInventoryLine line : inventory.getLines(true)) {		
+			BigDecimal qtyonhand = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
+					+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+			
+			BigDecimal qtyIntransit = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(s.confirmedqty), 0)"
+					+ "	FROM M_InOutLineConfirm s"
+					+ "	JOIN M_InOutConfirm c ON s.M_InOutConfirm_ID=c.M_InOutConfirm_ID"
+					+ "	JOIN M_InOutLine iol ON s.M_InOutLine_ID=iol.M_InOutLine_ID"
+					+ "	WHERE c.docstatus in ('DR','IP','IN') AND iol.M_Product_ID=? AND iol.m_locator_id=?"
+					, line.getM_Product_ID(),line.getM_Locator_ID());
+			
+			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).subtract(line.getQtyInternalUse());
+			if(qtyAvailable.signum()<0)
+				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Intransit Shipment = "+qtyIntransit+", Quantity Movement = "+line.getMovementQty()+", pada Movement Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());		
+		}
+	}
+
 
 	private void checkProductCost() {
 		int M_CostElement_ID_AveragePO=1000004;
