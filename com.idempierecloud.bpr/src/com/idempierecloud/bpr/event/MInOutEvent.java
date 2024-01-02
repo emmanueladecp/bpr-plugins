@@ -53,6 +53,7 @@ public class MInOutEvent extends CustomEvent {
 			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			checkReversal();
+			checkAvailableQtyProductReturReversal();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment(event.getTopic());
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_VOID)) {
@@ -333,6 +334,28 @@ public class MInOutEvent extends CustomEvent {
 						+", pada Shipment Line : "+line.getLine()
 						+", Product : "+line.getM_Product().toString()
 						+" Locator "+line.getM_Locator().getValue());
+		}
+	}
+	
+	
+	private void checkAvailableQtyProductReturReversal() {
+		if(inout.isSOTrx() && inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerReturns) && inout.getReversal_ID()>0 ) {
+			MInOutLine[] lines = inout.getLines(true);
+			for (MInOutLine line : lines) {
+				BigDecimal qtyonhand = DB.getSQLValueBD(inout.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
+						+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
+							
+				BigDecimal qtyAvailable = qtyonhand.add(line.getMovementQty());
+				
+				if(qtyAvailable.signum()<0)
+					throw new AdempiereException("Gagal Reverse, Stok sudah di gunakan!!"
+							+", Quantity Available : "+qtyAvailable.add(line.getMovementQty())
+							+", Quantity OnHand : " + qtyonhand
+							+", Quantity Movement : " + line.getMovementQty()
+							+", pada Shipment Line : " + line.getLine()
+							+", Product : "+line.getM_Product().toString()
+							+" Locator "+line.getM_Locator().getValue());
+			}
 		}
 	}
 	

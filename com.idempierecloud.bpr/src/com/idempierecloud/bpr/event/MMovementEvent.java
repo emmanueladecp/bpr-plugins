@@ -53,6 +53,7 @@ public class MMovementEvent extends CustomEvent {
 			}
 			checkReversal();
 			checkAvailableQtyProduct();
+			checkAvailableQtyProductReverse();
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			if(desc!=null && desc.equals("INTRANSIT"))
 				createMovementConfirm();
@@ -294,7 +295,9 @@ public class MMovementEvent extends CustomEvent {
 		lineSusut.saveEx();
 	}
 	
-	private void checkAvailableQtyProduct() {
+	private void checkAvailableQtyProduct() {	
+		if(movement.getReversal_ID()>0)
+			return;
 		for(MMovementLine line : movement.getLines(true)) {		
 			BigDecimal qtyonhand = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
 					+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_Locator_ID());
@@ -309,6 +312,19 @@ public class MMovementEvent extends CustomEvent {
 			BigDecimal qtyAvailable = qtyonhand.subtract(qtyIntransit).subtract(line.getMovementQty());
 			if(qtyAvailable.signum()<0)
 				throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Intransit Shipment = "+qtyIntransit+", Quantity Movement = "+line.getMovementQty()+", pada Movement Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());		
+		}
+	}
+	
+	private void checkAvailableQtyProductReverse() {		
+		if(movement.getReversal_ID()>0) {
+			for(MMovementLine line : movement.getLines(true)) {		
+				BigDecimal qtyonhand = DB.getSQLValueBD(line.get_TrxName(), "SELECT COALESCE(SUM(QtyOnHand), 0) FROM M_Storageonhand s"
+						+ "	WHERE s.M_Product_ID=? AND s.m_locator_id=?", line.getM_Product_ID(),line.getM_LocatorTo_ID());
+				
+				BigDecimal qtyAvailable = qtyonhand.add(line.getMovementQty());
+				if(qtyAvailable.signum()<0)
+					throw new AdempiereException("Gagal Complete!! Quantity Avaibility = "+qtyAvailable+", Quantity Movement = "+line.getMovementQty()+", pada Movement Line : "+line.getLine()+", Product : "+line.getM_Product().getValue()+"_"+line.getM_Product().getName()+" locator "+line.getM_Locator().getValue());		
+			}
 		}
 	}
 
