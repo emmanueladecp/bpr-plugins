@@ -37,6 +37,7 @@ import org.compiere.model.I_M_Promotion;
 import org.compiere.model.I_M_PromotionDistribution;
 import org.compiere.model.I_M_PromotionLine;
 import org.compiere.model.I_M_PromotionReward;
+import org.compiere.model.MDocType;
 import org.compiere.model.MOrder;
 import org.compiere.model.MOrderLine;
 import org.compiere.model.MProductPrice;
@@ -547,10 +548,13 @@ public class PromotionRule {
 			stmt.setInt(pindex++, order.getAD_Org_ID());
 			rs = stmt.executeQuery();
 			while(rs.next()) {
-				int M_Promotion_ID = rs.getInt(1);
-				List<Integer> promotionLineIDs = findPromotionLine(M_Promotion_ID, order);
-				if (!promotionLineIDs.isEmpty() || (rs.getString(2)!=null && rs.getString(2).equals("DISCOUNT"))) {
-					promotions.put(M_Promotion_ID, promotionLineIDs);
+				MDocType doctype = new MDocType(order.getCtx(), order.getC_DocTypeTarget_ID(), order.get_TrxName());
+				if(doctype.get_ValueAsBoolean("isPromo")) {
+					int M_Promotion_ID = rs.getInt(1);
+					List<Integer> promotionLineIDs = findPromotionLine(M_Promotion_ID, order);
+					if (!promotionLineIDs.isEmpty() || (rs.getString(2)!=null && rs.getString(2).equals("DISCOUNT"))) {
+						promotions.put(M_Promotion_ID, promotionLineIDs);
+					}
 				}
 			}
 		} finally {
