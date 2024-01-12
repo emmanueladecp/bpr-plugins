@@ -49,6 +49,7 @@ import com.idempierecloud.bpr.event.COrderLineEvent;
 import com.idempierecloud.bpr.event.CPaymentEvent;
 import com.idempierecloud.bpr.event.ImportInvoiceEvent;
 import com.idempierecloud.bpr.event.LoginEvent;
+import com.idempierecloud.bpr.event.MAllocationHdrEvent;
 import com.idempierecloud.bpr.event.MBPRPicklistLineEvent;
 import com.idempierecloud.bpr.event.MInOutConfirmEvent;
 import com.idempierecloud.bpr.event.MInOutEvent;
@@ -179,6 +180,8 @@ public class EventFactory extends CustomEventFactory {
 		//BPR_Picklist
 		registerEvent(IEventTopics.PO_BEFORE_NEW, I_BPR_PicklistLine.Table_Name, MBPRPicklistLineEvent.class);
 		//registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_BPR_Picklist.Table_Name, MBPRPicklistEvent.class);
+		
+		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_AllocationHdr.Table_Name, MAllocationHdrEvent.class);
 
 		
 	}
