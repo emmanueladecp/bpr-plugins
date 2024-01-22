@@ -18,6 +18,8 @@ import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
+import org.compiere.model.MMatchPO;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.CLogger;
@@ -54,9 +56,50 @@ public class CInvoiceEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 
 
-		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
-
-			
+		}
+		else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
+			checkProductType();
+		}
+	}
+	
+	private void checkProductType() {
+		if(!invoice.isSOTrx()) {
+			for(MInvoiceLine invoiceLine: invoice.getLines()) {
+				 StringBuilder sql = new StringBuilder ("select mm.m_matchpo_id from c_invoiceline ci "
+				 		+ "	join m_matchpo mm on ci.c_invoiceline_id = mm.c_invoiceline_id "
+				 		+ "	where mm.c_orderline_id = ? and ci.c_invoiceline_id =?");
+					PreparedStatement pstmnt = null;
+					ResultSet rsl = null;
+					try
+					{
+						pstmnt = DB.prepareStatement (sql.toString(), invoice.get_TrxName());
+						int index = 1; 
+			            pstmnt.setInt(index++, invoiceLine.getC_OrderLine_ID());
+			            pstmnt.setInt(index++, invoiceLine.getC_InvoiceLine_ID());
+						rsl = pstmnt.executeQuery ();
+						while (rsl.next ()){
+							MMatchPO mpo = new MMatchPO(invoiceLine.getCtx(), rsl.getInt(1), invoiceLine.get_TrxName());							
+							if(!mpo.getC_OrderLine().getC_Order().isSOTrx()) {
+								if(!mpo.getM_Product().getProductType().equals("I")) {
+									mpo.setRef_MatchPO_ID(mpo.get_ID());
+									mpo.saveEx();
+								}
+							}
+						}
+					}
+					catch (SQLException e)
+					{
+						log.log(Level.SEVERE, " CInvoiceEvent - " + sql.toString(), e);
+					}
+					finally
+					{
+						DB.close(rsl, pstmnt);
+						rsl = null;
+						pstmnt = null;
+					}
+				
+				
+			}
 		}
 			
 	}
