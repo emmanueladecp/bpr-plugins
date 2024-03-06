@@ -67,7 +67,20 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
 			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
 			BigDecimal priceActual = invoiceLine.getPriceList().add(OngkosAngkut).add(SubsidiAmt);
+			BigDecimal priceEntered = priceActual.multiply(invoiceLine.getM_Product().getWeight());
 			invoiceLine.setPriceActual(priceActual);
+			invoiceLine.setPriceActual(priceEntered);
+			
+			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
+			invoiceLine.setLineNetAmt(LineNetAmt);
+		}else if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceEntered")) {
+			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceActual = invoiceLine.getPriceEntered().divide(invoiceLine.getM_Product().getWeight()).setScale(0);
+			BigDecimal priceList = priceActual.subtract(OngkosAngkut).subtract(SubsidiAmt);
+			invoiceLine.setPriceActual(priceActual);
+			invoiceLine.setPriceList(priceList);
+			
 			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
 			invoiceLine.setLineNetAmt(LineNetAmt);
 		}
