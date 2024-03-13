@@ -69,7 +69,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			BigDecimal priceActual = invoiceLine.getPriceList().add(OngkosAngkut).add(SubsidiAmt);
 			BigDecimal priceEntered = priceActual.multiply(invoiceLine.getM_Product().getWeight());
 			invoiceLine.setPriceActual(priceActual);
-			invoiceLine.setPriceActual(priceEntered);
+			invoiceLine.setPriceEntered(priceEntered);
 			
 			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
 			invoiceLine.setLineNetAmt(LineNetAmt);
