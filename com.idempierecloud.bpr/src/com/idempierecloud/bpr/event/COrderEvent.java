@@ -107,7 +107,7 @@ public class COrderEvent extends CustomEvent{
 	}
 	private void setInsentif() {		
 		MDocType docType = (MDocType) order.getC_DocTypeTarget();
-		if(!docType.get_ValueAsBoolean("isTurus"))
+		if(!docType.get_ValueAsBoolean("isTurus")&& order.getAD_Org_ID()!=1000003) //BPR 1 ONLY 
 			return;
 		for(MOrderLine line:order.getLines()) {
 			if(line.getM_Product_ID()==1003383||line.get_ValueAsInt("relatedproduct_ID")==1003383) {//GABAH 64 BELITANG KERING SUPPLIER
