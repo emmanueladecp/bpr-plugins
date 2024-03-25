@@ -106,8 +106,14 @@ public class COrderEvent extends CustomEvent{
 
 	private void setInsentif() {		
 		MDocType docType = (MDocType) order.getC_DocTypeTarget();
+		
+		if(order.get_ValueAsInt("AD_Org_ID")!=1000003)
+			return;
+		
 		if(!docType.get_ValueAsBoolean("isTurus"))
 			return;
+		
+		
 		for(MOrderLine line:order.getLines()) {
 			if(line.getM_Product_ID()==1003383||line.get_ValueAsInt("relatedproduct_ID")==1003383) {//GABAH 64 BELITANG KERING SUPPLIER
 				StringBuffer sqlStmt = new StringBuffer();
