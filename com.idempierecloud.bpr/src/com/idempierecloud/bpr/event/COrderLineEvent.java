@@ -463,10 +463,17 @@ public class COrderLineEvent extends CustomEvent {
 				return;
 			if(orderLine.getC_BPartner_Location_ID()==0)
 				return;
+			
+			BigDecimal ongkosAngkut1 = BigDecimal.ZERO;
+			orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut1);
+			
 			MBPartnerLocation BPLoc = new MBPartnerLocation(orderLine.getCtx(), orderLine.getC_BPartner_Location_ID(), orderLine.get_TrxName());
-			BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(BPLoc.get_TrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where C_City_ID = ?", BPLoc.get_ValueAsInt("C_City_ID"));
+			BigDecimal BPR_OngkosAngkut = DB.getSQLValueBD(BPLoc.get_TrxName(), "Select OngkosAngkut from BPR_OngkosAngkutDetail where isActive='Y' AND C_City_ID = ?", BPLoc.get_ValueAsInt("C_City_ID"));
+			
 			if(BPR_OngkosAngkut!=null) {
 				orderLine.set_ValueOfColumn("OngkosAngkut", BPR_OngkosAngkut);
+			} else {
+				orderLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut1);
 			}
 		}
 		else if (order.getDeliveryViaRule().equalsIgnoreCase("P")) {//Pickup
