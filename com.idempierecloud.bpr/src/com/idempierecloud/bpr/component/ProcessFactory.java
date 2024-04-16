@@ -28,6 +28,7 @@ import com.idempierecloud.bpr.process.ImportUOM;
 import com.idempierecloud.bpr.process.ImportUpdateSalesRepBP;
 import com.idempierecloud.bpr.process.LCO_GenerateWithholding;
 import com.idempierecloud.bpr.process.ScheduleAutoCloseSO;
+import com.idempierecloud.bpr.process.SetCreditUsedBPartner;
 import com.idempierecloud.bpr.process.SetFakturPajakInvoice;
 import com.idempierecloud.bpr.process.ScheduleAnalisaPembelianBahanBaku;
 import com.idempierecloud.bpr.process.SyncBP;
@@ -62,6 +63,7 @@ public class ProcessFactory extends CustomProcessFactory {
 		registerProcess(ScheduleAutoCloseSO.class);
 		registerProcess(ScheduleAnalisaPembelianBahanBaku.class);
 		registerProcess(SetFakturPajakInvoice.class);
+		registerProcess(SetCreditUsedBPartner.class);
 		
 	}
 
