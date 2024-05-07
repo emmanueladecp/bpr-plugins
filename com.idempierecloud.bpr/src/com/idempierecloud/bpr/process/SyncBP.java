@@ -203,6 +203,7 @@ public class SyncBP extends CustomProcess {
 						if(bplocation.has("Phone"))
 							bpartnerLocation.setPhone(bplocation.get("Phone").getAsString());
 						
+						bpartnerLocation.set_ValueOfColumn("bpr_location_ID", Bpr_location_ID);
 						bpartnerLocation.setIsPreserveCustomName(bplocation.get("IsPreserveCustomName").getAsBoolean());
 						bpartnerLocation.setIsShipTo(bplocation.get("IsShipTo").getAsBoolean());
 						bpartnerLocation.setIsActive(bplocation.get("IsActive").getAsBoolean());
