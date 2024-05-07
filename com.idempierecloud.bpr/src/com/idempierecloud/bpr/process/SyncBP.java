@@ -146,15 +146,18 @@ public class SyncBP extends CustomProcess {
 					for (JsonElement location : bplocations) {
 						JsonObject bplocation = location.getAsJsonObject();
 
+						int Bpr_location_ID = bplocation.get("C_LocationOld_ID").getAsInt();
 						String bpLocationName = bplocation.get("Name").getAsString();
-						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
-					    		.setParameters(bpartner.getC_BPartner_ID(), bpLocationName)
+						
+						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and bpr_location_ID=?", get_TrxName())
+					    		.setParameters(bpartner.getC_BPartner_ID(), Bpr_location_ID)
 					    		.first();
 						
 						JsonObject address = bplocation.getAsJsonObject("C_Location_ID");
+						int C_Location_ID = bplocation.getAsJsonObject("C_Location_ID").getAsInt();
 						MLocation mAddress = null;
 						
-						if(bpartnerLocation!=null && bpartnerLocation.getC_Location_ID()>0) {
+						if(bpartnerLocation!=null && bpartnerLocation.getC_Location_ID()>0 && Bpr_location_ID==C_Location_ID) {
 							mAddress = (MLocation) bpartnerLocation.getC_Location();
 						}else {
 							mAddress = new MLocation(Env.getCtx(), 0, get_TrxName());
