@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import org.adempiere.base.event.IEventTopics;
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MCity;
 import org.compiere.model.MLocation;
@@ -33,7 +34,13 @@ public class CBPartnerLocationEvent extends CustomEvent {
 			setLocation();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setLocation();
+		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
+			cancelDelete();
 		}
+	}
+	
+	private void cancelDelete() {
+		throw new AdempiereException("Cannot delete this record, please inactive it");
 	}
 	
 	private void setLocation() {
@@ -61,6 +68,9 @@ public class CBPartnerLocationEvent extends CustomEvent {
 			loc.setIsActive(true);
 			loc.save();
 			c_location_id = loc.getC_Location_ID();
+		}
+		if(bpLocation.getC_Location_ID()>0) {
+			bpLocation.set_ValueOfColumn("C_LocationOld_ID", bpLocation.getC_Location_ID());	
 		}
 		bpLocation.setC_Location_ID(c_location_id);
 	}
