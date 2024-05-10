@@ -8,7 +8,10 @@ public class SetLocationBPLocation  extends CustomCallout{
 	protected String start() {
 		if(getValue()==null)
 			return null;
-		setValue("C_Location_ID", 1000000);
+		if(getTab().getValue("C_Location_ID")==null) {
+			setValue("C_Location_ID", 1000000);
+		}
+		
 		return null;
 	}
 

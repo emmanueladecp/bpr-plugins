@@ -4,6 +4,7 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartnerLocation;
 import org.compiere.model.MCity;
+import org.compiere.model.MClient;
 import org.compiere.model.MLocation;
 import org.compiere.model.MRegion;
 import org.compiere.model.PO;
@@ -27,13 +28,13 @@ public class CBPartnerLocationEvent extends CustomEvent {
 		
 		bpLocation = (MBPartnerLocation) po;
 		if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
-			updateLocation();
+			
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
-			updateLocation();
+			
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setLocation();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
-			setLocation();
+			setLocationChange();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			cancelDelete();
 		}
@@ -43,7 +44,57 @@ public class CBPartnerLocationEvent extends CustomEvent {
 		throw new AdempiereException("Cannot delete this record, please inactive it");
 	}
 	
+    private void setLocationChange() {
+    	
+    	MClient client = new MClient(bpLocation.getCtx(), bpLocation.getAD_Client_ID(), bpLocation.get_TrxName());
+		if(!client.getName().equalsIgnoreCase("Belitang")) {
+			return;
+		}
+        int c_location_id = bpLocation.getC_Location_ID();
+        
+        MLocation loc = new MLocation(bpLocation.getCtx(), c_location_id, bpLocation.get_TrxName());
+        MRegion region = new MRegion(bpLocation.getCtx(), bpLocation.get_ValueAsInt("C_Region_ID"), bpLocation.get_TrxName());
+        MCity city = new MCity(bpLocation.getCtx(), bpLocation.get_ValueAsInt("C_City_ID"), bpLocation.get_TrxName());
+        X_BPR_District district = new X_BPR_District(bpLocation.getCtx(), bpLocation.get_ValueAsInt("bpr_district_id"), bpLocation.get_TrxName());            
+        
+        StringBuilder sql = null;
+        if(bpLocation.get_ValueAsInt("BPR_Village_ID")>0) {
+            X_BPR_Village village = new X_BPR_Village(bpLocation.getCtx(), bpLocation.get_ValueAsInt("bpr_village_id"), bpLocation.get_TrxName());
+            
+            sql = new StringBuilder ("UPDATE C_Location ")
+                    .append("SET Address1 = '").append (bpLocation.getName()).append ("',")
+                    .append(" Address2 = '").append (district.getName()).append ("',")
+                    .append(" Address3 = '").append (village.getName()).append ("',")
+                    .append(" Address4 = '").append (city.getName()).append ("',")
+                    .append(" Address5 = '").append (region.getName()).append ("',")
+                    .append(" C_Country_ID = ").append (bpLocation.get_ValueAsInt("C_Country_ID")).append (",")
+                    .append(" C_Region_ID = ").append (bpLocation.get_ValueAsInt("C_Region_ID")).append (",")
+                    .append(" C_City_ID = ").append (bpLocation.get_ValueAsInt("C_City_ID")).append (",")
+                    .append(" BPR_Village_ID = ").append (village.getBPR_Village_ID()).append (",")
+                    .append(" UpdatedBy = ").append (bpLocation.getUpdatedBy())
+                    .append(" WHERE C_location_ID=").append(c_location_id);
+              DB.executeUpdate(sql.toString(), bpLocation.get_TrxName());
+        }else {
+            sql = new StringBuilder ("UPDATE C_Location ")
+            		 .append("SET Address1 = '").append (bpLocation.getName()).append ("',")
+                     .append(" Address2 = '").append (district.getName()).append ("',")
+                     .append(" Address3 = NULL ")
+                     .append(" Address4 = '").append (city.getName()).append ("',")
+                     .append(" Address5 = '").append (region.getName()).append ("',")
+                     .append(" C_Country_ID = ").append (bpLocation.get_ValueAsInt("C_Country_ID")).append (",")
+                     .append(" C_Region_ID = ").append (bpLocation.get_ValueAsInt("C_Region_ID")).append (",")
+                     .append(" C_City_ID = ").append (bpLocation.get_ValueAsInt("C_City_ID")).append (",")
+                     .append(" UpdatedBy = ").append (bpLocation.getUpdatedBy())
+                     .append(" WHERE C_location_ID=").append(c_location_id);
+                DB.executeUpdate(sql.toString(), bpLocation.get_TrxName());
+        }
+    }
+    
 	private void setLocation() {
+		MClient client = new MClient(bpLocation.getCtx(), bpLocation.getAD_Client_ID(), bpLocation.get_TrxName());
+		if(!client.getName().equalsIgnoreCase("Belitang")) {
+			return;
+		}
 		int c_location_id = DB.getSQLValue(bpLocation.get_TrxName(), "select c_location_id from c_location cl "
 				+ " where isactive = 'Y' and address1 like ? and C_Region_ID = ? and C_City_ID = ? and bpr_district_id =?",
 				 bpLocation.getName(),bpLocation.get_ValueAsInt("C_Region_ID"),bpLocation.get_ValueAsInt("C_City_ID"), bpLocation.get_ValueAsInt("bpr_district_id"));
@@ -73,15 +124,6 @@ public class CBPartnerLocationEvent extends CustomEvent {
 			bpLocation.set_ValueOfColumn("C_LocationOld_ID", bpLocation.getC_Location_ID());	
 		}
 		bpLocation.setC_Location_ID(c_location_id);
-	}
-
-	private void updateLocation() {
-		if(bpLocation.getC_Location_ID()==0)
-			return;
-		
-		MLocation location = (MLocation) bpLocation.getC_Location();
-		location.setAddress1(bpLocation.getName());
-		location.saveEx();
 	}
 	
 	

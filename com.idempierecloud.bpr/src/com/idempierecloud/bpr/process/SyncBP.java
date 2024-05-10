@@ -66,6 +66,7 @@ public class SyncBP extends CustomProcess {
 		}
 		
 		JsonObject result = rest.get(url, filter);
+		log.warning(result.toString());
 		
 		if(rest.isError())
 			throw new AdempiereException(rest.getMessage());
@@ -144,20 +145,21 @@ public class SyncBP extends CustomProcess {
 			    if(bp.has("C_BPartner_Location")) {
 					JsonArray bplocations = bp.getAsJsonArray("C_BPartner_Location");
 					for (JsonElement location : bplocations) {
-						JsonObject bplocation = location.getAsJsonObject();
-
-						int Bpr_location_ID = bplocation.get("C_LocationOld_ID").getAsInt();
+						JsonObject bplocation = location.getAsJsonObject();;
 						String bpLocationName = bplocation.get("Name").getAsString();
-						
-						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and bpr_location_ID=?", get_TrxName())
-					    		.setParameters(bpartner.getC_BPartner_ID(), Bpr_location_ID)
+						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and C_BPartner_LocationRef_ID=?", get_TrxName())
+					    		.setParameters(bpartner.getC_BPartner_ID(), bplocation.get("id").getAsInt())
 					    		.first();
+						if(bpartnerLocation==null) {
+							bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
+						    		.setParameters(bpartner.getC_BPartner_ID(), bpLocationName)
+						    		.first();
+						}
 						
 						JsonObject address = bplocation.getAsJsonObject("C_Location_ID");
-						int C_Location_ID = bplocation.getAsJsonObject("C_Location_ID").getAsInt();
 						MLocation mAddress = null;
 						
-						if(bpartnerLocation!=null && bpartnerLocation.getC_Location_ID()>0 && Bpr_location_ID==C_Location_ID) {
+						if(bpartnerLocation!=null && bpartnerLocation.getC_Location_ID()>0) {
 							mAddress = (MLocation) bpartnerLocation.getC_Location();
 						}else {
 							mAddress = new MLocation(Env.getCtx(), 0, get_TrxName());
@@ -204,10 +206,10 @@ public class SyncBP extends CustomProcess {
 						if(bplocation.has("Phone"))
 							bpartnerLocation.setPhone(bplocation.get("Phone").getAsString());
 						
-						bpartnerLocation.set_ValueOfColumn("bpr_location_ID", Bpr_location_ID);
 						bpartnerLocation.setIsPreserveCustomName(bplocation.get("IsPreserveCustomName").getAsBoolean());
 						bpartnerLocation.setIsShipTo(bplocation.get("IsShipTo").getAsBoolean());
 						bpartnerLocation.setIsActive(bplocation.get("IsActive").getAsBoolean());
+						bpartnerLocation.set_ValueOfColumn("C_BPartner_LocationRef_ID", bplocation.get("id").getAsInt());
 						bpartnerLocation.saveEx();
 					}
 				}
