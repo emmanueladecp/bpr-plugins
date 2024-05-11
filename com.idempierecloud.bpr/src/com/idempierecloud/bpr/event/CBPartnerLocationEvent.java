@@ -78,7 +78,7 @@ public class CBPartnerLocationEvent extends CustomEvent {
             sql = new StringBuilder ("UPDATE C_Location ")
             		 .append("SET Address1 = '").append (bpLocation.getName()).append ("',")
                      .append(" Address2 = '").append (district.getName()).append ("',")
-                     .append(" Address3 = NULL ")
+                     .append(" Address3 = NULL, ")
                      .append(" Address4 = '").append (city.getName()).append ("',")
                      .append(" Address5 = '").append (region.getName()).append ("',")
                      .append(" C_Country_ID = ").append (bpLocation.get_ValueAsInt("C_Country_ID")).append (",")
