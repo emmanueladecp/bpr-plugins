@@ -109,7 +109,9 @@ Require-Bundle: org.adempiere.base;bundle-version="0.0.0",
  wrapped.org.springframework.spring-web;bundle-version="5.2.15",
  org.codehaus.jettison.jettison;bundle-version="1.4.1"
 Bundle-ClassPath: .,
- lib/idempiere-xmlbeans.jar
+ lib/idempiere-xmlbeans.jar,
+ lib/cors-filter-2.6.jar,
+ lib/java-property-utils-1.9.1.jar
 Export-Package: org.idempiere.webservices.model,
  org.idempiere.adInterface.x10,
  org.idempiere.adInterface.x10.impl,

@@ -52,8 +52,8 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				if(shipLine.getMovementQty().compareTo(invoiceLine.getQtyInvoiced())!=0) {
 					if(shipLine.getM_Locator().getM_LocatorType_ID()==M_LocatorType_CustomerShipment) {
 						throw new AdempiereException("Qty Shipment tidak sama dengan Qty Invoice,"
-								+ " Qty Shipment : "+shipLine.getQtyEntered()
-								+ " Qty Invoice  : "+invoiceLine.getQtyEntered()
+								+ " Qty Shipment : "+shipLine.getMovementQty()
+								+ " Qty Invoice  : "+invoiceLine.getQtyInvoiced()
 								+ " Product : "+invoiceLine.getM_Product().getName());
 					}
 				}	

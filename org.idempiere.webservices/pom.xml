@@ -5,7 +5,7 @@
 		<groupId>org.idempiere</groupId>
 		<artifactId>org.idempiere.parent</artifactId>
 		<version>${revision}</version>
-		<relativePath>../org.idempiere.parent/pom.xml</relativePath>
+		<relativePath>../../idempiere/org.idempiere.parent/pom.xml</relativePath>
 	</parent>
 	<artifactId>org.idempiere.webservices</artifactId>
 	<packaging>eclipse-plugin</packaging>
@@ -63,6 +63,11 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.thetransactioncompany</groupId>
+				<artifactId>cors-filter</artifactId>
+				<version>2.6</version>
 			</plugin>
 		</plugins>
 	</build>

@@ -187,9 +187,6 @@
         <setEntry value="org.apache.felix.webconsole@default:true"/>
         <setEntry value="org.apache.geronimo.specs.geronimo-j2ee-management_1.1_spec@default:default"/>
         <setEntry value="org.apache.geronimo.specs.geronimo-jms_1.1_spec@default:default"/>
-        <setEntry value="org.apache.httpcomponents.client5.httpclient5@default:default"/>
-        <setEntry value="org.apache.httpcomponents.core5.httpcore5-h2@default:default"/>
-        <setEntry value="org.apache.httpcomponents.core5.httpcore5@default:default"/>
         <setEntry value="org.apache.httpcomponents.httpclient@default:default"/>
         <setEntry value="org.apache.httpcomponents.httpcore@default:default"/>
         <setEntry value="org.apache.neethi@default:default"/>
@@ -220,7 +217,6 @@
         <setEntry value="org.eclipse.core.variables@default:default"/>
         <setEntry value="org.eclipse.ecf.filetransfer@default:default"/>
         <setEntry value="org.eclipse.ecf.identity@default:default"/>
-        <setEntry value="org.eclipse.ecf.provider.filetransfer.httpclient5@default:default"/>
         <setEntry value="org.eclipse.ecf.provider.filetransfer.ssl@default:false"/>
         <setEntry value="org.eclipse.ecf.provider.filetransfer@default:default"/>
         <setEntry value="org.eclipse.ecf@default:default"/>
@@ -326,7 +322,6 @@
         <setEntry value="org.jvnet.staxex.stax-ex@default:default"/>
         <setEntry value="org.krysalis.barcode4j@default:default"/>
         <setEntry value="org.mortbay.jasper.apache-el@default:true"/>
-        <setEntry value="org.mortbay.jasper.apache-jsp@default:true"/>
         <setEntry value="org.objectweb.asm.commons@default:default"/>
         <setEntry value="org.objectweb.asm.tree.analysis@default:default"/>
         <setEntry value="org.objectweb.asm.tree@default:default"/>
@@ -416,8 +411,6 @@
         <setEntry value="org.idempiere.keikai@default:false"/>
         <setEntry value="org.idempiere.printformat.editor@default:default"/>
         <setEntry value="org.idempiere.webservices@default:default"/>
-        <setEntry value="org.idempiere.zk.billboard.chart@default:default"/>
-        <setEntry value="org.idempiere.zk.billboard@default:false"/>
         <setEntry value="org.idempiere.zk.extra@default:default"/>
     </setAttribute>
     <booleanAttribute key="show_selected_only" value="false"/>
