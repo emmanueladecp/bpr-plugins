@@ -58,7 +58,7 @@ public class SyncBP extends CustomProcess {
 		if(isSalesRep) {
 			params.add("issalesrep eq true");
 		}
-		String filter = "$expand=AD_User,C_BPartner_Location($expand=C_Location_ID)";
+		String filter = "$expand=SalesRep_ID,AD_User,C_BPartner_Location($expand=C_Location_ID)";
 		if(params.size()>0) {
 			String query = String.join(" and ", params);
 			query = RestService.encodeQuery(query);
@@ -66,6 +66,7 @@ public class SyncBP extends CustomProcess {
 		}
 		
 		JsonObject result = rest.get(url, filter);
+		log.warning(result.toString());
 		
 		if(rest.isError())
 			throw new AdempiereException(rest.getMessage());
@@ -129,8 +130,8 @@ public class SyncBP extends CustomProcess {
 					for (JsonElement row : users) {
 						JsonObject user = row.getAsJsonObject();
 						
-						MUser mUser = new Query(Env.getCtx(), MUser.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
-					    		.setParameters(bpartner.getC_BPartner_ID(), user.get("Name").getAsString())
+						MUser mUser = new Query(Env.getCtx(), MUser.Table_Name, "c_bpartner_id=? and value=?", get_TrxName())
+					    		.setParameters(bpartner.getC_BPartner_ID(), user.get("Value").getAsString())
 					    		.first();
 						if(mUser==null) {
 							mUser = new MUser(bpartner);
@@ -144,12 +145,16 @@ public class SyncBP extends CustomProcess {
 			    if(bp.has("C_BPartner_Location")) {
 					JsonArray bplocations = bp.getAsJsonArray("C_BPartner_Location");
 					for (JsonElement location : bplocations) {
-						JsonObject bplocation = location.getAsJsonObject();
-
+						JsonObject bplocation = location.getAsJsonObject();;
 						String bpLocationName = bplocation.get("Name").getAsString();
-						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
-					    		.setParameters(bpartner.getC_BPartner_ID(), bpLocationName)
+						MBPartnerLocation bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and C_BPartner_LocationRef_ID=?", get_TrxName())
+					    		.setParameters(bpartner.getC_BPartner_ID(), bplocation.get("id").getAsInt())
 					    		.first();
+						if(bpartnerLocation==null) {
+							bpartnerLocation = new Query(Env.getCtx(), MBPartnerLocation.Table_Name, "c_bpartner_id=? and name=?", get_TrxName())
+						    		.setParameters(bpartner.getC_BPartner_ID(), bpLocationName)
+						    		.first();
+						}
 						
 						JsonObject address = bplocation.getAsJsonObject("C_Location_ID");
 						MLocation mAddress = null;
@@ -204,6 +209,7 @@ public class SyncBP extends CustomProcess {
 						bpartnerLocation.setIsPreserveCustomName(bplocation.get("IsPreserveCustomName").getAsBoolean());
 						bpartnerLocation.setIsShipTo(bplocation.get("IsShipTo").getAsBoolean());
 						bpartnerLocation.setIsActive(bplocation.get("IsActive").getAsBoolean());
+						bpartnerLocation.set_ValueOfColumn("C_BPartner_LocationRef_ID", bplocation.get("id").getAsInt());
 						bpartnerLocation.saveEx();
 					}
 				}
@@ -223,17 +229,36 @@ public class SyncBP extends CustomProcess {
 	}
 
 	private int findSalesRep(JsonObject bp) {
-		JsonObject data = bp.getAsJsonObject("SalesRep_ID");
-		String name = data.get("identifier").getAsString();
-		MUser sales = new Query(Env.getCtx(), MUser.Table_Name, "Name=?", get_TrxName())
-	    		.setParameters(name)
-	    		.first();
-		if(sales!=null)
-			return sales.getAD_User_ID();
 		
-
-		addLog("No Sales Rep Found "+name);
-		return 0;
+		JsonObject SalesRep = bp.getAsJsonObject("SalesRep_ID");
+		int a =SalesRep.get("id").getAsInt();
+		MUser sales = new Query(Env.getCtx(), MUser.Table_Name, " AD_UserRef_ID=?", get_TrxName())
+	    		.setParameters(SalesRep.get("id").getAsInt())
+	    		.first();
+		if(sales!=null) {
+			sales.setName(SalesRep.get("Name").getAsString());
+			if(SalesRep.has("Value")) 
+				sales.setValue(SalesRep.get("Value").getAsString());
+			if(SalesRep.has("C_Job_ID")) {
+				sales.setC_BPartner_ID(SalesRep.get("C_Job_ID").getAsInt());
+			}
+			sales.saveEx();
+			return sales.getAD_User_ID();
+		}
+	
+		MUser user = new MUser(getCtx(),0,get_TrxName());
+		user.setName(SalesRep.get("Name").getAsString());
+		user.set_ValueOfColumn("AD_UserRef_ID", SalesRep.get("id").getAsInt());
+		if(SalesRep.has("Value")) 
+			user.setValue(SalesRep.get("Value").getAsString());
+		if(SalesRep.has("C_BPartner_ID"))
+			user.setC_BPartner_ID(SalesRep.get("C_BPartner_ID").getAsInt());
+		if(SalesRep.has("C_Job_ID")) {
+			user.setC_BPartner_ID(SalesRep.get("C_Job_ID").getAsInt());
+		}
+		user.saveEx();
+		
+		return user.getAD_User_ID();
 	}
 
 	private int findId(JsonObject bp, String column) {
