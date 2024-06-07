@@ -182,6 +182,7 @@ public class SyncBP extends CustomProcess {
 					    	bpartnerLocation = new MBPartnerLocation(bpartner);
 						}
 						bpartnerLocation.setC_Location_ID(mAddress.getC_Location_ID());
+						bpartnerLocation.setName(bpLocationName);				
 						if(bplocation.has("C_Country_ID"))
 							bpartnerLocation.set_ValueOfColumn("C_Country_ID", findId(bplocation, "C_Country_ID"));
 	
