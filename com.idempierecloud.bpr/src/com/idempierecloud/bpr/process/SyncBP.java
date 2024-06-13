@@ -1,5 +1,6 @@
 package com.idempierecloud.bpr.process;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -238,23 +239,19 @@ public class SyncBP extends CustomProcess {
 			sales.setName(SalesRep.get("Name").getAsString());
 			if(SalesRep.has("Value")) 
 				sales.setValue(SalesRep.get("Value").getAsString());
-			if(SalesRep.has("C_Job_ID")) {
-				sales.setC_BPartner_ID(SalesRep.get("C_Job_ID").getAsInt());
-			}
+			if(SalesRep.has("C_BPartner_ID"))
+				sales.setC_BPartner_ID(findId(SalesRep, "C_BPartner_ID"));
 			sales.saveEx();
 			return sales.getAD_User_ID();
 		}
 	
 		MUser user = new MUser(getCtx(),0,get_TrxName());
 		user.setName(SalesRep.get("Name").getAsString());
-		user.set_ValueOfColumn("AD_UserRef_ID", SalesRep.get("id").getAsInt());
+		user.set_ValueOfColumn("AD_UserRef_ID", BigDecimal.valueOf(SalesRep.get("id").getAsInt()));
 		if(SalesRep.has("Value")) 
 			user.setValue(SalesRep.get("Value").getAsString());
 		if(SalesRep.has("C_BPartner_ID"))
-			user.setC_BPartner_ID(SalesRep.get("C_BPartner_ID").getAsInt());
-		if(SalesRep.has("C_Job_ID")) {
-			user.setC_BPartner_ID(SalesRep.get("C_Job_ID").getAsInt());
-		}
+			user.setC_BPartner_ID(findId(SalesRep, "C_BPartner_ID"));		
 		user.saveEx();
 		
 		return user.getAD_User_ID();
