@@ -144,7 +144,13 @@ public class SyncBP extends CustomProcess {
 							mUser = new MUser(bpartner);
 						}
 						if(user.has("Value"))
-							mUser.setValue(user.get("Value").getAsString());		
+							mUser.setValue(user.get("Value").getAsString());
+						if(user.has("EMail"))
+							mUser.setValue(user.get("EMail").getAsString());
+						if(user.has("Phone"))
+							mUser.setValue(user.get("Phone").getAsString());
+						 if(user.has("C_Greeting_ID"))
+						    	mUser.setC_Greeting_ID(findId(user, "C_Greeting_ID"));
 						mUser.saveEx();
 					}
 			    }
