@@ -137,8 +137,8 @@ public class SyncBP extends CustomProcess {
 					for (JsonElement row : users) {
 						JsonObject user = row.getAsJsonObject();
 						
-						MUser mUser = new Query(Env.getCtx(), MUser.Table_Name, "c_bpartner_id=? and value=?", get_TrxName())
-					    		.setParameters(bpartner.getC_BPartner_ID(), user.get("Value").getAsString())
+						MUser mUser = new Query(Env.getCtx(), MUser.Table_Name, "c_bpartner_id=? and ad_userref_id=?", get_TrxName())
+					    		.setParameters(bpartner.getC_BPartner_ID(), user.get("id").getAsInt())
 					    		.first();
 						if(mUser==null) {
 							mUser = new MUser(bpartner);
@@ -146,11 +146,11 @@ public class SyncBP extends CustomProcess {
 						if(user.has("Value"))
 							mUser.setValue(user.get("Value").getAsString());
 						if(user.has("EMail"))
-							mUser.setValue(user.get("EMail").getAsString());
+							mUser.setEMail(user.get("EMail").getAsString());
 						if(user.has("Phone"))
-							mUser.setValue(user.get("Phone").getAsString());
+							mUser.setPhone(user.get("Phone").getAsString());
 						 if(user.has("C_Greeting_ID"))
-						    	mUser.setC_Greeting_ID(findId(user, "C_Greeting_ID"));
+						    mUser.setC_Greeting_ID(findId(user, "C_Greeting_ID"));
 						mUser.saveEx();
 					}
 			    }
@@ -278,6 +278,12 @@ public class SyncBP extends CustomProcess {
 			sales.setName(SalesRep.get("Name").getAsString());
 			if(SalesRep.has("Value")) 
 				sales.setValue(SalesRep.get("Value").getAsString());
+			if(SalesRep.has("EMail"))
+				sales.setEMail(SalesRep.get("EMail").getAsString());
+			if(SalesRep.has("Phone"))
+				sales.setPhone(SalesRep.get("Phone").getAsString());
+			 if(SalesRep.has("C_Greeting_ID"))
+				 sales.setC_Greeting_ID(findId(SalesRep, "C_Greeting_ID"));
 			sales.saveEx();
 			return sales.getAD_User_ID();
 		}
@@ -287,6 +293,12 @@ public class SyncBP extends CustomProcess {
 		user.set_ValueOfColumn("AD_UserRef_ID", BigDecimal.valueOf(SalesRep.get("id").getAsInt()));
 		if(SalesRep.has("Value")) 
 			user.setValue(SalesRep.get("Value").getAsString());
+		if(SalesRep.has("EMail"))
+			user.setEMail(SalesRep.get("EMail").getAsString());
+		if(SalesRep.has("Phone"))
+			user.setPhone(SalesRep.get("Phone").getAsString());
+		 if(SalesRep.has("C_Greeting_ID"))
+			 user.setC_Greeting_ID(findId(SalesRep, "C_Greeting_ID"));
 		user.saveEx();
 		
 		return user.getAD_User_ID();
