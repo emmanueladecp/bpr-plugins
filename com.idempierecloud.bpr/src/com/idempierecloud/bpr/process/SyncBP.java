@@ -31,7 +31,6 @@ public class SyncBP extends CustomProcess {
 	private Timestamp created = null;
 	private boolean isSalesRep = false;
 	private int C_BPartner_ID = 0;
-	private int AD_User_ID =0;
 	private int C_BP_Group_ID = 0;
 	private int C_SalesRegion_ID = 0;
 	
@@ -132,11 +131,6 @@ public class SyncBP extends CustomProcess {
 			    bpartner.setIsCustomer(bp.get("IsCustomer").getAsBoolean());
 			    bpartner.setIsSalesRep(bp.get("IsSalesRep").getAsBoolean());
 			    bpartner.saveEx();
-			    if(AD_User_ID>0) {
-			    	MUser user = new MUser(bpartner.getCtx(),AD_User_ID,get_TrxName());
-			    	user.setC_BPartner_ID(bpartner.getC_BPartner_ID());
-			    	user.saveEx();
-			    }
 
 			    if(bp.has("AD_User")) {
 			    	JsonArray users = bp.getAsJsonArray("AD_User");
@@ -278,10 +272,6 @@ public class SyncBP extends CustomProcess {
 			sales.setName(SalesRep.get("Name").getAsString());
 			if(SalesRep.has("Value")) 
 				sales.setValue(SalesRep.get("Value").getAsString());
-			if(C_BPartner_ID>0)
-				sales.setC_BPartner_ID(C_BPartner_ID);
-			else
-				AD_User_ID = sales.getAD_User_ID();
 			sales.saveEx();
 			return sales.getAD_User_ID();
 		}
@@ -291,12 +281,7 @@ public class SyncBP extends CustomProcess {
 		user.set_ValueOfColumn("AD_UserRef_ID", BigDecimal.valueOf(SalesRep.get("id").getAsInt()));
 		if(SalesRep.has("Value")) 
 			user.setValue(SalesRep.get("Value").getAsString());
-		if(C_BPartner_ID>0)
-			user.setC_BPartner_ID(C_BPartner_ID);
 		user.saveEx();
-		
-		if(C_BPartner_ID<=0)
-			AD_User_ID = user.getAD_User_ID();
 		
 		return user.getAD_User_ID();
 	}
