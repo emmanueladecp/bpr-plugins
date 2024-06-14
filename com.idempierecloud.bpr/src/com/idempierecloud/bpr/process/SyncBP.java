@@ -222,7 +222,7 @@ public class SyncBP extends CustomProcess {
 						bpartnerLocation.setIsPreserveCustomName(bplocation.get("IsPreserveCustomName").getAsBoolean());
 						bpartnerLocation.setIsShipTo(bplocation.get("IsShipTo").getAsBoolean());
 						bpartnerLocation.setIsActive(bplocation.get("IsActive").getAsBoolean());
-						bpartnerLocation.set_ValueOfColumn("C_BPartner_LocationRef_ID", bplocation.get("id").getAsInt());
+						bpartnerLocation.set_ValueOfColumn("C_BPartner_LocationRef_ID", BigDecimal.valueOf(bplocation.get("id").getAsInt()));
 						bpartnerLocation.saveEx();
 					}
 				}
