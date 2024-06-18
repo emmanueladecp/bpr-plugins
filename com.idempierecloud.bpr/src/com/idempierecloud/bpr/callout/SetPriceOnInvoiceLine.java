@@ -14,11 +14,11 @@ public class SetPriceOnInvoiceLine extends CustomCallout{
 		String IsSOTrx = getTab().get_ValueAsString("isSoTrx");
 		if(IsSOTrx.equals("N"))
 			return null;
+		if(getTab().getValue("M_Product_ID")==null)
+			return null;
 		BigDecimal OngkosAngkut = (BigDecimal) getTab().getValue("OngkosAngkut");
 		BigDecimal SubsidiAmt = (BigDecimal) getTab().getValue("SubsidiAmt");
 		BigDecimal QtyInvoiced = (BigDecimal) getTab().getValue("QtyInvoiced");
-		if(getTab().getValue("M_Product_ID")==null)
-			return null;
 		int M_Product_ID =(Integer)getTab().getValue("M_Product_ID");
 		MProduct product = new MProduct(getCtx(), M_Product_ID, null);
 		BigDecimal priceList =(BigDecimal)getValue(); 
