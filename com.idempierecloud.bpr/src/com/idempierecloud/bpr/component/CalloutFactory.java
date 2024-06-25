@@ -18,6 +18,7 @@
 
 package com.idempierecloud.bpr.component;
 
+import org.compiere.model.I_C_BPartner_Location;
 import org.compiere.model.I_C_InvoiceLine;
 import org.compiere.model.I_C_Order;
 import org.compiere.model.I_C_OrderLine;
@@ -30,6 +31,7 @@ import org.compiere.model.I_M_ProductionLine;
 import com.idempierecloud.bpr.base.CustomCalloutFactory;
 import com.idempierecloud.bpr.callout.SetDatePromiseMOrderLine;
 import com.idempierecloud.bpr.callout.SetInternalUseQty;
+import com.idempierecloud.bpr.callout.SetLocationBPLocation;
 import com.idempierecloud.bpr.callout.SetLocatorCustomerReturn;
 import com.idempierecloud.bpr.callout.SetMovementQtyConfirmLine;
 import com.idempierecloud.bpr.callout.SetPriceOnInvoiceLine;
@@ -74,7 +76,9 @@ public class CalloutFactory extends CustomCalloutFactory {
 		//C_InvoiceLine
 		registerCallout(I_C_InvoiceLine.Table_Name, "PriceList", SetPriceOnInvoiceLine.class);
 		registerCallout(I_C_InvoiceLine.Table_Name, "PriceEntered", SetPriceListOnInvoiceLine.class);
-		
+		//C_BPartnerLocation
+		registerCallout(I_C_BPartner_Location.Table_Name, "Name", SetLocationBPLocation.class);
+		registerCallout(I_C_BPartner_Location.Table_Name, "BPR_District_ID", SetLocationBPLocation.class);
 		
 		
 		
