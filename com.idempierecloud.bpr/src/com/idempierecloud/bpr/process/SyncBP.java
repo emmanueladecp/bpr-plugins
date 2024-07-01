@@ -243,12 +243,14 @@ public class SyncBP extends CustomProcess {
 	}
 
 	private int checkSalesRegion(JsonObject bp) {
-		C_SalesRegion_ID = DB.getSQLValue(get_TrxName(), "select C_SalesRegion_ID from C_SalesRegion where C_SalesRegion_ID = ?", findId(bp, "C_SalesRegion_ID"));
-		if(C_BP_Group_ID<=0) {
-			JsonObject salesRegion = bp.getAsJsonObject("C_SalesRegion_ID");
+		JsonObject salesRegion = bp.getAsJsonObject("C_SalesRegion_ID");
+		String identifier = String.valueOf(salesRegion.get("identifier"));
+		String cleanedIdentifier = identifier.replace("\"", "");
+		C_SalesRegion_ID = DB.getSQLValue(get_TrxName(), "select C_SalesRegion_ID from C_SalesRegion where Name = ?", cleanedIdentifier);
+		if(C_SalesRegion_ID<=0) {
 			MSalesRegion sr = new MSalesRegion(getCtx(), 0, get_TrxName());
-			sr.setName(String.valueOf(salesRegion.get("identifier")));
-			sr.setValue(String.valueOf(salesRegion.get("identifier")));
+			sr.setName(cleanedIdentifier);
+			sr.setValue(cleanedIdentifier);
 			sr.saveEx();
 			C_SalesRegion_ID = sr.getC_SalesRegion_ID();
 		}
@@ -256,12 +258,14 @@ public class SyncBP extends CustomProcess {
 	}
 	
 	private int cekC_BP_Group(JsonObject bp) {
-		C_BP_Group_ID = DB.getSQLValue(get_TrxName(), "select C_BP_Group_ID from C_BP_Group where C_BP_Group_ID = ?", findId(bp, "C_BP_Group_ID"));
-		if(C_BP_Group_ID<=0) {
-			JsonObject BP_Group = bp.getAsJsonObject("C_BP_Group_ID");
+		JsonObject BP_Group = bp.getAsJsonObject("C_BP_Group_ID");
+		String identifier = String.valueOf(BP_Group.get("identifier"));
+		String cleanedIdentifier = identifier.replace("\"", "");
+		C_BP_Group_ID = DB.getSQLValue(get_TrxName(), "select C_BP_Group_ID from C_BP_Group where Name = ?", cleanedIdentifier);
+		if(C_BP_Group_ID<=0) {			
 			MBPGroup bpg = new MBPGroup(getCtx(), 0, get_TrxName());
-			bpg.setName(String.valueOf(BP_Group.get("identifier")));
-			bpg.setValue(String.valueOf(BP_Group.get("identifier")));
+			bpg.setName(cleanedIdentifier);
+			bpg.setValue(cleanedIdentifier);
 			bpg.saveEx();
 			C_BP_Group_ID = bpg.getC_BP_Group_ID();
 		}
