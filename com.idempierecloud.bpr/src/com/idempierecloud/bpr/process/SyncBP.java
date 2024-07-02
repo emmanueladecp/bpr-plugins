@@ -153,6 +153,8 @@ public class SyncBP extends CustomProcess {
 							mUser.setPhone(user.get("Phone").getAsString());
 						 if(user.has("C_Greeting_ID"))
 						    mUser.setC_Greeting_ID(findId(user, "C_Greeting_ID"));
+						if(mUser.get_ValueAsInt("AD_UserRef_ID")<=0)
+							mUser.set_ValueOfColumn("AD_UserRef_ID", BigDecimal.valueOf(user.get("id").getAsInt()));
 						mUser.saveEx();
 					}
 			    }
