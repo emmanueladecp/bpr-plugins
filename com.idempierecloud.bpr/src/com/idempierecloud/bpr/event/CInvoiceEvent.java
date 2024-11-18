@@ -59,6 +59,7 @@ public class CInvoiceEvent extends CustomEvent {
 		}
 		else if(event.getTopic().equals(IEventTopics.DOC_AFTER_COMPLETE)) {
 			checkProductType();
+			setCreditUsed();
 		}
 	}
 	
