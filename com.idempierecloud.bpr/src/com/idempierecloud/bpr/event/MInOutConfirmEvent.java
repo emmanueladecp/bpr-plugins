@@ -168,9 +168,17 @@ public class MInOutConfirmEvent extends CustomEvent {
         shipment.setMovementDate(timestamp);
         shipment.setDateAcct(timestamp);
 		shipment.saveEx();
-		if(!shipment.processIt(MInOut.DOCACTION_Complete))
+		
+		if(!shipment.processIt(MInOut.DOCACTION_Complete)) {
+			confirm.setProcessed(false);
+			confirm.setDocStatus(MInOutConfirm.STATUS_Drafted);
+			confirm.saveEx();
 			throw new AdempiereException("Shipment gagal Complete : "+shipment.getProcessMsg());
+		}
+		
+		confirm.saveEx();
 		shipment.saveEx();
+		
 		return;
 	}
 	
