@@ -36,7 +36,7 @@ import com.idempierecloud.bpr.base.CustomEvent;
 
 public class COrderEvent extends CustomEvent{
 
-	private static CLogger log = CLogger.getCLogger(COrderLineEvent.class);
+	private static CLogger log = CLogger.getCLogger(COrderEvent.class);
 	String m_processMsg = null;
 	private MOrder order = null;
 
@@ -49,9 +49,11 @@ public class COrderEvent extends CustomEvent{
 			checkSalesRep();
 			setCreditAvailable();
 			checkPOReference();
+			checkSOThirdParty();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			checkCreditAvailable();
 			checkPOReference();
+			checkSOThirdParty();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
 			setPotongKarung();
@@ -92,6 +94,64 @@ public class COrderEvent extends CustomEvent{
 			bp.setSO_CreditUsed(CreditUsed);
 			bp.saveEx();
 		}
+	}
+	
+	private void checkSOThirdParty() {
+		log.log(Level.INFO, "Start Check SO Third Party");
+		
+		//jika bukan SO, maka return
+		if(!order.isSOTrx()) {
+			log.log(Level.INFO, "Return Bukan SO");
+			return;
+		}
+		log.log(Level.INFO, "Tipe SO");
+		
+		//MDocType doctype = (MDocType) order.getC_DocTypeTarget();
+		//MDocType doctype = (MDocType) order.get
+		
+		//jika bukan App Order BPR (1000048), maka return 
+		int C_DocType_ID_AppOrderBPR=1000048;
+		if(order.getC_DocTypeTarget_ID()!=C_DocType_ID_AppOrderBPR) {
+			log.log(Level.INFO, "Return SO Bukan Tipe App Order "  + order.getC_DocTypeTarget_ID());
+			return;
+		}
+		log.log(Level.INFO, "Tipe App Order");
+		
+		if(order.get_ValueAsString("SORefExt").equalsIgnoreCase("")) {
+			log.log(Level.INFO, "SO Reff nya kosong 1");
+			return;
+		}
+		
+		log.log(Level.INFO, "SO Reff nya ada 1");
+		
+		String soReff = order.get_ValueAsString("SORefExt");
+		
+		if (soReff == null || soReff.isEmpty() || soReff.isBlank()) {
+			log.log(Level.INFO, "SO Reff nya kosong 2");
+			return;
+		}
+		
+		log.log(Level.INFO, "SO Reff nya ada 2 " + soReff);
+		
+		String reff = "";
+		reff = DB.getSQLValueString(order.get_TrxName(), "SELECT SORefExt FROM C_Order WHERE c_doctypetarget_id = 1000048 AND SORefExt=? AND C_Order_ID<>?", soReff, order.getC_Order_ID());
+		
+		log.log(Level.INFO, "Data reff nya " + reff);
+		
+		if (reff == "") {
+			return;
+		}
+		
+		if(reff!=null) {
+			log.log(Level.INFO, "Data reff nya " + reff);
+			log.log(Level.WARNING, "Duplikat SO Reference : "+reff);
+			throw new AdempiereException("Duplikat SO Reference : "+reff);
+		}
+		
+		log.log(Level.INFO, "Skipped");
+		
+		
+		
 	}
 
 	private void checkMethodCreditUseBP() {
