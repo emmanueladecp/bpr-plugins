@@ -877,11 +877,26 @@ public class VAllocation extends CustomForm {
 					+ " fully allocated");
 		}
 		MBPartner bpartner = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
+		BigDecimal creditUsed = DB.getSQLValueBD(trxName, "SELECT calculate_credituse(?)", bpartner.getC_BPartner_ID());  		
+
 		bpartner.setTotalOpenBalance();
+		bpartner.setSO_CreditUsed(creditUsed);
 		bpartner.saveEx();
+		
+		
+		//  Recalculate Credit Used
+		MBPartner bpartner3 = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
+		BigDecimal creditUsed3 = DB.getSQLValueBD(trxName, "SELECT calculate_credituse(?)", bpartner3.getC_BPartner_ID());  		
+		bpartner3.setSO_CreditUsed(creditUsed3);
+		bpartner3.saveEx();
+		
+		
 		/*MBPartner bpartner2 = new MBPartner(Env.getCtx(), m_C_BPartner2_ID, trxName);
 		bpartner2.setTotalOpenBalance();
 		bpartner2.saveEx();*/
+		
+		
+		
 		paymentList.clear();
 		amountList.clear();
 		

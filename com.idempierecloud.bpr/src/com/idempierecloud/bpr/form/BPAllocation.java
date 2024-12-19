@@ -879,16 +879,40 @@ public class BPAllocation extends CustomForm {
 					+ " fully allocated");
 		}
 		MBPartner bpartner = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
+		BigDecimal creditUsed = DB.getSQLValueBD(trxName, "SELECT calculate_credituse(?)", bpartner.getC_BPartner_ID());  		
 		bpartner.setTotalOpenBalance();
+		bpartner.setSO_CreditUsed(creditUsed);
 		bpartner.saveEx();
+		
+		
 		MBPartner bpartner2 = new MBPartner(Env.getCtx(), m_C_BPartner2_ID, trxName);
+		BigDecimal creditUsed2 = DB.getSQLValueBD(trxName, "SELECT calculate_credituse(?)", bpartner2.getC_BPartner_ID());
 		bpartner2.setTotalOpenBalance();
+		bpartner2.setSO_CreditUsed(creditUsed2);
 		bpartner2.saveEx();
+		
+		
+		
+		//  Recalculate Credit Used
+		MBPartner bpartner3 = new MBPartner(Env.getCtx(), m_C_BPartner_ID, trxName);
+		BigDecimal creditUsed3 = DB.getSQLValueBD(trxName, "SELECT calculate_credituse(?)", bpartner3.getC_BPartner_ID());  		
+		bpartner3.setSO_CreditUsed(creditUsed3);
+		bpartner3.saveEx();
+		
+		MBPartner bpartner4 = new MBPartner(Env.getCtx(), m_C_BPartner2_ID, trxName);
+		BigDecimal creditUsed4 = DB.getSQLValueBD(trxName, "SELECT calculate_credituse(?)", bpartner4.getC_BPartner_ID());
+		bpartner4.setSO_CreditUsed(creditUsed4);
+		bpartner4.saveEx();
+		//  Recalculate Credit Used
+		
+		
 		paymentList.clear();
 		amountList.clear();
 		
 		return alloc;
 	}   //  saveData
+	
+	
 	
 	@Override
 	protected void initForm() {
