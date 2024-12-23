@@ -50,6 +50,7 @@ public class CInvoiceEvent extends CustomEvent {
 			checkFaktur();
 		}	
 		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkHeaderWithRelatedDocument();
 			checkMovementDate();
 			checkqtyShipment();
 			checkDocStatusShipment();
@@ -200,6 +201,62 @@ public class CInvoiceEvent extends CustomEvent {
 					throw new AdempiereException("Shipment Document No : "+shipment.getDocumentNo()+" pada Invoice Line No "+ line.getLine()+" Belum complete!");
 			}
 		}
+	}
+	
+	private void checkHeaderWithRelatedDocument() {
+		if(!invoice.get_ValueAsBoolean("isSOTrx"))
+			return;
+		
+		if(invoice.isSOTrx()){
+			if(invoice.getReversal_ID()>0)
+				return;
+		}
+		
+		//check dulu per lines nya wajib ambil dari Shipment
+		int c_bpartner_id = invoice.getC_BPartner_ID();
+		MInvoiceLine[] lines = invoice.getLines();
+		
+		boolean getFromOrderOnly = false;
+		boolean getFromShipmentOnly = false;
+		boolean getFromOrderAndShipment = false;
+		
+		for(MInvoiceLine line:lines) {
+			if(line.getC_OrderLine_ID()>0 && line.getM_InOutLine_ID()>0) {
+				getFromOrderAndShipment = true;
+			} else {
+				if(line.getM_InOutLine_ID()>0) {
+					getFromShipmentOnly = true;
+				} else {
+					getFromOrderOnly = true;
+					break;
+				}
+			}
+		}
+		
+		if (getFromOrderOnly) {
+			throw new AdempiereException("Dokumen Invoice tidak ada pasangan dokumen SJ");
+		}
+		
+		
+		//int c_bpartner_id = invoice.getC_BPartner_ID();
+		//MInvoiceLine[] lines = invoice.getLines();
+		boolean sameDataBp = true;
+		
+		for(MInvoiceLine line:lines) {
+			if(line.getM_InOutLine_ID()>0) {
+				MInOut shipment = (MInOut) line.getM_InOutLine().getM_InOut();
+				int bp_lines = shipment.get_ValueAsInt("C_BPartner_ID");
+				
+				if (bp_lines != c_bpartner_id) {
+					sameDataBp = false;
+				}
+			}
+		}
+		
+		if (!sameDataBp) {
+			throw new AdempiereException("BP Invoice Missmatch dengan BP Invoice Lines");
+		}
+		
 	}
 
 	
