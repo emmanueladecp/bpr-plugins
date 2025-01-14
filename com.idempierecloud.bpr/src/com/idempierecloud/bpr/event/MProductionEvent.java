@@ -26,6 +26,7 @@ public class MProductionEvent extends CustomEvent{
 	private static CLogger log = CLogger.getCLogger(MProductionEvent.class);
 	private final static int C_Doctype_ID_BPR_RiceToRice = 1000066;
 	private final static int C_Doctype_ID_BPR_WIPRice = 1000086;
+	private final static int C_Doctype_ID_BPR_GrainToRice = 1000067;
 	
 	private MProductionExt production = null;
 
@@ -33,11 +34,72 @@ public class MProductionEvent extends CustomEvent{
 	protected void doHandleEvent(PO po, Event event) {
 		log.fine("Production Event : "+event.getTopic());
 		production = (MProductionExt) po;
+		
+		
 		if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkItemFGWithItemComponent();
 			checkProductCost();
 			checkQtyUsed();
 			checkRelatedProduct();
 			checkWIP();
+		}
+	}
+	
+	private void checkItemFGWithItemComponent() {
+		if(production.getReversal_ID()>0)
+			return;
+	
+		//notes : BAHAN BAKU WIP TIDAK BOLEH SAMA DENGAN END PRODUCT
+		
+		if(!production.get_ValueAsBoolean("IsUseProductionPlan") && production.get_ValueAsInt("C_DocType_ID")==C_Doctype_ID_BPR_GrainToRice) {
+			//Tab Bahan Baku WIP
+			String sqlStmt = "select M_Productionline_ID, qtyused, m_product_id from M_ProductionLine where M_Production_ID = ? and isActive = 'Y' and jenisproduk = 'W'";
+			
+			//Cari End Product
+			String sqlStmt2 = "select M_Productionline_ID, qtyused, m_product_id from M_ProductionLine where M_Production_ID = ? and isActive = 'Y' and jenisproduk = 'E'";
+			
+			
+			
+			PreparedStatement pstmt = null;
+			ResultSet rs = null;
+			PreparedStatement pstmt2 = null;
+			ResultSet rs2 = null;
+			
+			try {
+				pstmt = DB.prepareStatement(sqlStmt, null);
+				pstmt.setInt(1, production.get_ID());
+				rs = pstmt.executeQuery();
+				
+				pstmt2 = DB.prepareStatement(sqlStmt2, null);
+				pstmt2.setInt(1, production.get_ID());
+				rs2 = pstmt2.executeQuery();
+				
+				while (rs.next()) {
+					int M_Productionline_ID = rs.getInt(1);
+					BigDecimal qtyused = rs.getBigDecimal(2);
+					int M_Product_ID1 = rs.getInt(3);
+					
+					while (rs2.next()) {
+						int M_Productionline_ID2 = rs2.getInt(1);
+						BigDecimal qtyused2 = rs2.getBigDecimal(2);
+						int M_Product_ID2 = rs2.getInt(3);
+						
+						if (M_Product_ID1 == M_Product_ID2) {
+							throw new AdempiereException("Product Bahan Baku WIP tidak boleh sama dengan Product Barang Jadi");
+						}
+					}
+				}
+			} catch (SQLException e) {
+				log.log(Level.SEVERE, sqlStmt.toString(), e);
+				log.log(Level.SEVERE, sqlStmt2.toString(), e);
+			} finally{
+				DB.close(rs, pstmt);
+				DB.close(rs2, pstmt2);
+				rs = null;
+				pstmt = null;
+				rs2 = null;
+				pstmt2 = null;
+			}
 		}
 	}
 	
