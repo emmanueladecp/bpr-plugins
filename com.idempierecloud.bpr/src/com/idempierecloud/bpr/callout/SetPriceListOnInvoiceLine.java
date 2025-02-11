@@ -23,7 +23,17 @@ public class SetPriceListOnInvoiceLine  extends CustomCallout{
 		int M_Product_ID =(Integer)getTab().getValue("M_Product_ID");
 		MProduct product = new MProduct(getCtx(), M_Product_ID, null);
 		BigDecimal priceEntered =(BigDecimal)getValue(); 
-		BigDecimal priceActual = priceEntered.divide(product.getWeight()).setScale(0);
+		BigDecimal priceActual =(BigDecimal)getValue(); 
+		
+		//handling bug divide by zero if weight = 0
+		if (product.getWeight() ==  BigDecimal.valueOf(0) )
+		{
+			priceActual = priceEntered;
+		} else {
+			priceActual = priceEntered.divide(product.getWeight()).setScale(0);
+		}
+		
+		
 		BigDecimal PriceList = priceActual.subtract(OngkosAngkut).subtract(SubsidiAmt);
 		BigDecimal LineNetAmt = priceActual.multiply(QtyInvoiced);	
 		
