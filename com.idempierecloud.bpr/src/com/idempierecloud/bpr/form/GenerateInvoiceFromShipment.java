@@ -203,7 +203,7 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 			+ "   concat(cb.value,'_',cb.name) as valuebp, 	mi.movementdate, bp2.bpr_picklist_id, bp2.documentno "
 			+ "   from m_inout mi left join bpr_picklistline bp on mi.m_inout_id = bp.m_inout_id  "
 			+ "   left join bpr_picklist bp2 on bp.bpr_picklist_id = bp2.bpr_picklist_id  "
-			+ "   join ad_org ao ON ao.ad_org_id = mi.ad_org_id "
+			+ "   join AD_Org ao ON ao.ad_org_id = mi.ad_org_id "
 			+ "   join c_doctype cd on cd.c_doctype_id = mi.c_doctype_id  "
 			+ "   join c_bpartner cb ON cb.c_bpartner_id = mi.c_bpartner_id "
 			+ "   where mi.docstatus in ('CO','CL') and bp2.docstatus in ('CO','CL') and mi.issotrx ='Y'"

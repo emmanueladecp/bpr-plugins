@@ -181,7 +181,7 @@ public abstract class CreateFromShipment extends CreateFrom
 		StringBuilder sql = new StringBuilder("SELECT o.C_Order_ID,")
 			.append(display)
 			.append(" FROM C_Order o "
-					+ " join ad_org ao on ao.ad_org_id = o.ad_org_id WHERE ")
+					+ " join AD_Org ao on ao.ad_org_id = o.ad_org_id WHERE ")
 			.append(colBP)
 			.append("=? AND o.IsSOTrx=? AND o.DocStatus IN ('CO') ");
 		if (forCreditMemo)
