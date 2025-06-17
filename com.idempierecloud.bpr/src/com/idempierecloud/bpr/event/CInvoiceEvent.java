@@ -190,13 +190,22 @@ public class CInvoiceEvent extends CustomEvent {
 		if(!invoice.get_ValueAsBoolean("isSOTrx"))
 			return;
 		MInvoiceLine[] lines = invoice.getLines();
+		/*
+		 * //**for(MInvoiceLine line:lines) { if(line.getM_InOutLine_ID()>0) { MInOut
+		 * shipment = (MInOut) line.getM_InOutLine().getM_InOut();
+		 * if(shipment.getDocStatus().equalsIgnoreCase("CO")) return; else
+		 * if(shipment.getDocStatus().equalsIgnoreCase("CL")) return; else throw new
+		 * AdempiereException("Shipment Document No : "+shipment.getDocumentNo()
+		 * +" pada Invoice Line No "+ line.getLine()+" Belum complete!"); } }
+		 */
+		
 		for(MInvoiceLine line:lines) {
 			if(line.getM_InOutLine_ID()>0) {
 				MInOut shipment = (MInOut) line.getM_InOutLine().getM_InOut();
 				if(shipment.getDocStatus().equalsIgnoreCase("CO"))
-					return;
+					continue;
 				else if(shipment.getDocStatus().equalsIgnoreCase("CL"))
-					return;
+					continue;
 				else
 					throw new AdempiereException("Shipment Document No : "+shipment.getDocumentNo()+" pada Invoice Line No "+ line.getLine()+" Belum complete!");
 			}
