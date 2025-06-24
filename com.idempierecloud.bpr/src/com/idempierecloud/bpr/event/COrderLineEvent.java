@@ -369,9 +369,24 @@ public class COrderLineEvent extends CustomEvent {
 					SO_CreditAvaiable = Env.ZERO;
 				BigDecimal sumLineAmt = DB.getSQLValueBD(orderLine.get_TrxName(), " Select coalesce(sum(linenetamt),0) from c_orderline where c_orderline_id not in (?) and c_order_id = ? ", orderLine.get_ID(),orderLine.getC_Order_ID());
 				BigDecimal grandTotal = lineamt.add(sumLineAmt);
+				
+				//check Tipe SO apakah termasuk COD
+				boolean isCOD = false;
+				int paymentTerm = order.getC_PaymentTerm_ID();
+				if (paymentTerm == 1000010) {
+					isCOD = true;
+				} else {
+					isCOD = false;
+				}
+				
+				
 				if(SO_CreditAvaiable.compareTo(grandTotal)<0) {
-					log.warning("Grand Total Melebihi SO Credit Available pada Header");
-					throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
+					if (isCOD) {
+						
+					} else {
+						log.warning("Grand Total Melebihi SO Credit Available pada Header");
+						throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
+					}
 				}
 			}
 		}
