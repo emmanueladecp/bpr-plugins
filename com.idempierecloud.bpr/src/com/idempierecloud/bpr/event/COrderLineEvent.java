@@ -371,19 +371,19 @@ public class COrderLineEvent extends CustomEvent {
 				BigDecimal grandTotal = lineamt.add(sumLineAmt);
 				
 				//check Tipe SO apakah termasuk COD
-				boolean isCOD = false;
-				int paymentTerm = order.getC_PaymentTerm_ID();
-				if (paymentTerm == 1000010) {
-					isCOD = true;
-				} else {
-					isCOD = false;
-				}
+				//boolean isCOD = false;
+				//int paymentTerm = order.getC_PaymentTerm_ID();
+				//if (paymentTerm == 1000010) {
+				//	isCOD = true;
+				//} else {
+				//	isCOD = false;
+				//}
 				
 				
 				if(SO_CreditAvaiable.compareTo(grandTotal)<0) {
-					if (isCOD) {
+				//	if (isCOD) {
 						
-					} else {
+				//	} else {
 						StringBuilder msglog = new StringBuilder("Grand Total Melebihi SO Credit Available pada Header. ")
 								.append("Tipe COD : ")
 								.append(isCOD);
@@ -393,7 +393,7 @@ public class COrderLineEvent extends CustomEvent {
 						log.warning(msglog.toString());
 						throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
 						
-					}
+				//	}
 				}
 			}
 		}
