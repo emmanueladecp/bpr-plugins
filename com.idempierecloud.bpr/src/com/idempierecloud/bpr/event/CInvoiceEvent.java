@@ -99,8 +99,6 @@ public class CInvoiceEvent extends CustomEvent {
 						rsl = null;
 						pstmnt = null;
 					}
-				
-				
 			}
 		}
 	}
@@ -128,7 +126,6 @@ public class CInvoiceEvent extends CustomEvent {
 				}
 			}
 		}
-		
 	}
 	
 	private void checkMovementDate() {
@@ -171,9 +168,6 @@ public class CInvoiceEvent extends CustomEvent {
 				rsl = null;
 				pstmnt = null;
 			}
-		    
-		    
-			
 		}
 	}
 

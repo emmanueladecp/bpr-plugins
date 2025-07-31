@@ -32,6 +32,7 @@ import com.idempierecloud.bpr.process.SetFakturPajakInvoice;
 import com.idempierecloud.bpr.process.ScheduleAnalisaPembelianBahanBaku;
 import com.idempierecloud.bpr.process.SyncBP;
 import com.idempierecloud.bpr.process.UpdateProductCostPrice;
+import com.idempierecloud.bpr.process.VoidSalesOrder;
 
 /**
  * Process Factory
@@ -62,7 +63,7 @@ public class ProcessFactory extends CustomProcessFactory {
 		registerProcess(ScheduleAutoCloseSO.class);
 		registerProcess(ScheduleAnalisaPembelianBahanBaku.class);
 		registerProcess(SetFakturPajakInvoice.class);
-		
+		registerProcess(VoidSalesOrder.class);
 	}
 
 }

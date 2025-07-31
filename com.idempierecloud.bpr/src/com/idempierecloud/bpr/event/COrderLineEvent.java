@@ -384,14 +384,14 @@ public class COrderLineEvent extends CustomEvent {
 				//	if (isCOD) {
 						
 				//	} else {
-						StringBuilder msglog = new StringBuilder("Grand Total Melebihi SO Credit Available pada Header. ")
-								.append("Tipe COD : ")
-								.append(isCOD);
+				//		StringBuilder msglog = new StringBuilder("Grand Total Melebihi SO Credit Available pada Header. ")
+				//				.append("Tipe COD : ")
+				//				.append(isCOD);
 						
-						//log.warning("Grand Total Melebihi SO Credit Available pada Header");
-						//throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
-						log.warning(msglog.toString());
+						log.warning("Grand Total Melebihi SO Credit Available pada Header");
 						throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
+						//log.warning(msglog.toString());
+						//throw new AdempiereException("Grand Total Melebihi SO Credit Available pada Header");
 						
 				//	}
 				}
