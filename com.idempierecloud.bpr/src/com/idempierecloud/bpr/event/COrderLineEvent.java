@@ -213,8 +213,9 @@ public class COrderLineEvent extends CustomEvent {
 	
 	
 	private void setIfOrderlineFOC() {
-		final int Doctype_ManualOrder = 1000060; 
-		if(orderLine.getC_Order().getC_DocTypeTarget_ID()==Doctype_ManualOrder && orderLine.getC_Order().isSOTrx()) {
+		//final int Doctype_ManualOrder = 1000060; 
+		//if(orderLine.getC_Order().getC_DocTypeTarget_ID()==Doctype_ManualOrder && orderLine.getC_Order().isSOTrx()) {
+		if(orderLine.getC_Order().isSOTrx()) {
 			if(orderLine.get_ValueAsBoolean("isFOC")) {
 				orderLine.setPrice(BigDecimal.ZERO);
 				orderLine.setLineNetAmt(BigDecimal.ZERO);
