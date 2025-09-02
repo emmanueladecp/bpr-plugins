@@ -387,9 +387,9 @@ public class CreateFromMaterialMovement extends CreateFrom  implements EventList
 				line.setM_Movement_ID(movement.getM_Movement_ID());
 				line.setAD_Org_ID(movement.getAD_Org_ID());
 				line.setM_Product_ID(requestLine.getM_Product_ID());
-				int m_locator_ID = DB.getSQLValue(movement.get_TrxName(), "select m_locator_id from m_locator ml where m_locatortype_id in (select m_locatortype_id from m_locatortype ml2 where name='Customer Shipment') and m_warehouse_id = ?", M_Warehouse_ID);
+				int m_locator_ID = DB.getSQLValue(movement.get_TrxName(), "select m_locator_id from m_locator ml where m_locatortype_id in (select m_locatortype_id from m_locatortype ml2 where name='Customer Shipment'  and isactive = 'Y') and isactive = 'Y' and m_warehouse_id = ?", M_Warehouse_ID);
 				line.setM_Locator_ID(m_locator_ID);
-				int m_locatorTo_ID = DB.getSQLValue(movement.get_TrxName(), "select m_locator_id from m_locator ml where m_locatortype_id in (select m_locatortype_id from m_locatortype ml2 where name='INTRANSIT') and m_warehouse_id = ?", M_Warehouse_ID);
+				int m_locatorTo_ID = DB.getSQLValue(movement.get_TrxName(), "select m_locator_id from m_locator ml where m_locatortype_id in (select m_locatortype_id from m_locatortype ml2 where name='INTRANSIT' and isactive = 'Y') and isactive = 'Y' and m_warehouse_id = ?", M_Warehouse_ID);
 				line.setM_LocatorTo_ID(m_locatorTo_ID);
 				line.set_ValueOfColumn("M_LocatorToAlias_ID", requestLine.getM_LocatorToAlias_ID());
 				line.setMovementQty(Qty);
