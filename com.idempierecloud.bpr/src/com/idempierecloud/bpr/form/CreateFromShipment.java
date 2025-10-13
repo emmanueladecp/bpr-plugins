@@ -5,9 +5,11 @@ import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.logging.Level;
+import java.time.*;
 
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.apps.IStatusBar;
@@ -15,7 +17,7 @@ import org.compiere.grid.CreateFrom;
 import org.compiere.minigrid.IMiniTable;
 import org.compiere.model.GridTab;
 import org.compiere.model.MInOut;
-import org.compiere.model.MInOutLine;
+//import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MLocator;
 import org.compiere.model.MOrder;
@@ -160,7 +162,108 @@ public abstract class CreateFromShipment extends CreateFrom
 		return list;
 	}
 	
-	protected ArrayList<KeyNamePair> loadOrderData (int C_BPartner_ID, boolean forInvoice, boolean sameWarehouseOnly, boolean forCreditMemo)
+	protected ArrayList<KeyNamePair> loadOrderData(
+	        int C_BPartner_ID,
+	        boolean forInvoice,
+	        boolean sameWarehouseOnly,
+	        boolean forCreditMemo)
+	{
+	    final ArrayList<KeyNamePair> list = new ArrayList<>();
+
+	    final String isSOTrxParam = isSOTrx ? "Y" : "N";
+
+	    // 12-month cutoff at start of the day (avoids time-of-day surprises)
+	    final Timestamp cutoffTs = Timestamp.valueOf(LocalDate.now().minusMonths(12).atStartOfDay());
+
+	    // Display fragment (unchanged)
+	    final StringBuilder display = new StringBuilder(
+	            "ao.name||' - ' ||o.DocumentNo||' - ' ||" +
+	            " case when o.description is not null then o.description else '-' end")
+	        .append("||' - '||")
+	        .append(DB.TO_CHAR("o.DateOrdered", DisplayType.Date, Env.getAD_Language(Env.getCtx())));
+
+	    // Columns based on context
+	    String amountColumn = "ol.QtyDelivered";
+	    String colBP        = "o.C_BPartner_ID";
+	    if (forInvoice) {
+	        amountColumn = "ol.QtyInvoiced";
+	        colBP        = "o.Bill_BPartner_ID";
+	    }
+
+	    // Sensible cap for UI lists
+	    final int MAX_ROWS = 200;
+	    final String rowLimit =
+	        (org.compiere.util.DB.isOracle() ? " FETCH FIRST " + MAX_ROWS + " ROWS ONLY"
+	                                          : " LIMIT " + MAX_ROWS);
+
+	    // ---------- Build SQL (EXISTS in both branches; add date window) ----------
+	    final StringBuilder sql = new StringBuilder();
+	    sql.append("SELECT o.C_Order_ID, ").append(display)
+	       .append(" FROM C_Order o")
+	       .append(" JOIN AD_Org ao ON ao.AD_Org_ID = o.AD_Org_ID")
+	       .append(" WHERE ").append(colBP).append("=?")
+	       .append(" AND o.IsSOTrx=?")
+	       .append(" AND o.DocStatus IN ('CO')")
+	       .append(" AND o.DateOrdered >= ?"); // <-- 12-month window
+
+	    if (sameWarehouseOnly) {
+	        sql.append(" AND o.M_Warehouse_ID=?");
+	    }
+
+	    if (forCreditMemo) {
+	        sql.append(" AND EXISTS (")
+	           .append("   SELECT 1 FROM C_OrderLine ol")
+	           .append("   WHERE ol.C_Order_ID = o.C_Order_ID")
+	           .append("     AND ").append(amountColumn).append(" > 0")
+	           .append("     AND (CASE")
+	           .append("            WHEN ol.QtyDelivered >= ol.QtyOrdered")
+	           .append("            THEN (ol.QtyDelivered - ol.QtyInvoiced) <> 0")
+	           .append("            ELSE 1=1")
+	           .append("          END)")
+	           .append(" )")
+	           .append(" ORDER BY o.DateOrdered DESC, o.DocumentNo DESC")
+	           .append(rowLimit);
+	    } else {
+	        sql.append(" AND EXISTS (")
+	           .append("   SELECT 1 FROM C_OrderLine ol2")
+	           .append("   WHERE ol2.C_Order_ID = o.C_Order_ID")
+	           .append("     AND (ol2.QtyOrdered - COALESCE((")
+	           .append("         SELECT SUM(iol.MovementQty)")
+	           .append("         FROM M_InOutLine iol")
+	           .append("         WHERE iol.C_OrderLine_ID = ol2.C_OrderLine_ID")
+	           .append("     ), 0)) > 0")
+	           .append(" )")
+	           .append(" ORDER BY o.DateOrdered, o.DocumentNo")
+	           .append(rowLimit);
+	    }
+
+	    PreparedStatement pstmt = null;
+	    ResultSet rs = null;
+	    try {
+	        pstmt = DB.prepareStatement(sql.toString(), null);
+
+	        int idx = 1;
+	        pstmt.setInt(idx++, C_BPartner_ID);   // 1) partner (or bill-to if forInvoice)
+	        pstmt.setString(idx++, isSOTrxParam); // 2) 'Y'/'N'
+	        pstmt.setTimestamp(idx++, cutoffTs);  // 3) date window (12 months back)
+	        if (sameWarehouseOnly) {
+	            pstmt.setInt(idx++, getM_Warehouse_ID()); // 4) optional
+	        }
+
+	        rs = pstmt.executeQuery();
+	        while (rs.next()) {
+	            list.add(new KeyNamePair(rs.getInt(1), rs.getString(2)));
+	        }
+	    } catch (SQLException e) {
+	        log.log(Level.SEVERE, "loadOrderData SQL: " + sql, e);
+	    } finally {
+	        DB.close(rs, pstmt);
+	    }
+
+	    return list;
+	}
+	
+	protected ArrayList<KeyNamePair> loadOrderData_Backup (int C_BPartner_ID, boolean forInvoice, boolean sameWarehouseOnly, boolean forCreditMemo)
 	{
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 
