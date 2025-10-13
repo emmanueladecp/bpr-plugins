@@ -64,7 +64,6 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 			checkCreditUsedChange(IEventTopics.PO_BEFORE_NEW);
 			checkSOCreditLimit();
-			
 			setMarkPotongKarung();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyOrdered();
@@ -80,10 +79,13 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
 			checkSOCreditLimit();
+			checkRelatedWithMainProduct();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
 			checkCreditUsedChange(IEventTopics.PO_AFTER_DELETE);
+		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
+			checkRelatedWithMainProduct();
 		}
 	}	
 	
@@ -420,8 +422,10 @@ public class COrderLineEvent extends CustomEvent {
 		int M_PriceList_Version_ID = DB.getSQLValue(orderLine.get_TrxName(), "SELECT M_PriceList_Version_ID FROM M_PriceList_Version WHERE isActive='Y' AND M_PriceList_ID=? AND ValidFrom<=? order By ValidFrom DESC Limit 1", orderLine.getC_Order().getM_PriceList_ID(), orderLine.getC_Order().getDateOrdered());
 		
 		MProductPrice price = MProductPrice.get(orderLine.getCtx(), M_PriceList_Version_ID, orderLine.get_ValueAsInt("relatedProduct_ID"), orderLine.get_TrxName());
-		if(price==null)
+		if(price==null) {
 			throw new AdempiereException("No Product Price for "+relatedProduct.getName()+" M_PriceList_Version_ID:"+M_PriceList_Version_ID);
+		}
+		
 		orderLine.setPriceEntered(price.getPriceList());
 		orderLine.setPriceList(price.getPriceList());
 		orderLine.setPriceActual(price.getPriceList());
@@ -572,6 +576,38 @@ public class COrderLineEvent extends CustomEvent {
 	        order.set_ValueOfColumn("IsAllowPotongKarung", markPotongKarung);
 	        order.saveEx();
 		}
+	}
+	
+	private void checkRelatedWithMainProduct() {
+		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
+		MOrder order = (MOrder)orderLine.getC_Order();
+		
+		//harus merupakan Purchase Order
+		if(order.isSOTrx())
+			return;
+		
+		//harus merupakan Purchase Order Turus
+		if(!docType.get_ValueAsBoolean("isTurus"))
+			return;
+		
+		//blokiran pertama, untuk PO Turus, maka Product Utama wajib mempunyai turunan
+		int countRelatedProduct = 0;
+		countRelatedProduct = DB.getSQLValue(orderLine.get_TrxName(), "SELECT COUNT(relatedproduct_id) as counter FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=?", orderLine.getM_Product_ID());
+		
+		if (countRelatedProduct == 0)
+		{
+			throw new AdempiereException("Product Utama PO Turus wajib mempunyai related product");
+		}
+		
+		//blokiran kedua, PO Turus, maka Product Utama dan Product Related yang diinput harus berhubungan
+		int countLinkedRelated = 0;
+		countLinkedRelated = DB.getSQLValue(orderLine.get_TrxName(), "SELECT COUNT(relatedproduct_id) as counter FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=? AND RelatedProduct_ID=?", orderLine.getM_Product_ID(), orderLine.get_ValueAsInt("relatedProduct_ID") );
+		
+		if (countLinkedRelated == 0)
+		{
+			throw new AdempiereException("Product Utama dan Product Related PO Turus tidak saling berhubungan");
+		}
+		
 	}
 	
 	@Override
