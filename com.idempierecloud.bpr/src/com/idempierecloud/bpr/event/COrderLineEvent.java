@@ -79,13 +79,10 @@ public class COrderLineEvent extends CustomEvent {
 			setIfOrderlineFOC();
 			checkCreditUsedChange(IEventTopics.PO_BEFORE_CHANGE);
 			checkSOCreditLimit();
-			checkRelatedWithMainProduct();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_DELETE)) {
 			checkRequisitionLine();
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_DELETE)) {
 			checkCreditUsedChange(IEventTopics.PO_AFTER_DELETE);
-		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_CHANGE)) {
-			checkRelatedWithMainProduct();
 		}
 	}	
 	
@@ -578,37 +575,7 @@ public class COrderLineEvent extends CustomEvent {
 		}
 	}
 	
-	private void checkRelatedWithMainProduct() {
-		MDocType docType = (MDocType) orderLine.getC_Order().getC_DocTypeTarget();
-		MOrder order = (MOrder)orderLine.getC_Order();
-		
-		//harus merupakan Purchase Order
-		if(order.isSOTrx())
-			return;
-		
-		//harus merupakan Purchase Order Turus
-		if(!docType.get_ValueAsBoolean("isTurus"))
-			return;
-		
-		//blokiran pertama, untuk PO Turus, maka Product Utama wajib mempunyai turunan
-		int countRelatedProduct = 0;
-		countRelatedProduct = DB.getSQLValue(orderLine.get_TrxName(), "SELECT COUNT(relatedproduct_id) as counter FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=?", orderLine.getM_Product_ID());
-		
-		if (countRelatedProduct == 0)
-		{
-			throw new AdempiereException("Product Utama PO Turus wajib mempunyai related product");
-		}
-		
-		//blokiran kedua, PO Turus, maka Product Utama dan Product Related yang diinput harus berhubungan
-		int countLinkedRelated = 0;
-		countLinkedRelated = DB.getSQLValue(orderLine.get_TrxName(), "SELECT COUNT(relatedproduct_id) as counter FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=? AND RelatedProduct_ID=?", orderLine.getM_Product_ID(), orderLine.get_ValueAsInt("relatedProduct_ID") );
-		
-		if (countLinkedRelated == 0)
-		{
-			throw new AdempiereException("Product Utama dan Product Related PO Turus tidak saling berhubungan");
-		}
-		
-	}
+	
 	
 	@Override
 	protected void doHandleEvent() {

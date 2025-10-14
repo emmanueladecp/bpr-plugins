@@ -56,6 +56,7 @@ public class COrderEvent extends CustomEvent{
 			checkSOThirdParty();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setPriceCost();
+			checkRelatedWithMainProduct() ;
 			setPotongKarung();
 			setInsentif();
 			checkMethodCreditUseBP();
@@ -204,6 +205,57 @@ public class COrderEvent extends CustomEvent{
 			}
 		}
 		
+	}
+	
+	private void checkRelatedWithMainProduct() {
+		MDocType dt = (MDocType) order.getC_DocTypeTarget();
+		boolean allowPotongKarung = order.get_ValueAsBoolean("IsAllowPotongKarung"); 
+		int c_charge_id_potongKarung = 1000139;
+		
+		if(order.isSOTrx()) return;
+		
+		if(!order.isSOTrx()&&dt.get_ValueAsBoolean("IsTurus")) {
+			for(MOrderLine orderLine:order.getLines()) {
+				
+				int countRelatedProduct = 0;
+				
+				if (allowPotongKarung) {
+					if (orderLine.getC_Charge_ID() == c_charge_id_potongKarung) {
+						continue;
+					} else {
+						//blokiran pertama, untuk PO Turus, maka Product Utama wajib mempunyai turunan
+						countRelatedProduct = DB.getSQLValue(order.get_TrxName(), "SELECT COUNT(relatedproduct_id)  FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=?", orderLine.getM_Product_ID());
+						if (countRelatedProduct == 0)
+						{
+							throw new AdempiereException("Product Utama PO Turus wajib mempunyai related product");
+						}
+						
+						//blokiran kedua, PO Turus, maka Product Utama dan Product Related yang diinput harus berhubungan
+						int countLinkedRelated = 0;
+						countLinkedRelated = DB.getSQLValue(order.get_TrxName(), "SELECT COUNT(relatedproduct_id)  FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=? AND RelatedProduct_ID=?", orderLine.getM_Product_ID(), orderLine.get_ValueAsInt("relatedProduct_ID") );
+						if (countLinkedRelated == 0)
+						{
+							throw new AdempiereException("Product Utama dan Product Related PO Turus tidak saling berhubungan");
+						}
+					}
+				} else {
+					//blokiran pertama, untuk PO Turus, maka Product Utama wajib mempunyai turunan
+					countRelatedProduct = DB.getSQLValue(order.get_TrxName(), "SELECT COUNT(relatedproduct_id)  FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=?", orderLine.getM_Product_ID());
+					if (countRelatedProduct == 0)
+					{
+						throw new AdempiereException("Product Utama PO Turus wajib mempunyai related product");
+					}
+					
+					//blokiran kedua, PO Turus, maka Product Utama dan Product Related yang diinput harus berhubungan
+					int countLinkedRelated = 0;
+					countLinkedRelated = DB.getSQLValue(order.get_TrxName(), "SELECT COUNT(relatedproduct_id)  FROM M_RelatedProduct where isactive ='Y' AND RelatedProductType='A' AND M_Product_ID=? AND RelatedProduct_ID=?", orderLine.getM_Product_ID(), orderLine.get_ValueAsInt("relatedProduct_ID") );
+					if (countLinkedRelated == 0)
+					{
+						throw new AdempiereException("Product Utama dan Product Related PO Turus tidak saling berhubungan");
+					}
+				}
+			}
+		}
 	}
 	
     private void setPotongKarung() {
