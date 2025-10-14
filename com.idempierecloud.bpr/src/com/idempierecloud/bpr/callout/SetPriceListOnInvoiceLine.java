@@ -8,6 +8,8 @@ import com.idempierecloud.bpr.base.CustomCallout;
 
 public class SetPriceListOnInvoiceLine  extends CustomCallout{
 	
+	private static final BigDecimal ZERO = BigDecimal.ZERO;
+	
 	@Override
 	protected String start() {
 		if(getValue()==null)
@@ -26,13 +28,17 @@ public class SetPriceListOnInvoiceLine  extends CustomCallout{
 		BigDecimal priceActual =(BigDecimal)getValue(); 
 		
 		//handling bug divide by zero if weight = 0
-		if (product.getWeight() ==  BigDecimal.valueOf(0) )
-		{
+		
+		if (product.getWeight().compareTo(ZERO) == 0) {
 			priceActual = priceEntered;
 		} else {
-			priceActual = priceEntered.divide(product.getWeight()).setScale(0);
+			if (product.getWeight() ==  BigDecimal.valueOf(0) )
+			{
+				priceActual = priceEntered;
+			} else {
+				priceActual = priceEntered.divide(product.getWeight()).setScale(0);
+			}
 		}
-		
 		
 		BigDecimal PriceList = priceActual.subtract(OngkosAngkut).subtract(SubsidiAmt);
 		BigDecimal LineNetAmt = priceActual.multiply(QtyInvoiced);	
