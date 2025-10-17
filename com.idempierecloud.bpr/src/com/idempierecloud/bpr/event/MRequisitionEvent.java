@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import org.adempiere.base.event.IEventTopics;
@@ -68,9 +69,17 @@ public class MRequisitionEvent extends CustomEvent {
 			if(qtyPack==null)
 					qtyPack= Env.ZERO;
 			
+			//dibalik jadi pengali dulu, krn jika hasil bagi adalah sebuah desimal berkepanjangan (0.4545454545454.....),
+			//maka akan menyebabkan error
+			
+			//BigDecimal newQtyOrdered = qtyPack
+			//		.divide(totalQtyPack)
+			//		.multiply(timbanganNetAmt);
+			
 			BigDecimal newQtyOrdered = qtyPack
-					.divide(totalQtyPack)
-					.multiply(timbanganNetAmt);
+					.multiply(timbanganNetAmt)
+					.divide(totalQtyPack, 0, RoundingMode.HALF_UP);;
+			
 			line.setQty(newQtyOrdered);
 			line.saveEx();
 		}
