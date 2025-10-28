@@ -9,12 +9,15 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
 import org.compiere.model.MInOutLine;
+import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MLocator;
 import org.compiere.model.MMovement;
 import org.compiere.model.MMovementLine;
 import org.compiere.model.MMovementLineMA;
+import org.compiere.model.MOrderLine;
 import org.compiere.model.MProduct;
 import org.compiere.model.MStorageOnHand;
+import org.compiere.model.MTransaction;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.CLogger;
@@ -30,6 +33,8 @@ public class MMovementEvent extends CustomEvent {
 	private static CLogger log = CLogger.getCLogger(MMovementEvent.class);
 	
 	private MMovement movement = null;
+	int C_DocType_ID_ConfirmMovementBPRRMP=1000059;
+	
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -68,6 +73,31 @@ public class MMovementEvent extends CustomEvent {
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			if(desc!=null && desc.equals("INTRANSIT")) {
 				checkConfirmMovement();
+			}
+		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
+			checkMTransactionExist();
+		}
+	}
+	
+	private void checkMTransactionExist() {
+		
+		if(movement.getC_DocType_ID()!=C_DocType_ID_ConfirmMovementBPRRMP) {
+			log.log(Level.INFO, "Bukan Confirm Movement, fungsi checkMTransactionExist tidak dijalankan");
+			return;
+		}
+		log.log(Level.INFO, "Confirm Movement, fungsi checkMTransactionExist dijalankan");
+		MMovementLine[] oLines = movement.getLines(true);
+		
+		for (int i = 0; i < oLines.length; i++) {
+			MMovementLine oLine = oLines[i];
+			boolean hasMTrx = new Query(movement.getCtx(), MTransaction.Table_Name,
+									MTransaction.COLUMNNAME_M_MovementLine_ID+"=?", movement.get_TrxName())
+									.setOnlyActiveRecords(true)
+									.setParameters(oLine.get_ID())
+									.match();
+			if(hasMTrx) {
+				log.log(Level.INFO, "Ada MTransaction terdeteksi dengan movementlineid : " + oLine.get_ID());
+				throw new AdempiereException("Tidak dapat Void Confirm Movement. Sudah pernah dicomplete dan terbentuk MTransaction movementlineid : " + oLine.get_ID());
 			}
 		}
 	}
