@@ -34,6 +34,7 @@ import com.idempierecloud.bpr.process.SyncBP;
 import com.idempierecloud.bpr.process.UpdateProductCostPrice;
 import com.idempierecloud.bpr.process.VoidSalesOrder;
 import com.idempierecloud.bpr.process.CloseSOPO;
+import com.idempierecloud.bpr.process.CloseRequisition;
 /**
  * Process Factory
  */
@@ -65,6 +66,7 @@ public class ProcessFactory extends CustomProcessFactory {
 		registerProcess(SetFakturPajakInvoice.class);
 		registerProcess(VoidSalesOrder.class);
 		registerProcess(CloseSOPO.class);
+		registerProcess(CloseRequisition.class);
 	}
 
 }
