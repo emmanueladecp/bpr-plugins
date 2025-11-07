@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 
 import org.compiere.model.MOrder;
-
+import org.compiere.process.DocAction;
 import org.compiere.util.DB;
 
 import com.idempierecloud.bpr.base.CustomProcess;
@@ -46,7 +46,7 @@ public class CloseSOPO extends CustomProcess  {
     				if (order.isProcessed() && "CO".equals(order.getDocStatus())) {
                         if (order.closeIt()) {
                         	order.setDocStatus(MOrder.DOCSTATUS_Closed);
-                        	order.setDocAction(MOrder.ACTION_None);
+                        	order.setDocAction(DocAction.ACTION_None);
                             order.saveEx();
                             addLog("Closed SOPO: " + rsl.getInt(1));
                             successCount++;

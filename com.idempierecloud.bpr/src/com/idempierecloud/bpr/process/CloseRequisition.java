@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 
 import org.compiere.model.MRequisition;
-
+import org.compiere.process.DocAction;
 import org.compiere.util.DB;
 
 import com.idempierecloud.bpr.base.CustomProcess;
@@ -46,7 +46,7 @@ public class CloseRequisition extends CustomProcess  {
     				if (requisition.isProcessed() && "CO".equals(requisition.getDocStatus())) {
                         if (requisition.closeIt()) {
                         	requisition.setDocStatus(MRequisition.DOCSTATUS_Closed);
-                        	requisition.setDocAction(MRequisition.ACTION_None);
+                        	requisition.setDocAction(DocAction.ACTION_None);
                         	requisition.saveEx();
                             addLog("Closed Requisition: " + rsl.getInt(1));
                             successCount++;
