@@ -114,8 +114,96 @@ public class CreateFromOrder extends CreateFrom {
 	
 	/**
 	 *  Load DocType Field.
-	 */	
+	 */
 	protected ArrayList<KeyNamePair> loadRequisitionData() {
+		ArrayList<KeyNamePair> list = new ArrayList<>();
+
+		// --- Ambil parameter kontrol lebih dulu ---
+		final String trxName = order.get_TrxName();
+
+		final String isturus = DB.getSQLValueString(
+		        trxName,
+		        "SELECT COALESCE(cd.isturus,'N') " +
+		        "FROM c_order co JOIN c_doctype cd ON co.c_doctypetarget_id = cd.c_doctype_id " +
+		        "WHERE co.c_order_id = ?",
+		        C_Order_ID
+		);
+
+		final int isRMP = DB.getSQLValue(
+		        trxName,
+		        "SELECT COUNT(1) FROM ad_client ac WHERE ac.value LIKE 'RMP' AND ac.ad_client_id = ?",
+		        AD_Client_ID
+		);
+
+		boolean isTurusAndNotRMP = "Y".equalsIgnoreCase(isturus) && isRMP < 1;
+
+		StringBuilder sql = new StringBuilder();
+		sql.append("SELECT r.M_Requisition_ID, r.DocumentNo || ' - ' || TO_CHAR(r.DateRequired, 'YYYY-MM-DD') AS DocumentNo ")
+		   .append("FROM M_Requisition r ")
+		   .append("LEFT JOIN bpr_timbangan t ON t.bpr_timbangan_id = r.bpr_timbangan_id ")
+		   .append("WHERE r.AD_Client_ID = ? ")
+		   .append("  AND r.AD_Org_ID = ? ")
+		   .append("  AND r.IsActive = 'Y' ")
+		   .append("  AND r.DocStatus IN ('CO') ")
+		   // hanya requisition yang masih relevan: ada line yg belum terikat orderline ATAU ordernya void/reversed
+		   .append("  AND EXISTS ( ")
+		   .append("      SELECT 1 ")
+		   .append("      FROM M_RequisitionLine rl ")
+		   .append("      LEFT JOIN C_OrderLine ol ON rl.c_orderline_id = ol.c_orderline_id ")
+		   .append("      LEFT JOIN C_Order o ON ol.c_order_id = o.c_order_id ")
+		   .append("      WHERE rl.M_Requisition_ID = r.M_Requisition_ID ")
+		   .append("        AND (rl.c_orderline_id IS NULL OR o.DocStatus IN ('VO','RE')) ")
+		   .append("  ) ");
+
+		ArrayList<Object> params = new ArrayList<>();
+		params.add(AD_Client_ID);
+		params.add(AD_Org_ID);
+
+		if (NotaTimbangan != null && !NotaTimbangan.isEmpty()) {
+		    sql.append("  AND t.value ILIKE ? ");
+		    params.add("%" + NotaTimbangan + "%");
+		}
+
+		if (isTurusAndNotRMP) {
+		    // PR Bahan Baku
+		    if (C_BPartner_ID > 0) {
+		        sql.append("  AND r.C_BPartner_ID = ? ");
+		        params.add(C_BPartner_ID);
+		    }
+		    sql.append("  AND r.C_DocType_ID = 1000088 ");
+		} else {
+			if (C_BPartner_ID > 0) {
+		        sql.append("  AND r.C_BPartner_ID = ? ");
+		        params.add(C_BPartner_ID);
+		    }
+		    sql.append("  AND r.C_DocType_ID <> 1000088 ");
+		}
+
+		// selalu urutkan dari kebutuhan terbaru
+		sql.append("ORDER BY r.DateRequired DESC");
+
+		try (PreparedStatement pstmt = DB.prepareStatement(sql.toString(), trxName)) {
+		    int idx = 1;
+		    for (Object p : params) {
+		        if (p instanceof Integer)      pstmt.setInt(idx++, (Integer) p);
+		        else if (p instanceof String)  pstmt.setString(idx++, (String) p);
+		        else                           pstmt.setObject(idx++, p);
+		    }
+
+		    try (ResultSet rs = pstmt.executeQuery()) {
+		        while (rs.next()) {
+		            list.add(new KeyNamePair(rs.getInt(1), rs.getString(2)));
+		        }
+		    }
+		} catch (SQLException e) {
+		    log.log(Level.SEVERE, sql.toString(), e);
+		}
+
+		return list;
+
+	}
+	
+	protected ArrayList<KeyNamePair> loadRequisitionData2() {
 		ArrayList<KeyNamePair> list = new ArrayList<KeyNamePair>();
 		
 		StringBuffer sqlStmt = new StringBuffer();
@@ -216,6 +304,7 @@ public class CreateFromOrder extends CreateFrom {
 	    try{
 	    	pstmt = DB.prepareStatement(sqlStmt.toString(), null);
 	    	int index = 1;
+	    	pstmt.setInt(index++, AD_Client_ID);
 	    	if(M_Requisition_ID>0)
 	    		pstmt.setInt(index++, M_Requisition_ID);
 	    	if(isturus.equals("Y")&&isRMP<1) {

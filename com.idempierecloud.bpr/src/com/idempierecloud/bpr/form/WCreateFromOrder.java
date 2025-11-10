@@ -151,7 +151,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		}
 		initRequisitionData();
 		
-		//loadRequisition();
+		//	loadRequisition();
 		
 		return true;
 	}
@@ -303,7 +303,8 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 
 	@Override
 	public void valueChange(ValueChangeEvent e) {
-		if (log.isLoggable(Level.CONFIG)) log.config(e.getPropertyName() + "=" + e.getNewValue());
+		//if (log.isLoggable(Level.CONFIG)) log.config(e.getPropertyName() + "=" + e.getNewValue());
+		if (log.isLoggable(Level.SEVERE)) log.config(e.getPropertyName() + "=" + e.getNewValue());
 
 		//  BPartner - load Order/Invoice/Shipment
 		if (e.getPropertyName().equals("timbangan"))
@@ -316,6 +317,13 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		{
 			Integer newBpValue = (Integer)e.getNewValue();
 			C_BPartner_ID = newBpValue == null?0:newBpValue.intValue();
+			initRequisitionData();
+			loadRequisition();
+			
+		} else if (e.getPropertyName().equals("M_Requisition_ID"))
+		{
+			Integer newReqValue = (Integer)e.getNewValue();
+			M_Requisition_ID = newReqValue == null?0:newReqValue.intValue();
 			initRequisitionData();
 			loadRequisition();
 			
