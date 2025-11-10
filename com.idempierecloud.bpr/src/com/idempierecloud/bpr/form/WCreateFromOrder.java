@@ -151,7 +151,7 @@ public class WCreateFromOrder extends CreateFromOrder implements EventListener<E
 		}
 		initRequisitionData();
 		
-		loadRequisition();
+		//loadRequisition();
 		
 		return true;
 	}

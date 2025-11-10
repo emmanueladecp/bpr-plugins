@@ -192,11 +192,12 @@ public class CreateFromOrder extends CreateFrom {
 	    sqlStmt.append(" left join c_order o on ol.c_order_id=o.c_order_id");
 	    sqlStmt.append(" left join bpr_timbangan t on t.bpr_timbangan_id=r.bpr_timbangan_id");
 	    sqlStmt.append(" where (rl.c_orderline_id is null or o.docstatus in ('VO','RE'))");
-
+	    sqlStmt.append(" and r.isactive = 'Y' and rl.isactive='Y' and r.docstatus in ('CO') and r.ad_client_id = ?");
+	    
 	    if(NotaTimbangan!=null && !NotaTimbangan.isEmpty())
 	    	sqlStmt.append(" and t.value like '%"+NotaTimbangan+"%'");
 	    
-	    sqlStmt.append(" and r.isactive = 'Y' and rl.isactive='Y' and r.docstatus in ('CO') and r.ad_client_id = "+AD_Client_ID);
+	    
 	    if(M_Requisition_ID>0) {
 	    	sqlStmt.append(" and r.m_requisition_id=?");
 	    }

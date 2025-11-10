@@ -31,7 +31,7 @@ public class CloseSOPO extends CustomProcess  {
             //boolean isFirstLine = true;
 
             StringBuilder sql = new StringBuilder();
-            sql.append("SELECT C_Order_ID FROM C_Order WHERE ad_client_id = 1000003 AND docstatus = 'CO' AND EXTRACT(YEAR FROM created) IN (2023, 2024) order by CREATED desc ");
+            sql.append("SELECT C_Order_ID FROM C_Order WHERE ad_client_id = 1000003 and c_bpartner_id = 1012074 AND docstatus = 'CO' AND EXTRACT(YEAR FROM created) IN (2023, 2024) order by CREATED desc");
             
             PreparedStatement pstmnt = null;
     		ResultSet rsl = null;
