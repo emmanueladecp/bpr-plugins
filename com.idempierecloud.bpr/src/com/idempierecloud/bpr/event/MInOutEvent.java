@@ -52,6 +52,7 @@ public class MInOutEvent extends CustomEvent {
 			checkCustomerReturn();
 			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
+			checkProductTypeExpenseMustNotReverseUsingVendorReturns();
 			checkReversal();
 			checkAvailableQtyProductReturReversal();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
@@ -62,6 +63,39 @@ public class MInOutEvent extends CustomEvent {
 			checkShipment(event.getTopic());
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkShipment(event.getTopic());
+		}
+	}
+	
+	private void checkProductTypeExpenseMustNotReverseUsingVendorReturns() {
+		if(inout.getReversal_ID()>0)
+			return;
+		
+		if(!inout.getMovementType().equals(MInOut.MOVEMENTTYPE_VendorReturns))
+			return;
+		
+		int counterService = 0;
+		int counterExpense = 0;
+		
+		for(MInOutLine line : inout.getLines(false)) {
+			//BigDecimal qty = line.getMovementQty();
+			
+			MProduct product = line.getProduct();
+
+			if(MProduct.PRODUCTTYPE_Service.equals(product.getProductType())) {
+				counterService +=1 ;
+			}
+			
+			if(MProduct.PRODUCTTYPE_ExpenseType.equals(product.getProductType())) {
+				counterExpense +=1 ;
+			}
+		}
+		
+		if (counterService > 0) {
+			throw new AdempiereException("Product Service tidak bisa menggunakan Return To Vendor");
+		}
+		
+		if (counterExpense > 0) {
+			throw new AdempiereException("Product Expense tidak bisa menggunakan Return To Vendor");
 		}
 	}
 	
