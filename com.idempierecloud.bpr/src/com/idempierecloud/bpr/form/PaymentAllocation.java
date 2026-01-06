@@ -231,6 +231,7 @@ public class PaymentAllocation extends CustomForm
 		columnNames.add(Msg.translate(Env.getCtx(), "C_BankAccount_ID"));
 		columnNames.add(Msg.translate(Env.getCtx(), "Description"));
 		
+		
 		return columnNames;
 	}
 	
@@ -354,6 +355,7 @@ public class PaymentAllocation extends CustomForm
 				//	Added by Jorge Colmenarez, 2022-01-05 16:46 RQ #0000225
 				line.add(rs.getTimestamp(12));       //  1-DateAcct
 				line.add(rs.getString(13));       //  11-Description
+				line.add("");						// Reason
 				if (Env.ZERO.compareTo(open) != 0)
 					data.add(line);
 			}
@@ -393,6 +395,7 @@ public class PaymentAllocation extends CustomForm
 		//	Added by Jorge Colmenarez, 2022-01-05 16:47 RQ #0000225
 		columnNames.add(Msg.translate(Env.getCtx(), "DateAcct"));
 		columnNames.add(Msg.translate(Env.getCtx(), "Description"));
+		columnNames.add("Reason");
 		
 		return columnNames;
 	}
@@ -415,11 +418,12 @@ public class PaymentAllocation extends CustomForm
 		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  8-Conv WriteOff
 		invoiceTable.setColumnClass(i++, BigDecimal.class, false);      //  9-Conv OverUnder
 		invoiceTable.setColumnClass(i++, BigDecimal.class, true);		//	10-Conv Applied
-		invoiceTable.setColumnClass(i++, String.class, true);       	//  11-Currency
+		//invoiceTable.setColumnClass(i++, String.class, true);       	//  11-Currency
 //		invoiceTable.setColumnClass(i++, BigDecimal.class, true);      	//  10-Multiplier
 		//	Added by Jorge Colmenarez, 2022-01-05 16:47 RQ #0000225
 		invoiceTable.setColumnClass(i++, Timestamp.class, true);        //  1-DateAcct
 		invoiceTable.setColumnClass(i++, String.class, true);        //  1-Description
+		invoiceTable.setColumnClass(i++, String.class, false);        //  1-Reason
 		//  Table UI
 		invoiceTable.autoSize();
 	}
