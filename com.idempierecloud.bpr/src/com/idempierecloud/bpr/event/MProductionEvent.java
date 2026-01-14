@@ -105,7 +105,7 @@ public class MProductionEvent extends CustomEvent{
 	
 	private void checkProductCost() {
 		
-		//TODO: harus ditambahkan pengecekan untuk Tab Turunan pada Produksi, karena menggunakan StandardCosting method
+		
 		int M_CostElement_ID_AveragePO=1000004;
 		int M_CostElement_ID_StandardCosting=1000003;
 		
@@ -123,19 +123,18 @@ public class MProductionEvent extends CustomEvent{
 			}
 		}
 		
+		
+		//harus ditambahkan pengecekan untuk Tab Turunan pada Produksi, karena menggunakan StandardCosting method harus terdaftar di Master Perhitungan Turunan (BPR_POBahanBakuHeader)
 		for(MProductionLineExt line : production.getLines()) {
 			if(line.get_ValueAsString("JenisProduk").equals("T")) {
-				BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
-						 " and M_Product_ID = ? and M_CostElement_ID=?",production.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_StandardCosting);
+				int countProduct = 0;
 				
-				if(MCost_CurrentCostPrice==null) {
-					throw new AdempiereException("Tidak ditemukan Cost untuk Product : "+line.getM_Product().getName()
-												+", Organization :  "+line.getAD_Org_ID()
-												+", Cost Element : Standard Cost - Turunan - Produksi");
-				}else if(MCost_CurrentCostPrice.signum()<=0) {
-						throw new AdempiereException("Cost untuk Product : "+line.getM_Product().getName()
-								+", Organization :  "+line.getAD_Org_ID()
-								+", Cost Element : Standard Cost - Turunan - Produksi, Current Cost Price Harus Lebih Besar dari 0");
+				countProduct = DB.getSQLValue(line.get_TrxName(), "SELECT COUNT(*) AS QTY FROM BPR_POBahanBakuHeader WHERE AD_Org_ID = 0 "+
+						 " and M_Product_ID = ? and isactive = 'Y' ",line.getM_Product_ID());
+				
+				if (countProduct == 0)
+				{
+					throw new AdempiereException("Product Turunan wajib terdaftar pada Master Perhitungan Turunan");
 				}
 			}
 		}

@@ -3,12 +3,14 @@ package com.idempierecloud.bpr.event;
 import java.math.BigDecimal;
 
 import org.adempiere.base.event.IEventTopics;
+import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MAllocationLine;
 import org.compiere.model.MBPartner;
 import org.compiere.model.MPayment;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -29,7 +31,21 @@ public class CPaymentEvent extends CustomEvent {
 		}else if (event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setBankAccount();
 		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			setIsPrepayment();			
+			setIsPrepayment();		
+			setAPPaymentAmountMustNotBeZero();
+		}
+	}
+	
+	private void setAPPaymentAmountMustNotBeZero() {
+		if(!payment.get_ValueAsBoolean("isReceipt"))
+			return;
+		
+		BigDecimal PayAmt = (BigDecimal)payment.getPayAmt();
+		if (PayAmt == null)
+			PayAmt = Env.ZERO;
+		
+		if (PayAmt.signum() == 0) {
+			throw new AdempiereException("Payment Amount pada AP Payment tidak boleh 0");
 		}
 	}
 	
