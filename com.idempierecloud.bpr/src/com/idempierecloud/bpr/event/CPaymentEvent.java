@@ -44,7 +44,7 @@ public class CPaymentEvent extends CustomEvent {
 		if (PayAmt == null)
 			PayAmt = Env.ZERO;
 		
-		if (PayAmt.signum() == 0) {
+		if (PayAmt.compareTo(Env.ZERO) == 0) {
 			throw new AdempiereException("Payment Amount pada AP Payment tidak boleh 0");
 		}
 	}
