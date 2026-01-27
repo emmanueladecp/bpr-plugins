@@ -52,9 +52,12 @@ public class MInOutEvent extends CustomEvent {
 			checkCustomerReturn();
 			setProcessedLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
-			checkProductTypeExpenseMustNotReverseUsingVendorReturns();
+			//ini sementara belum pakai dulu
+			//checkProductTypeExpenseMustNotReverseUsingVendorReturns();
+			
 			checkReversal();
 			checkAvailableQtyProductReturReversal();
+			checkBPHeaderAndLine();
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_VOID)) {
 			checkShipment(event.getTopic());
 		}else if(event.getTopic().equals(IEventTopics.DOC_AFTER_VOID)) {
@@ -63,6 +66,32 @@ public class MInOutEvent extends CustomEvent {
 			checkShipment(event.getTopic());
 		}else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_REVERSECORRECT)) {
 			checkShipment(event.getTopic());
+		}
+	}
+	
+	private void checkBPHeaderAndLine() {
+		if(inout.getReversal_ID()>0)
+			return;
+		
+		if(inout.getMovementType().equals(MInOut.MOVEMENTTYPE_VendorReturns))
+			return;
+		
+		if(!inout.isSOTrx() || !inout.getMovementType().equals(MInOut.MOVEMENTTYPE_CustomerShipment))
+			return;
+		
+		int CBHeader = inout.getC_BPartner_ID();
+		
+		MInOutLine[] lines = inout.getLines(true);
+		for (MInOutLine line : lines) {		
+			
+			MOrderLine oline = new MOrderLine(line.getCtx(), line.getC_OrderLine_ID(), line.get_TrxName());
+			
+			//BigDecimal qtyAvailable = oline.getQtyOrdered().subtract(MovementQty);
+			int CBPLine = oline.getC_BPartner_ID();
+			
+			if (CBHeader != CBPLine) {
+				throw new AdempiereException("Terdapat beda Customer ID pada Shipment (Customer)");
+			}
 		}
 	}
 	
@@ -162,7 +191,8 @@ public class MInOutEvent extends CustomEvent {
                 Created = sdf.parse(sdf.format(Created));
             } catch (ParseException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                //e.printStackTrace();
+            	throw new AdempiereException("Error on parsing date function CheckMovementDate");
             }          
             Date date = new Date(Created.getTime());         
             Calendar cal = Calendar.getInstance();
