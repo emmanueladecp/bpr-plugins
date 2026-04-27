@@ -35,6 +35,7 @@ import com.idempierecloud.bpr.process.UpdateProductCostPrice;
 import com.idempierecloud.bpr.process.VoidSalesOrder;
 import com.idempierecloud.bpr.process.CloseSOPO;
 import com.idempierecloud.bpr.process.CloseRequisition;
+import com.idempierecloud.bpr.process.ImportUpdateChargeARWriteOff;
 /**
  * Process Factory
  */
@@ -67,6 +68,7 @@ public class ProcessFactory extends CustomProcessFactory {
 		registerProcess(VoidSalesOrder.class);
 		registerProcess(CloseSOPO.class);
 		registerProcess(CloseRequisition.class);
+		registerProcess(ImportUpdateChargeARWriteOff.class);
 	}
 
 }
