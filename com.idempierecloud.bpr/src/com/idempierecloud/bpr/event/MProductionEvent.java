@@ -125,19 +125,24 @@ public class MProductionEvent extends CustomEvent{
 		
 		
 		//harus ditambahkan pengecekan untuk Tab Turunan pada Produksi, karena menggunakan StandardCosting method harus terdaftar di Master Perhitungan Turunan (BPR_POBahanBakuHeader)
-		for(MProductionLineExt line : production.getLines()) {
-			if(line.get_ValueAsString("JenisProduk").equals("T")) {
-				int countProduct = 0;
-				
-				countProduct = DB.getSQLValue(line.get_TrxName(), "SELECT COUNT(*) AS QTY FROM BPR_POBahanBakuHeader WHERE AD_Org_ID = 0 "+
-						 " and M_Product_ID = ? and isactive = 'Y' ",line.getM_Product_ID());
-				
-				if (countProduct == 0)
-				{
-					throw new AdempiereException("Product Turunan wajib terdaftar pada Master Perhitungan Turunan");
+		//exclude untuk tipe produksi GRAIN TO RICE
+		if (production.get_ValueAsInt("C_DocType_ID")!=C_Doctype_ID_BPR_GrainToRice)
+		{
+			for(MProductionLineExt line : production.getLines()) {
+				if(line.get_ValueAsString("JenisProduk").equals("T")) {
+					int countProduct = 0;
+					
+					countProduct = DB.getSQLValue(line.get_TrxName(), "SELECT COUNT(*) AS QTY FROM BPR_POBahanBakuHeader WHERE AD_Org_ID = 0 "+
+							 " and M_Product_ID = ? and isactive = 'Y' ",line.getM_Product_ID());
+					
+					if (countProduct == 0)
+					{
+						throw new AdempiereException("Product Turunan wajib terdaftar pada Master Perhitungan Turunan");
+					}
 				}
 			}
 		}
+		
 		
 	}
 	
