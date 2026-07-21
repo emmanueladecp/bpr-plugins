@@ -70,7 +70,7 @@ public class COrderLineEvent extends CustomEvent {
 			calculatePriceInsentif();
 			setWitholdingType();
 			calculateGrossUp();
-			calculateOngkosAngkut();
+			//calculateOngkosAngkut();
 			calculateAdditionalCost();
 			calculatePromo();
 			calculatePrice();
