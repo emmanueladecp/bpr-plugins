@@ -49,6 +49,8 @@ public class COrderLineEvent extends CustomEvent {
 		log.fine("OrderLine Event : "+event.getTopic());
 		
 		orderLine = (MOrderLine) po;
+		MOrder order = (MOrder)orderLine.getC_Order();
+		
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setQtyOrdered();
 			setPricePOTurus();
@@ -66,6 +68,10 @@ public class COrderLineEvent extends CustomEvent {
 			checkSOCreditLimit();
 			setMarkPotongKarung();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
+			
+			if(order.isSOTrx()&&order.getDocStatus().equals(MOrder.DOCSTATUS_Completed))
+				return ;
+			
 			setQtyOrdered();
 			calculatePriceInsentif();
 			setWitholdingType();
