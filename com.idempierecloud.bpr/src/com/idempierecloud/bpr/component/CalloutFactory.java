@@ -35,6 +35,7 @@ import com.idempierecloud.bpr.callout.SetLocationBPLocation;
 import com.idempierecloud.bpr.callout.SetLocatorCustomerReturn;
 import com.idempierecloud.bpr.callout.SetMovementQtyConfirmLine;
 import com.idempierecloud.bpr.callout.SetPriceOnInvoiceLine;
+import com.idempierecloud.bpr.callout.SetProposalReturPricing;
 import com.idempierecloud.bpr.callout.SetPriceListOnInvoiceLine;
 import com.idempierecloud.bpr.callout.SetQCPenerimaanGabahBPR;
 import com.idempierecloud.bpr.callout.SetQtyUsedProductionLine;
@@ -61,27 +62,42 @@ public class CalloutFactory extends CustomCalloutFactory {
 		// C_Order
 		registerCallout(I_C_Order.Table_Name, "C_BPartner_ID", SetSOCreditAvailable.class);
 		registerCallout(I_C_Order.Table_Name, "DateOrdered", SetDatePromiseMOrderLine.class);
+		
 		// C_OrderLine
 		registerCallout(I_C_OrderLine.Table_Name, "M_Product_ID", SetUOMOrderLine.class);
+		
+		// Proposal Retur
+		// HARUS setelah SetUOMOrderLine
+		registerCallout(I_C_OrderLine.Table_Name, "M_Product_ID", SetProposalReturPricing.class);
+		registerCallout(I_C_OrderLine.Table_Name, "PriceList", SetProposalReturPricing.class);
+		registerCallout(I_C_OrderLine.Table_Name, "SubsidiAmt", SetProposalReturPricing.class);
+		registerCallout(I_C_OrderLine.Table_Name, "OngkosAngkut", SetProposalReturPricing.class);
+		registerCallout(I_C_OrderLine.Table_Name, "C_UOM_ID", SetProposalReturPricing.class);
+		registerCallout(I_C_OrderLine.Table_Name, "QtyEntered", SetProposalReturPricing.class);
+		
 		//BPR_QualityControl
 		registerCallout(I_BPR_QualityControl.Table_Name, "BPR_Timbangan_ID", SetQCPenerimaanGabahBPR.class);
+		
 		// M_ProductionLine
 		registerCallout(I_M_ProductionLine.Table_Name, "QtyEntered", SetQtyUsedProductionLine.class);
+		
 		// M_InOutLine
 		registerCallout(I_M_InOutLine.Table_Name, "M_Locator_ID", SetLocatorCustomerReturn.class);
+		
 		// M_InOutLineConfirm
 		registerCallout(I_M_InOutLineConfirm.Table_Name, "QtyEntered", SetMovementQtyConfirmLine.class);
+		
 		// M_Inventoryline
 		registerCallout(I_M_InventoryLine.Table_Name, "QtyAdd", SetInternalUseQty.class);
+		
 		//C_InvoiceLine
 		registerCallout(I_C_InvoiceLine.Table_Name, "PriceList", SetPriceOnInvoiceLine.class);
 		registerCallout(I_C_InvoiceLine.Table_Name, "PriceEntered", SetPriceListOnInvoiceLine.class);
+		
 		//C_BPartnerLocation
 		registerCallout(I_C_BPartner_Location.Table_Name, "Name", SetLocationBPLocation.class);
 		registerCallout(I_C_BPartner_Location.Table_Name, "BPR_District_ID", SetLocationBPLocation.class);
-		
-		
-		
+	
 	}
 
 }

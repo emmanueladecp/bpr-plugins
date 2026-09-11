@@ -37,10 +37,12 @@ import org.idempiere.model.PromotionRule;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
+import com.idempierecloud.bpr.util.ProposalReturPricingUtil;
 
 public class COrderLineEvent extends CustomEvent {
 
 	private static CLogger log = CLogger.getCLogger(COrderLineEvent.class);
+	private static int C_DocType_ID_CustomerReturnBPR=1000084;
 	
 	private MOrderLine orderLine = null;
 
@@ -51,6 +53,10 @@ public class COrderLineEvent extends CustomEvent {
 		orderLine = (MOrderLine) po;
 		MOrder order = (MOrder)orderLine.getC_Order();
 		
+		// proposal return ga usah trigger semua di bawah ini, udah pindah ke callout
+		//if(order.getC_DocTypeTarget_ID()==C_DocType_ID_CustomerReturnBPR) 
+		//	return;
+		
 		if(event.getTopic().equals(IEventTopics.PO_BEFORE_NEW)) {
 			setQtyOrdered();
 			setPricePOTurus();
@@ -60,7 +66,9 @@ public class COrderLineEvent extends CustomEvent {
 			calculateAdditionalCost();
 			calculatePromo();
 			calculatePrice();
-			setProposalRetur();
+			//setProposalRetur();
+			setProposalReturPricing();
+			
 			calculateLinetNetAmt();
 			setDiscount();
 			setIfOrderlineFOC();
@@ -517,24 +525,92 @@ public class COrderLineEvent extends CustomEvent {
 			return;
 		orderLine.setDiscount(BigDecimal.ZERO);
 	}
-	private void setProposalRetur() {
-		
-		MOrder order = (MOrder)orderLine.getC_Order();
-		int C_DocType_ID_CustomerReturnBPR=1000084;
-		
-		if(order.getC_DocTypeTarget_ID()==C_DocType_ID_CustomerReturnBPR) {
-			int C_Invoiceline_ID = DB.getSQLValue(orderLine.get_TrxName(), "select max(c_invoiceline_id) from c_invoiceline ci "
-					+ " join c_invoice ci2 on ci.c_invoice_id = ci2.c_invoice_id "
-					+ " where ci.m_product_id=? and ci2.C_BPartner_ID=? and ci2.docstatus in ('CO','CL') and ci2.isSoTrx='Y'", orderLine.getM_Product_ID(), orderLine.getC_BPartner_ID());
-			if(C_Invoiceline_ID > 0) {
-				MInvoiceLine inLine = new MInvoiceLine(orderLine.getCtx(),C_Invoiceline_ID, orderLine.get_TrxName());
-				orderLine.setPriceEntered(inLine.getPriceEntered());
-				orderLine.setPriceActual(inLine.getPriceActual());
-			}
-			else {
-				orderLine.setPriceActual(orderLine.getPriceList());
-			}
-		}
+	
+	/*
+	 * private void setProposalRetur() {
+	 * 
+	 * if(order.getC_DocTypeTarget_ID()==C_DocType_ID_CustomerReturnBPR) { int
+	 * C_Invoiceline_ID = DB.getSQLValue(orderLine.get_TrxName(),
+	 * "select max(c_invoiceline_id) from c_invoiceline ci " +
+	 * " join c_invoice ci2 on ci.c_invoice_id = ci2.c_invoice_id " +
+	 * " where ci.m_product_id=? and ci2.C_BPartner_ID=? and ci2.docstatus in ('CO','CL') and ci2.isSoTrx='Y'"
+	 * , orderLine.getM_Product_ID(), orderLine.getC_BPartner_ID());
+	 * if(C_Invoiceline_ID > 0) { MInvoiceLine inLine = new
+	 * MInvoiceLine(orderLine.getCtx(),C_Invoiceline_ID, orderLine.get_TrxName());
+	 * orderLine.setPriceEntered(inLine.getPriceEntered());
+	 * orderLine.setPriceActual(inLine.getPriceActual()); } else {
+	 * orderLine.setPriceActual(orderLine.getPriceList()); } } }
+	 */
+	
+	private void setProposalReturPricing() {
+
+	    if (orderLine.getM_Product_ID() <= 0)
+	        return;
+
+	    MOrder order =
+	            (MOrder) orderLine.getC_Order();
+
+
+	    if (order == null)
+	        return;
+
+
+	    if (order.getC_DocTypeTarget_ID()
+	            != C_DocType_ID_CustomerReturnBPR) {
+
+	        return;
+	    }
+
+
+	    ProposalReturPricingUtil.PricingResult pricing =
+	            ProposalReturPricingUtil.resolveInitialPricing(
+	                    order,
+
+	                    orderLine.getM_Product_ID(),
+
+	                    orderLine.getC_UOM_ID(),
+
+	                    orderLine.getQtyEntered(),
+
+	                    orderLine.getQtyOrdered(),
+
+	                    orderLine.get_TrxName()
+	            );
+
+
+	    orderLine.setPriceList(
+	            pricing.getPriceList()
+	    );
+
+
+	    orderLine.set_ValueOfColumn(
+	            ProposalReturPricingUtil.COLUMN_SUBSIDI_AMT,
+	            pricing.getSubsidiAmt()
+	    );
+
+
+	    orderLine.set_ValueOfColumn(
+	            ProposalReturPricingUtil.COLUMN_ONGKOS_ANGKUT,
+	            pricing.getOngkosAngkut()
+	    );
+
+
+	    orderLine.setPriceActual(
+	            pricing.getPriceActual()
+	    );
+
+
+	    orderLine.setPriceEntered(
+	            pricing.getPriceEntered()
+	    );
+
+
+	    /*
+	     * Tidak perlu set LineNetAmt di sini
+	     * karena setelah method ini Anda sudah punya:
+	     *
+	     * calculateLinetNetAmt();
+	     */
 	}
 	
 	private void setQtyOrdered() {
