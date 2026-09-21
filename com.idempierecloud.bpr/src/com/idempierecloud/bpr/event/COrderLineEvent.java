@@ -80,6 +80,9 @@ public class COrderLineEvent extends CustomEvent {
 			if(order.isSOTrx()&&order.getDocStatus().equals(MOrder.DOCSTATUS_Completed))
 				return ;
 			
+			if(order.isSOTrx()&&order.getDocStatus().equals(MOrder.DOCSTATUS_Closed))
+				return ;
+			
 			setQtyOrdered();
 			calculatePriceInsentif();
 			setWitholdingType();
