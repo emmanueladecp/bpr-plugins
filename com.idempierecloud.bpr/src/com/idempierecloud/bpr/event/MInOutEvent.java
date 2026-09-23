@@ -132,6 +132,9 @@ public class MInOutEvent extends CustomEvent {
 		if(inout.isSOTrx()) {
 			int M_CostElement_ID_AveragePO=1000004;
 			for(MInOutLine line : inout.getLines(true)) {
+				if (line.getProduct()==null) {
+					continue;
+				}
 				BigDecimal MCost_CurrentCostPrice = DB.getSQLValueBD(line.get_TrxName(), "SELECT Coalesce(M_Cost.currentcostprice,0) FROM M_Cost WHERE AD_Org_ID = ? "+
 				 " and M_Product_ID = ? and M_CostElement_ID=?",inout.getAD_Org_ID(),line.getM_Product_ID(), M_CostElement_ID_AveragePO);
 				if(MCost_CurrentCostPrice==null) {
