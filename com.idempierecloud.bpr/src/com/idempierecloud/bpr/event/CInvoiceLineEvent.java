@@ -38,12 +38,17 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyInvoice();
 			setIfOrderlineFOC();
-			recalculatePriceActual();
+			recalculatePriceActual2();
+			//recalculatePriceActual();
+			
+			
+			
 		}else if(event.getTopic().equals(IEventTopics.PO_AFTER_NEW)) {
 			setPaymentTermHeader();
 		}
 			
 	}
+	
 	
 	private void checkqtyShipment() {
 		if(invoiceLine.getC_Invoice().isSOTrx()) {
@@ -62,11 +67,36 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		
 	}
 
+	
+	private void recalculatePriceActual2() {
+		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
+			//BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+			//BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceActual = invoiceLine.getPriceList();
+			
+			BigDecimal priceEntered = priceActual.multiply(invoiceLine.getM_Product().getWeight());
+			
+			invoiceLine.setPriceActual(priceActual);
+			invoiceLine.setPriceEntered(priceEntered);
+			
+			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
+			invoiceLine.setLineNetAmt(LineNetAmt);
+		}else if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceEntered")) {
+			//BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+			//BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceActual = invoiceLine.getPriceEntered().divide(invoiceLine.getM_Product().getWeight()).setScale(0);
+			BigDecimal priceList = priceActual;
+			invoiceLine.setPriceActual(priceActual);
+			invoiceLine.setPriceList(priceList);
+			
+			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
+			invoiceLine.setLineNetAmt(LineNetAmt);
+		}
+	}
+	
 	//price entered = harga berdasarkan selected UoM (example : harga per zak) (sudah ditambah OA dan Additional Cost)
 	//price actual = harga berdasarkan satuan terkecil (example : harga per kg) (sudah ditambah OA dan Additional Cost)
 	//price list = di form aslinya tidak pengaruh kemana mana, namun disini simpan harga asli berdasarkan satuan terkecil(dikurangi OA dan Add Cost)
-	
-	
 	private void recalculatePriceActual() {
 		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
 			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");

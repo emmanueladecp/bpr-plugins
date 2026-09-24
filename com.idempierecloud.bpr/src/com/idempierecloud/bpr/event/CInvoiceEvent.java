@@ -1,6 +1,7 @@
 package com.idempierecloud.bpr.event;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,12 +15,14 @@ import java.util.logging.Level;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MBPartner;
+import org.compiere.model.MCurrency;
 import org.compiere.model.MInOut;
 import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MMatchPO;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MTax;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.CLogger;
@@ -38,6 +41,11 @@ public class CInvoiceEvent extends CustomEvent {
 	private MInvoice invoice = null;
 	private final static int M_LocatorType_CustomerShipment = 1000002;
 	private final static int C_Doctype_AR_CreditMemo = 1000004;
+	//private final static int C_CHARGE_ID_PPN_KELUARAN_2501009 = 1000344;
+	private final static int C_CHARGE_ID_PENJUALAN_OA = 1000429;
+	private final static int C_CHARGE_ID_PENJUALAN_KEMASAN = 1000430;
+	private final static int C_TAX_RATE_11 = 1000003;
+	private final static int C_Doctype_AR_Invoice_Customer = 1000002;
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -62,7 +70,300 @@ public class CInvoiceEvent extends CustomEvent {
 			checkProductType();
 			setCreditUsed();
 		}
+		else if(event.getTopic().equals(IEventTopics.DOC_BEFORE_PREPARE)) {
+			
+			if (!invoice.isSOTrx())
+		        return;
+			
+			if (invoice.getC_DocTypeTarget_ID() != C_Doctype_AR_Invoice_Customer )
+		        return;
+			
+			if (invoice.isReversal())
+			    return;
+			
+			 calculateAdditionalCharge(invoice);
+		} 
 	}
+	
+	
+	 private void calculateAdditionalCharge(MInvoice invoice)
+    {
+        // ============================================================
+        // 1. Hitung total OA + Subsidi dalam kondisi GROSS
+        //    karena nilai OA/Subsidi sudah termasuk PPN 11%
+        // ============================================================
+
+        //BigDecimal grossAdditionalValue = BigDecimal.ZERO;
+        BigDecimal lineOngkosAngkut = BigDecimal.ZERO;
+        BigDecimal lineSubsidi = BigDecimal.ZERO;
+
+        MInvoiceLine[] lines = invoice.getLines(true);
+
+        for (MInvoiceLine invoiceLine : lines)
+        {
+            // Jangan ikut menghitung line tambahan kita sendiri
+            if (isAdditionalChargeLine(invoiceLine, "IsAdditionalCharge"))
+                continue;
+            
+            if (isAdditionalChargeLine(invoiceLine, "IsAdditionalOA"))
+                continue;
+            
+            if (isAdditionalChargeLine(invoiceLine, "IsAdditionalSubsidi"))
+                continue;
+
+            BigDecimal qtyKg = invoiceLine.getQtyInvoiced();
+
+            BigDecimal ongkosAngkut =
+                (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
+
+            BigDecimal subsidiAmt =
+                (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+
+            if (qtyKg == null)
+                qtyKg = BigDecimal.ZERO;
+
+            if (ongkosAngkut == null)
+                ongkosAngkut = BigDecimal.ZERO;
+
+            if (subsidiAmt == null)
+                subsidiAmt = BigDecimal.ZERO;
+
+            lineOngkosAngkut =
+                ongkosAngkut.multiply(qtyKg);
+
+            lineSubsidi =
+                subsidiAmt.multiply(qtyKg);
+
+            //grossAdditionalValue = grossAdditionalValue
+            //    .add(lineOngkosAngkut)
+            //    .add(lineSubsidi);
+        }
+
+        // ============================================================
+        // 2. Kalau <= 0, hapus/nonaktifkan line tambahan
+        // ============================================================
+
+        //if (grossAdditionalValue.compareTo(BigDecimal.ZERO) <= 0)
+        //{
+        //    removeAdditionalChargeLine(invoice);
+        //    return;
+        //}
+        
+        if (lineOngkosAngkut.compareTo(BigDecimal.ZERO) <= 0)
+        {
+        	removeAdditionalChargeLine(invoice, "IsAdditionalOA");
+        }
+        
+        if (lineSubsidi.compareTo(BigDecimal.ZERO) <= 0)
+        {
+        	removeAdditionalChargeLine(invoice, "IsAdditionalSubsidi");
+        }
+
+        // ============================================================
+        // 3. Currency precision
+        // ============================================================
+
+        MCurrency currency = MCurrency.get(
+            invoice.getCtx(),
+            invoice.getC_Currency_ID()
+        );
+
+        int precision = currency.getStdPrecision();
+
+        // ============================================================
+        // 4. Ambil tax
+        // ============================================================
+
+        MTax tax = MTax.get(
+            invoice.getCtx(),
+            C_TAX_RATE_11
+        );
+
+        BigDecimal taxRate = tax.getRate();
+
+        // ============================================================
+        // 5. Karena gross sudah termasuk PPN:
+        //
+        // DPP = Gross / (1 + TaxRate/100)
+        // ============================================================
+
+        BigDecimal divisor = BigDecimal.ONE.add(
+            taxRate.divide(
+                BigDecimal.valueOf(100),
+                10,
+                RoundingMode.HALF_UP
+            )
+        );
+
+        //BigDecimal dpp = grossAdditionalValue.divide(
+        //    divisor,
+        //    precision,
+        //    RoundingMode.HALF_UP
+        //);
+        
+        BigDecimal dppOA = lineOngkosAngkut.divide(
+                divisor,
+                precision,
+                RoundingMode.HALF_UP
+        );
+        
+        BigDecimal dppSubsidi = lineSubsidi.divide(
+                divisor,
+                precision,
+                RoundingMode.HALF_UP
+        );
+
+        // ============================================================
+        // 6. Cari existing additional charge line
+        // ============================================================
+
+        if (lineOngkosAngkut.compareTo(BigDecimal.ZERO) > 0)
+        {
+        	MInvoiceLine additionalLine =
+                    findAdditionalChargeLine(invoice,"IsAdditionalOA");
+
+                if (additionalLine == null)
+                {
+                    additionalLine = new MInvoiceLine(
+                        invoice.getCtx(),
+                        0,
+                        invoice.get_TrxName()
+                    );
+
+                    int lineNo = getNextLineNo(invoice);
+
+                    additionalLine.setAD_Org_ID(invoice.getAD_Org_ID());
+                    additionalLine.setC_Invoice_ID(invoice.getC_Invoice_ID());
+                    additionalLine.setLine(lineNo);
+
+                    additionalLine.setC_Charge_ID(
+                    		C_CHARGE_ID_PENJUALAN_OA
+                    );
+
+                    additionalLine.setQtyEntered(
+                        BigDecimal.ONE
+                    );
+
+                    additionalLine.setQtyInvoiced(
+                        BigDecimal.ONE
+                    );
+                }
+
+                // ============================================================
+                // 7. Set DPP sebagai Price
+                //
+                // Karena PriceList IsTaxIncluded = N
+                // ============================================================
+
+                additionalLine.setC_Tax_ID(
+                		C_TAX_RATE_11
+                );
+
+                additionalLine.setPriceList(dppOA);
+                additionalLine.setPrice(dppOA);
+                additionalLine.setPriceEntered(dppOA);
+                
+                additionalLine.set_ValueOfColumn("IsAdditionalOA", true);
+                additionalLine.set_ValueOfColumn("IsAdditionalCharge", true);
+
+                additionalLine.saveEx();
+        }
+        
+        if (lineSubsidi.compareTo(BigDecimal.ZERO) > 0)
+        {
+        	MInvoiceLine additionalLine =
+                    findAdditionalChargeLine(invoice,"IsAdditionalSubsidi");
+
+                if (additionalLine == null)
+                {
+                    additionalLine = new MInvoiceLine(
+                        invoice.getCtx(),
+                        0,
+                        invoice.get_TrxName()
+                    );
+
+                    int lineNo = getNextLineNo(invoice);
+
+                    additionalLine.setAD_Org_ID(invoice.getAD_Org_ID());
+                    additionalLine.setC_Invoice_ID(invoice.getC_Invoice_ID());
+                    additionalLine.setLine(lineNo);
+
+                    additionalLine.setC_Charge_ID(
+                    		C_CHARGE_ID_PENJUALAN_KEMASAN
+                    );
+
+                    additionalLine.setQtyEntered(
+                        BigDecimal.ONE
+                    );
+
+                    additionalLine.setQtyInvoiced(
+                        BigDecimal.ONE
+                    );
+                }
+
+                // ============================================================
+                // 7. Set DPP sebagai Price
+                //
+                // Karena PriceList IsTaxIncluded = N
+                // ============================================================
+
+                additionalLine.setC_Tax_ID(
+                		C_TAX_RATE_11
+                );
+
+                additionalLine.setPriceList(dppSubsidi);
+                additionalLine.setPrice(dppSubsidi);
+                additionalLine.setPriceEntered(dppSubsidi);
+                
+                additionalLine.set_ValueOfColumn("IsAdditionalSubsidi", true);
+                additionalLine.set_ValueOfColumn("IsAdditionalCharge", true);
+
+                additionalLine.saveEx();
+        }
+    }
+
+    private boolean isAdditionalChargeLine(
+        MInvoiceLine line, String additionalCharge)
+    {
+        return line.get_ValueAsBoolean(additionalCharge);
+    }
+
+    private MInvoiceLine findAdditionalChargeLine(
+        MInvoice invoice, String additionalCharge)
+    {
+        for (MInvoiceLine line : invoice.getLines(true))
+        {
+            if (isAdditionalChargeLine(line, additionalCharge))
+                return line;
+        }
+
+        return null;
+    }
+
+    private void removeAdditionalChargeLine(
+        MInvoice invoice, String additionalCharge)
+    {
+        MInvoiceLine line =
+            findAdditionalChargeLine(invoice, additionalCharge);
+
+        if (line != null)
+        {
+            line.deleteEx(true);
+        }
+    }
+
+    private int getNextLineNo(MInvoice invoice)
+    {
+        int maxLine = 0;
+
+        for (MInvoiceLine line : invoice.getLines(true))
+        {
+            if (line.getLine() > maxLine)
+                maxLine = line.getLine();
+        }
+
+        return maxLine + 10;
+    }
 	
 	private void checkProductType() {
 		if(!invoice.isSOTrx()) {
@@ -224,6 +525,16 @@ public class CInvoiceEvent extends CustomEvent {
 		boolean getFromOrderAndShipment = false;
 		
 		for(MInvoiceLine line:lines) {
+			// Jangan ikut menghitung line tambahan kita sendiri
+            if (isAdditionalChargeLine(line, "IsAdditionalCharge"))
+                continue;
+            
+            if (isAdditionalChargeLine(line, "IsAdditionalOA"))
+                continue;
+            
+            if (isAdditionalChargeLine(line, "IsAdditionalSubsidi"))
+                continue;
+			
 			if(line.getC_OrderLine_ID()>0 && line.getM_InOutLine_ID()>0) {
 				getFromOrderAndShipment = true;
 			} else {

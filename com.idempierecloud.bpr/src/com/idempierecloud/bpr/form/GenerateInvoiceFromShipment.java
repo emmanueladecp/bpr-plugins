@@ -465,9 +465,11 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 						iLine.setC_Tax_ID(order.get_ValueAsInt("C_Tax_ID"));
 					else 
 						iLine.setC_Tax_ID(1000000);//C_Tax_ID Bebas_PPN
-					iLine.setPriceActual(oline.getPriceActual());
-					iLine.setPriceEntered(oline.getPriceEntered());
+					//iLine.setPriceActual(oline.getPriceActual());
+					//iLine.setPriceEntered(oline.getPriceEntered());
 					iLine.setPriceList(oline.getPriceList());
+					iLine.setPriceActual(oline.getPriceList());
+					iLine.setPriceEntered(oline.getPriceList().multiply(line.getMovementQty()));
 					if(oline.getC_Charge_ID()>0)
 						iLine.setC_Charge_ID(oline.getC_Charge_ID());
 					iLine.set_ValueOfColumn("OngkosAngkut", oline.get_Value("OngkosAngkut"));

@@ -16,13 +16,17 @@ public class SetPriceOnInvoiceLine extends CustomCallout{
 			return null;
 		if(getTab().getValue("M_Product_ID")==null)
 			return null;
-		BigDecimal OngkosAngkut = (BigDecimal) getTab().getValue("OngkosAngkut");
-		BigDecimal SubsidiAmt = (BigDecimal) getTab().getValue("SubsidiAmt");
+		//BigDecimal OngkosAngkut = (BigDecimal) getTab().getValue("OngkosAngkut");
+		//BigDecimal SubsidiAmt = (BigDecimal) getTab().getValue("SubsidiAmt");
 		BigDecimal QtyInvoiced = (BigDecimal) getTab().getValue("QtyInvoiced");
 		int M_Product_ID =(Integer)getTab().getValue("M_Product_ID");
 		MProduct product = new MProduct(getCtx(), M_Product_ID, null);
 		BigDecimal priceList =(BigDecimal)getValue(); 
-		BigDecimal priceActual = priceList.add(OngkosAngkut).add(SubsidiAmt);
+		//BigDecimal priceActual = priceList.add(OngkosAngkut).add(SubsidiAmt);
+		//BigDecimal priceEntered = priceActual.multiply(product.getWeight());
+		//BigDecimal LineNetAmt = priceActual.multiply(QtyInvoiced);	
+		
+		BigDecimal priceActual = priceList;
 		BigDecimal priceEntered = priceActual.multiply(product.getWeight());
 		BigDecimal LineNetAmt = priceActual.multiply(QtyInvoiced);	
 		

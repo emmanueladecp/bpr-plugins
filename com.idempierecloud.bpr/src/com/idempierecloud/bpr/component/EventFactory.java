@@ -95,6 +95,7 @@ public class EventFactory extends CustomEventFactory {
 		registerEvent(IEventTopics.DOC_BEFORE_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_COMPLETE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.DOC_BEFORE_POST, I_C_Invoice.Table_Name, CInvoiceEvent.class);
+		registerEvent(IEventTopics.DOC_BEFORE_PREPARE, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		registerEvent(IEventTopics.DOC_AFTER_REVERSECORRECT, I_C_Invoice.Table_Name, CInvoiceEvent.class);
 		
 		// C_InvoiceLine

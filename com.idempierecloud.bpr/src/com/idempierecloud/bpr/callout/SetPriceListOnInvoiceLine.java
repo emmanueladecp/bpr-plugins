@@ -19,8 +19,8 @@ public class SetPriceListOnInvoiceLine  extends CustomCallout{
 			return null;
 		if(getTab().getValue("M_Product_ID")==null)
 			return null;
-		BigDecimal OngkosAngkut = (BigDecimal) getTab().getValue("OngkosAngkut");
-		BigDecimal SubsidiAmt = (BigDecimal) getTab().getValue("SubsidiAmt");
+		//BigDecimal OngkosAngkut = (BigDecimal) getTab().getValue("OngkosAngkut");
+		//BigDecimal SubsidiAmt = (BigDecimal) getTab().getValue("SubsidiAmt");
 		BigDecimal QtyInvoiced = (BigDecimal) getTab().getValue("QtyInvoiced");
 		int M_Product_ID =(Integer)getTab().getValue("M_Product_ID");
 		MProduct product = new MProduct(getCtx(), M_Product_ID, null);
@@ -40,7 +40,8 @@ public class SetPriceListOnInvoiceLine  extends CustomCallout{
 			}
 		}
 		
-		BigDecimal PriceList = priceActual.subtract(OngkosAngkut).subtract(SubsidiAmt);
+		//BigDecimal PriceList = priceActual.subtract(OngkosAngkut).subtract(SubsidiAmt);
+		BigDecimal PriceList = priceActual;
 		BigDecimal LineNetAmt = priceActual.multiply(QtyInvoiced);	
 		
 		getTab().setValue("PriceActual", priceActual);
