@@ -75,13 +75,16 @@ public class CInvoiceEvent extends CustomEvent {
 			if (!invoice.isSOTrx())
 		        return;
 			
-			if (invoice.getC_DocTypeTarget_ID() != C_Doctype_AR_Invoice_Customer )
-		        return;
+			//if (invoice.getC_DocTypeTarget_ID() != C_Doctype_AR_Invoice_Customer )
+		    //    return;
 			
 			if (invoice.isReversal())
 			    return;
 			
-			 calculateAdditionalCharge(invoice);
+			if (invoice.getC_DocTypeTarget_ID() == C_Doctype_AR_Invoice_Customer || invoice.getC_DocTypeTarget_ID() == C_Doctype_AR_CreditMemo) {
+				calculateAdditionalCharge(invoice);
+			}
+			 
 		} 
 	}
 	
@@ -93,7 +96,7 @@ public class CInvoiceEvent extends CustomEvent {
         //    karena nilai OA/Subsidi sudah termasuk PPN 11%
         // ============================================================
 
-        //BigDecimal grossAdditionalValue = BigDecimal.ZERO;
+        //BigDecimal grossAdditionalValue = BigDecimal.	ZERO;
         BigDecimal lineOngkosAngkut = BigDecimal.ZERO;
         BigDecimal lineSubsidi = BigDecimal.ZERO;
 
@@ -128,11 +131,11 @@ public class CInvoiceEvent extends CustomEvent {
             if (subsidiAmt == null)
                 subsidiAmt = BigDecimal.ZERO;
 
-            lineOngkosAngkut =
-                ongkosAngkut.multiply(qtyKg);
+            lineOngkosAngkut = lineOngkosAngkut
+                    .add(ongkosAngkut.multiply(qtyKg));
 
-            lineSubsidi =
-                subsidiAmt.multiply(qtyKg);
+            lineSubsidi = lineSubsidi
+                    .add(subsidiAmt.multiply(qtyKg));
 
             //grossAdditionalValue = grossAdditionalValue
             //    .add(lineOngkosAngkut)
