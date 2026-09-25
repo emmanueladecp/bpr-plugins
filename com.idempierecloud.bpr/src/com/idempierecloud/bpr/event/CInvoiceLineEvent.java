@@ -23,6 +23,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	
 	private MInvoiceLine invoiceLine = null;
 	private final static int M_LocatorType_CustomerShipment = 1000002;
+	private static final int PRICE_CONVERSION_PRECISION = 12;
 
 	@Override
 	protected void doHandleEvent(PO po, Event event) {
@@ -35,6 +36,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			setOngkosAngkut_SubsidiAmt();
 			setQtyInvoice();
 			setIfOrderlineFOC();
+			setPriceUlang();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyInvoice();
 			setIfOrderlineFOC();
@@ -49,6 +51,35 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			
 	}
 	
+	private void setPriceUlang() {
+		//if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("OngkosAngkut")) {
+			invoiceLine.setPriceActual(invoiceLine.getPriceList());
+			BigDecimal priceEntered =
+	                MUOMConversion.convertProductFrom(
+	                		invoiceLine.getCtx(),
+	                		invoiceLine.getM_Product_ID(),
+	                		invoiceLine.getC_UOM_ID(),
+	                        invoiceLine.getPriceList(),
+	                        PRICE_CONVERSION_PRECISION
+	                );
+			
+			invoiceLine.setPriceEntered(priceEntered);
+		//}
+		
+		/*if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("SubsidiAmt")) {
+			invoiceLine.setPriceActual(invoiceLine.getPriceList());
+			BigDecimal priceEntered =
+	                MUOMConversion.convertProductFrom(
+	                		invoiceLine.getCtx(),
+	                		invoiceLine.getM_Product_ID(),
+	                		invoiceLine.getC_UOM_ID(),
+	                        invoiceLine.getPriceList(),
+	                        PRICE_CONVERSION_PRECISION
+	                );
+			
+			invoiceLine.setPriceEntered(priceEntered);
+		}*/
+	}
 	
 	private void checkqtyShipment() {
 		if(invoiceLine.getC_Invoice().isSOTrx()) {
@@ -64,11 +95,11 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				}	
 			}
 		}
-		
 	}
 
 	
 	private void recalculatePriceActual2() {
+		
 		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
 			//BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
 			//BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
@@ -97,7 +128,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	//price entered = harga berdasarkan selected UoM (example : harga per zak) (sudah ditambah OA dan Additional Cost)
 	//price actual = harga berdasarkan satuan terkecil (example : harga per kg) (sudah ditambah OA dan Additional Cost)
 	//price list = di form aslinya tidak pengaruh kemana mana, namun disini simpan harga asli berdasarkan satuan terkecil(dikurangi OA dan Add Cost)
-	private void recalculatePriceActual() {
+	/*private void recalculatePriceActual() {
 		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
 			BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
 			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
@@ -121,7 +152,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			BigDecimal LineNetAmt = invoiceLine.getPriceActual().multiply(invoiceLine.getQtyInvoiced());	
 			invoiceLine.setLineNetAmt(LineNetAmt);
 		}
-	}
+	}*/
 
 	private void setPaymentTermHeader() {
 		if(invoiceLine.getC_Invoice().isSOTrx()) {
