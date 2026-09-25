@@ -13,6 +13,7 @@ import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.Env;
 import org.osgi.service.event.Event;
 
 import com.idempierecloud.bpr.base.CustomEvent;
@@ -51,6 +52,14 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			
 	}
 	
+	public static BigDecimal nvl(
+            BigDecimal value) {
+
+        return value != null
+                ? value
+                : Env.ZERO;
+    }
+	
 	private void setPriceUlang() {
 		//if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("OngkosAngkut")) {
 			invoiceLine.setPriceActual(invoiceLine.getPriceList());
@@ -64,7 +73,15 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	                );
 			
 			invoiceLine.setPriceEntered(priceEntered);
-		//}
+			
+			BigDecimal lineNetAmt =
+	                nvl(priceEntered)
+	                        .multiply(
+	                                nvl(invoiceLine.getQtyEntered())
+	                        );
+			
+			invoiceLine.setLineNetAmt(lineNetAmt);
+		//}/
 		
 		/*if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("SubsidiAmt")) {
 			invoiceLine.setPriceActual(invoiceLine.getPriceList());
