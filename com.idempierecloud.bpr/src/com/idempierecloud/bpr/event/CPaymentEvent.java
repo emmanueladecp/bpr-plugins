@@ -19,6 +19,7 @@ public class CPaymentEvent extends CustomEvent {
 
 	
 	private static CLogger log = CLogger.getCLogger(MPayment.class);
+	private final static int C_DOCTYPE_ID_KASBON = 1000087;
 	
 	private MPayment payment = null;
 	@Override
@@ -33,7 +34,23 @@ public class CPaymentEvent extends CustomEvent {
 		}else if (event.getTopic().equals(IEventTopics.DOC_BEFORE_COMPLETE)) {
 			setIsPrepayment();		
 			setAPPaymentAmountMustNotBeZero();
+			setADOrgTrxForKasbon();
 		}
+	}
+	
+	private void setADOrgTrxForKasbon() {
+		if(payment.get_ValueAsBoolean("isReceipt"))
+			return;
+		
+		if((payment.getC_DocType_ID() != C_DOCTYPE_ID_KASBON))
+			return;
+		
+		if (payment.getAD_OrgTrx_ID() > 0) {
+			if (payment.getAD_OrgTrx_ID() != payment.getAD_Org_ID()) {
+				payment.setAD_OrgTrx_ID(payment.getAD_Org_ID());
+			}
+		}
+		
 	}
 	
 	private void setAPPaymentAmountMustNotBeZero() {
