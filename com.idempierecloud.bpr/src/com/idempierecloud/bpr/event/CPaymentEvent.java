@@ -39,6 +39,7 @@ public class CPaymentEvent extends CustomEvent {
 	}
 	
 	private void setADOrgTrxForKasbon() {
+		//khusus jalan pada menu kasbon , dan isReceipt = false
 		if(payment.get_ValueAsBoolean("isReceipt"))
 			return;
 		
