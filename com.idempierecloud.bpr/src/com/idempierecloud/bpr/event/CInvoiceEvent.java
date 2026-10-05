@@ -42,8 +42,8 @@ public class CInvoiceEvent extends CustomEvent {
 	private final static int M_LocatorType_CustomerShipment = 1000002;
 	private final static int C_Doctype_AR_CreditMemo = 1000004;
 	//private final static int C_CHARGE_ID_PPN_KELUARAN_2501009 = 1000344;
-	private final static int C_CHARGE_ID_PENJUALAN_OA = 1000429;
-	private final static int C_CHARGE_ID_PENJUALAN_KEMASAN = 1000430;
+	//private final static int C_CHARGE_ID_PENJUALAN_OA = 1000429;
+	//private final static int C_CHARGE_ID_PENJUALAN_KEMASAN = 1000430;
 	private final static int C_TAX_RATE_11 = 1000003;
 	private final static int C_Doctype_AR_Invoice_Customer = 1000002;
 
@@ -82,7 +82,10 @@ public class CInvoiceEvent extends CustomEvent {
 			    return;
 			
 			if (invoice.getC_DocTypeTarget_ID() == C_Doctype_AR_Invoice_Customer || invoice.getC_DocTypeTarget_ID() == C_Doctype_AR_CreditMemo) {
-				calculateAdditionalCharge(invoice);
+				//int isRMP = DB.getSQLValue(invoice.get_TrxName(), "select count(AD_Client_ID) from ad_client ac where value like 'RMP' and ad_client_id =?", invoice.getAD_Client_ID());
+				//if(isRMP<1) { 
+					calculateAdditionalCharge(invoice);
+				//}
 			}
 			 
 		} 
@@ -152,15 +155,18 @@ public class CInvoiceEvent extends CustomEvent {
         //    return;
         //}
         
-        if (lineOngkosAngkut.compareTo(BigDecimal.ZERO) <= 0)
-        {
-        	removeAdditionalChargeLine(invoice, "IsAdditionalOA");
-        }
+        //if (lineOngkosAngkut.compareTo(BigDecimal.ZERO) <= 0)
+        //{
+        //	removeAdditionalChargeLine(invoice, "IsAdditionalOA");
+        //}
         
-        if (lineSubsidi.compareTo(BigDecimal.ZERO) <= 0)
-        {
-        	removeAdditionalChargeLine(invoice, "IsAdditionalSubsidi");
-        }
+        //if (lineSubsidi.compareTo(BigDecimal.ZERO) <= 0)
+        //{
+        //	removeAdditionalChargeLine(invoice, "IsAdditionalSubsidi");
+        //}
+        
+        removeAdditionalChargeLine(invoice, "IsAdditionalOA");
+        removeAdditionalChargeLine(invoice, "IsAdditionalSubsidi");
 
         // ============================================================
         // 3. Currency precision
@@ -238,9 +244,14 @@ public class CInvoiceEvent extends CustomEvent {
                     additionalLine.setAD_Org_ID(invoice.getAD_Org_ID());
                     additionalLine.setC_Invoice_ID(invoice.getC_Invoice_ID());
                     additionalLine.setLine(lineNo);
+                    
+                    int chargeOngkosAngkut = getChargeId(
+                    	    "4102001 Penjualan Lain-lain Ongkos Angkut",
+                    	    invoice.get_TrxName()
+                    	);
 
                     additionalLine.setC_Charge_ID(
-                    		C_CHARGE_ID_PENJUALAN_OA
+                    		chargeOngkosAngkut
                     );
 
                     additionalLine.setQtyEntered(
@@ -261,10 +272,14 @@ public class CInvoiceEvent extends CustomEvent {
                 additionalLine.setC_Tax_ID(
                 		C_TAX_RATE_11
                 );
+                
+                BigDecimal priceOA = invoice.isTaxIncluded()
+                        ? lineOngkosAngkut 
+                        : dppOA; 
 
-                additionalLine.setPriceList(dppOA);
-                additionalLine.setPrice(dppOA);
-                additionalLine.setPriceEntered(dppOA);
+                additionalLine.setPriceList(priceOA);
+                additionalLine.setPrice(priceOA);
+                additionalLine.setPriceEntered(priceOA);
                 
                 additionalLine.set_ValueOfColumn("IsAdditionalOA", true);
                 additionalLine.set_ValueOfColumn("IsAdditionalCharge", true);
@@ -290,9 +305,14 @@ public class CInvoiceEvent extends CustomEvent {
                     additionalLine.setAD_Org_ID(invoice.getAD_Org_ID());
                     additionalLine.setC_Invoice_ID(invoice.getC_Invoice_ID());
                     additionalLine.setLine(lineNo);
+                    
+                    int chargeKemasan = getChargeId(
+                    	    "4102002 Penjualan Lain-lain Kemasan",
+                    	    invoice.get_TrxName()
+                    	);
 
                     additionalLine.setC_Charge_ID(
-                    		C_CHARGE_ID_PENJUALAN_KEMASAN
+                    		chargeKemasan
                     );
 
                     additionalLine.setQtyEntered(
@@ -313,10 +333,14 @@ public class CInvoiceEvent extends CustomEvent {
                 additionalLine.setC_Tax_ID(
                 		C_TAX_RATE_11
                 );
+                
+                BigDecimal priceSubsidi = invoice.isTaxIncluded()
+                        ? lineSubsidi 
+                        : dppSubsidi; 
 
-                additionalLine.setPriceList(dppSubsidi);
-                additionalLine.setPrice(dppSubsidi);
-                additionalLine.setPriceEntered(dppSubsidi);
+                additionalLine.setPriceList(priceSubsidi);
+                additionalLine.setPrice(priceSubsidi);
+                additionalLine.setPriceEntered(priceSubsidi);
                 
                 additionalLine.set_ValueOfColumn("IsAdditionalSubsidi", true);
                 additionalLine.set_ValueOfColumn("IsAdditionalCharge", true);
@@ -324,6 +348,18 @@ public class CInvoiceEvent extends CustomEvent {
                 additionalLine.saveEx();
         }
     }
+	 
+	 private int getChargeId(String chargeName, String trxName)
+	 {
+	     return DB.getSQLValue(
+	         trxName,
+	         "SELECT C_Charge_ID " +
+	         "FROM C_Charge " +
+	         "WHERE IsActive = 'Y' " +
+	         "AND UPPER(Name) = UPPER(?)",
+	         chargeName
+	     );
+	 }
 
     private boolean isAdditionalChargeLine(
         MInvoiceLine line, String additionalCharge)

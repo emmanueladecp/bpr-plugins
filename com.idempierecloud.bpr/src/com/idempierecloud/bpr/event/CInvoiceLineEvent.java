@@ -9,6 +9,7 @@ import org.compiere.model.MInOutLine;
 import org.compiere.model.MInvoice;
 import org.compiere.model.MInvoiceLine;
 import org.compiere.model.MOrderLine;
+import org.compiere.model.MProduct;
 import org.compiere.model.MUOMConversion;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
@@ -36,8 +37,8 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			checkqtyShipment();
 			setOngkosAngkut_SubsidiAmt();
 			setQtyInvoice();
-			setIfOrderlineFOC();
 			setPriceUlang();
+			setIfOrderlineFOC();
 		}else if(event.getTopic().equals(IEventTopics.PO_BEFORE_CHANGE)) {
 			setQtyInvoice();
 			setIfOrderlineFOC();
@@ -62,15 +63,37 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	
 	private void setPriceUlang() {
 		//if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("OngkosAngkut")) {
-			invoiceLine.setPriceActual(invoiceLine.getPriceList());
-			BigDecimal priceEntered =
-	                MUOMConversion.convertProductFrom(
-	                		invoiceLine.getCtx(),
-	                		invoiceLine.getM_Product_ID(),
-	                		invoiceLine.getC_UOM_ID(),
-	                        invoiceLine.getPriceList(),
-	                        PRICE_CONVERSION_PRECISION
-	                );
+		
+		if (invoiceLine.getC_Invoice().isSOTrx()) {
+			
+			BigDecimal ongkosAngkut = (BigDecimal)invoiceLine.get_Value("OngkosAngkut");
+			BigDecimal SubsidiAmt = (BigDecimal)invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal priceList =(BigDecimal)invoiceLine.getPriceList();
+			
+			BigDecimal priceActual = BigDecimal.ZERO;
+			
+			int M_Product_ID = invoiceLine.getM_Product_ID();
+			if(invoiceLine.getM_Product_ID()==0)
+				return;
+			MProduct product = new MProduct(invoiceLine.getCtx(), M_Product_ID, null);
+			
+			if(SubsidiAmt.compareTo(BigDecimal.ZERO)<0) {
+				priceActual = priceList.add(SubsidiAmt);
+			} else {
+				priceActual = priceList;
+			}
+			
+			invoiceLine.setPriceActual(priceActual);
+			BigDecimal priceEntered = priceActual.multiply(product.getWeight());
+			
+			//BigDecimal priceEntered =
+	        //        MUOMConversion.convertProductFrom(
+	        //        		invoiceLine.getCtx(),
+	        //        		invoiceLine.getM_Product_ID(),
+	        //        		invoiceLine.getC_UOM_ID(),
+	        //                invoiceLine.getPriceList(),
+	        //                PRICE_CONVERSION_PRECISION
+	        //        );
 			
 			invoiceLine.setPriceEntered(priceEntered);
 			
@@ -81,6 +104,8 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	                        );
 			
 			invoiceLine.setLineNetAmt(lineNetAmt);
+		}
+			
 		//}/
 		
 		/*if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("SubsidiAmt")) {
@@ -119,8 +144,16 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		
 		if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceList")) {
 			//BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
-			//BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
-			BigDecimal priceActual = invoiceLine.getPriceList();
+			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			
+			//BigDecimal priceActual = invoiceLine.getPriceList();
+			BigDecimal priceActual = BigDecimal.ZERO;
+			
+			if(SubsidiAmt.compareTo(BigDecimal.ZERO)<0) {
+				priceActual = invoiceLine.getPriceList().add(SubsidiAmt);
+			} else {
+				priceActual = invoiceLine.getPriceList();
+			}
 			
 			BigDecimal priceEntered = priceActual.multiply(invoiceLine.getM_Product().getWeight());
 			
@@ -131,9 +164,19 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			invoiceLine.setLineNetAmt(LineNetAmt);
 		}else if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceEntered")) {
 			//BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
-			//BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
+			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
 			BigDecimal priceActual = invoiceLine.getPriceEntered().divide(invoiceLine.getM_Product().getWeight()).setScale(0);
-			BigDecimal priceList = priceActual;
+			
+			
+			//BigDecimal priceList = priceActual;
+			BigDecimal priceList = BigDecimal.ZERO;
+			
+			if(SubsidiAmt.compareTo(BigDecimal.ZERO)<0) {
+				priceList = priceActual.subtract(SubsidiAmt);
+			} else {
+				priceList = priceActual;
+			}
+			
 			invoiceLine.setPriceActual(priceActual);
 			invoiceLine.setPriceList(priceList);
 			
@@ -198,6 +241,7 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			MOrderLine oline = (MOrderLine) invoiceLine.getC_OrderLine();
 			if(oline.get_ValueAsBoolean("isFOC")) {
 				invoiceLine.setPrice(BigDecimal.ZERO);
+				invoiceLine.setLineNetAmt(BigDecimal.ZERO);
 			}
 		}
 	}
@@ -212,20 +256,23 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 	}
 
 	private void setOngkosAngkut_SubsidiAmt() {
-		if(invoiceLine.getC_OrderLine_ID()>0) {
-			MOrderLine oLine = (MOrderLine) invoiceLine.getC_OrderLine();
-			BigDecimal ongkosAngkut = (BigDecimal)oLine.get_Value("OngkosAngkut");
-			BigDecimal SubsidiAmt = (BigDecimal)oLine.get_Value("SubsidiAmt");
-			if(ongkosAngkut!=null) {
-				if(ongkosAngkut.compareTo(BigDecimal.ZERO)>0 && ongkosAngkut!=null) 
-					invoiceLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
+		if(invoiceLine.getC_Invoice().isSOTrx()){
+			if(invoiceLine.getC_OrderLine_ID()>0) {
+				MOrderLine oLine = (MOrderLine) invoiceLine.getC_OrderLine();
+				BigDecimal ongkosAngkut = (BigDecimal)oLine.get_Value("OngkosAngkut");
+				BigDecimal SubsidiAmt = (BigDecimal)oLine.get_Value("SubsidiAmt");
+				if(ongkosAngkut!=null) {
+					//if(ongkosAngkut.compareTo(BigDecimal.ZERO)>0 && ongkosAngkut!=null) 
+						invoiceLine.set_ValueOfColumn("OngkosAngkut", ongkosAngkut);
+				}
+				if(SubsidiAmt!=null) {
+					//if(SubsidiAmt.compareTo(BigDecimal.ZERO)>0) 
+						invoiceLine.set_ValueOfColumn("SubsidiAmt", SubsidiAmt);
+				}
+					
 			}
-			if(SubsidiAmt!=null) {
-				if(SubsidiAmt.compareTo(BigDecimal.ZERO)>0) 
-					invoiceLine.set_ValueOfColumn("SubsidiAmt", SubsidiAmt);
-			}
-				
 		}
+		
 	}
 
 	private void setWitholdingType() {

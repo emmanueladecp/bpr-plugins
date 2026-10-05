@@ -2,6 +2,7 @@ package com.idempierecloud.bpr.form;
 
 import static org.compiere.model.SystemIDs.COLUMN_C_PERIOD_AD_ORG_ID;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -455,25 +456,55 @@ public class GenerateInvoiceFromShipment extends CustomForm implements ValueChan
 					MOrderLine oline = (MOrderLine) line.getC_OrderLine();	
 				
 					MInvoiceLine iLine = new MInvoiceLine(invoice.getCtx(), 0, trxName);
+					
+					BigDecimal OngkosAngkut = BigDecimal.ZERO;
+					BigDecimal SubsidiAmt = BigDecimal.ZERO;
+					BigDecimal priceActual = BigDecimal.ZERO;
+					
+					OngkosAngkut = (BigDecimal)oline.get_Value("OngkosAngkut");
+					SubsidiAmt = (BigDecimal)oline.get_Value("SubsidiAmt");
+					
 					iLine.setAD_Org_ID(invoice.getAD_Org_ID());
 					iLine.setC_Invoice_ID(invoice.get_ID());
 					iLine.setM_InOutLine_ID(line.getM_InOutLine_ID());
 					iLine.setM_Product_ID(line.getM_Product_ID());
 					iLine.setQtyEntered(line.getQtyEntered());
 					iLine.setQtyInvoiced(line.getMovementQty());
+					
 					if(order.get_ValueAsInt("C_Tax_ID")>0) 
 						iLine.setC_Tax_ID(order.get_ValueAsInt("C_Tax_ID"));
 					else 
 						iLine.setC_Tax_ID(1000000);//C_Tax_ID Bebas_PPN
+					
 					//iLine.setPriceActual(oline.getPriceActual());
 					//iLine.setPriceEntered(oline.getPriceEntered());
+					
+					//iLine.setPriceList(oline.getPriceList());
+					//iLine.setPriceActual(oline.getPriceList());
+					//iLine.setPriceEntered(oline.getPriceList().multiply(line.getMovementQty()));
+					
 					iLine.setPriceList(oline.getPriceList());
-					iLine.setPriceActual(oline.getPriceList());
-					iLine.setPriceEntered(oline.getPriceList().multiply(line.getMovementQty()));
+					
+					if(SubsidiAmt.compareTo(BigDecimal.ZERO)<0) {
+						priceActual = iLine.getPriceList().add(SubsidiAmt);
+					} else {
+						priceActual = iLine.getPriceList();
+					}
+					
+					BigDecimal priceEntered = priceActual.multiply(iLine.getM_Product().getWeight());
+					iLine.setPriceActual(priceActual);
+					iLine.setPriceEntered(priceEntered);
+					
 					if(oline.getC_Charge_ID()>0)
 						iLine.setC_Charge_ID(oline.getC_Charge_ID());
-					iLine.set_ValueOfColumn("OngkosAngkut", oline.get_Value("OngkosAngkut"));
-					iLine.set_ValueOfColumn("SubsidiAmt", oline.get_Value("SubsidiAmt"));
+					
+					
+					//iLine.set_ValueOfColumn("OngkosAngkut", oline.get_Value("OngkosAngkut"));
+					//iLine.set_ValueOfColumn("SubsidiAmt", oline.get_Value("SubsidiAmt"));
+					iLine.set_ValueOfColumn("OngkosAngkut", OngkosAngkut);
+					iLine.set_ValueOfColumn("SubsidiAmt", SubsidiAmt);
+					
+					
 					iLine.saveEx();
 				}
 				if(invoice.getC_Invoice_ID()>0) {
