@@ -72,10 +72,10 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			
 			BigDecimal priceActual = BigDecimal.ZERO;
 			
-			int M_Product_ID = invoiceLine.getM_Product_ID();
+			//int M_Product_ID = invoiceLine.getM_Product_ID();
 			if(invoiceLine.getM_Product_ID()==0)
 				return;
-			MProduct product = new MProduct(invoiceLine.getCtx(), M_Product_ID, null);
+			//MProduct product = new MProduct(invoiceLine.getCtx(), M_Product_ID, null);
 			
 			if(SubsidiAmt.compareTo(BigDecimal.ZERO)<0) {
 				priceActual = priceList.add(SubsidiAmt);
@@ -84,16 +84,16 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 			}
 			
 			invoiceLine.setPriceActual(priceActual);
-			BigDecimal priceEntered = priceActual.multiply(product.getWeight());
+			//BigDecimal priceEntered = priceActual.multiply(product.getWeight());
 			
-			//BigDecimal priceEntered =
-	        //        MUOMConversion.convertProductFrom(
-	        //        		invoiceLine.getCtx(),
-	        //        		invoiceLine.getM_Product_ID(),
-	        //        		invoiceLine.getC_UOM_ID(),
-	        //                invoiceLine.getPriceList(),
-	        //                PRICE_CONVERSION_PRECISION
-	        //        );
+			BigDecimal priceEntered =
+	                MUOMConversion.convertProductFrom(
+	                		invoiceLine.getCtx(),
+	                		invoiceLine.getM_Product_ID(),
+	                		invoiceLine.getC_UOM_ID(),
+	                		priceActual,
+	                        PRICE_CONVERSION_PRECISION
+	                );
 			
 			invoiceLine.setPriceEntered(priceEntered);
 			
@@ -155,7 +155,16 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 				priceActual = invoiceLine.getPriceList();
 			}
 			
-			BigDecimal priceEntered = priceActual.multiply(invoiceLine.getM_Product().getWeight());
+			//BigDecimal priceEntered = priceActual.multiply(invoiceLine.getM_Product().getWeight());
+			
+			BigDecimal priceEntered =
+	                MUOMConversion.convertProductFrom(
+	                		invoiceLine.getCtx(),
+	                		invoiceLine.getM_Product_ID(),
+	                		invoiceLine.getC_UOM_ID(),
+	                		priceActual,
+	                        PRICE_CONVERSION_PRECISION
+	                );
 			
 			invoiceLine.setPriceActual(priceActual);
 			invoiceLine.setPriceEntered(priceEntered);
@@ -165,7 +174,14 @@ private static CLogger log = CLogger.getCLogger(CInvoiceLineEvent.class);
 		}else if(invoiceLine.getC_Invoice().isSOTrx()&&invoiceLine.is_ValueChanged("PriceEntered")) {
 			//BigDecimal OngkosAngkut = (BigDecimal) invoiceLine.get_Value("OngkosAngkut");
 			BigDecimal SubsidiAmt = (BigDecimal) invoiceLine.get_Value("SubsidiAmt");
-			BigDecimal priceActual = invoiceLine.getPriceEntered().divide(invoiceLine.getM_Product().getWeight()).setScale(0);
+			
+			BigDecimal priceActual = BigDecimal.ZERO;
+			
+			if (invoiceLine.getC_UOM_ID() != invoiceLine.getM_Product().getC_UOM_ID()){
+				priceActual = invoiceLine.getPriceEntered().divide(invoiceLine.getM_Product().getWeight()).setScale(0);
+			} else {
+				priceActual = invoiceLine.getPriceEntered();
+			}
 			
 			
 			//BigDecimal priceList = priceActual;
