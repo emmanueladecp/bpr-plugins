@@ -189,6 +189,9 @@ public class CInvoiceEvent extends CustomEvent {
         );
 
         BigDecimal taxRate = tax.getRate();
+        
+        BigDecimal denominator =
+                BigDecimal.valueOf(100).add(taxRate);
 
         // ============================================================
         // 5. Karena gross sudah termasuk PPN:
@@ -221,6 +224,25 @@ public class CInvoiceEvent extends CustomEvent {
                 precision,
                 RoundingMode.HALF_UP
         );
+        
+        BigDecimal ppnOA = lineOngkosAngkut
+                .multiply(taxRate)
+                .divide(
+                        denominator,
+                        0,
+                        RoundingMode.HALF_UP
+                );
+
+        BigDecimal ppnSubsidi = lineSubsidi
+                .multiply(taxRate)
+                .divide(
+                        denominator,
+                        0,
+                        RoundingMode.HALF_UP
+                );
+        
+        BigDecimal netOA = lineOngkosAngkut.subtract(ppnOA);
+        BigDecimal netSubsidi = lineSubsidi.subtract(ppnSubsidi);
 
         // ============================================================
         // 6. Cari existing additional charge line
@@ -276,6 +298,10 @@ public class CInvoiceEvent extends CustomEvent {
                 BigDecimal priceOA = invoice.isTaxIncluded()
                         ? lineOngkosAngkut 
                         : dppOA; 
+                
+                //BigDecimal priceOA = invoice.isTaxIncluded()
+                //        ? lineOngkosAngkut  // Gross
+                //        : netOA;           // Net setelah PPN bulat
 
                 additionalLine.setPriceList(priceOA);
                 additionalLine.setPrice(priceOA);
@@ -337,6 +363,10 @@ public class CInvoiceEvent extends CustomEvent {
                 BigDecimal priceSubsidi = invoice.isTaxIncluded()
                         ? lineSubsidi 
                         : dppSubsidi; 
+                
+                //BigDecimal priceSubsidi = invoice.isTaxIncluded()
+                //        ? lineSubsidi      // Gross
+                //        : netSubsidi;      // Net setelah PPN bulat
 
                 additionalLine.setPriceList(priceSubsidi);
                 additionalLine.setPrice(priceSubsidi);

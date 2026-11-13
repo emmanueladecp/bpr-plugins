@@ -88,7 +88,7 @@ public class COrderLineEvent extends CustomEvent {
 			setWitholdingType();
 			calculateGrossUp();
 			//calculateOngkosAngkut();
-			calculateAdditionalCost();
+			//calculateAdditionalCost();
 			calculatePromo();
 			calculatePrice();
 			calculateLinetNetAmt();
